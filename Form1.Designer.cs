@@ -54,28 +54,29 @@
             label3 = new Label();
             label2 = new Label();
             panel3 = new Panel();
+            listBox1 = new ListBox();
+            statusStrip1 = new StatusStrip();
+            toolStripStatusLabel1 = new ToolStripStatusLabel();
+            button14 = new Button();
+            button13 = new Button();
+            chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
             button12 = new Button();
             button10 = new Button();
             button11 = new Button();
             button9 = new Button();
             button8 = new Button();
-            chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            button13 = new Button();
-            button14 = new Button();
-            statusStrip1 = new StatusStrip();
-            toolStripStatusLabel1 = new ToolStripStatusLabel();
-            listBox1 = new ListBox();
             panel1.SuspendLayout();
             panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trackBar1).BeginInit();
             panel3.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)chart1).BeginInit();
             statusStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)chart1).BeginInit();
             SuspendLayout();
             // 
             // panel1
             // 
+            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             panel1.BackColor = Color.FromArgb(33, 28, 29);
             panel1.Controls.Add(textBox1);
             panel1.Controls.Add(button2);
@@ -88,6 +89,7 @@
             // 
             // textBox1
             // 
+            textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             textBox1.Location = new Point(230, 60);
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(368, 23);
@@ -95,6 +97,7 @@
             // 
             // button2
             // 
+            button2.Anchor = AnchorStyles.Left;
             button2.BackColor = Color.FromArgb(53, 48, 49);
             button2.FlatStyle = FlatStyle.Popup;
             button2.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
@@ -108,6 +111,7 @@
             // 
             // button1
             // 
+            button1.Anchor = AnchorStyles.Left;
             button1.BackColor = Color.FromArgb(53, 48, 49);
             button1.FlatStyle = FlatStyle.Popup;
             button1.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
@@ -132,6 +136,7 @@
             // 
             // panel2
             // 
+            panel2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel2.BackColor = Color.FromArgb(20, 20, 20);
             panel2.Controls.Add(pictureBox1);
             panel2.Controls.Add(trackBar1);
@@ -155,6 +160,7 @@
             // 
             // pictureBox1
             // 
+            pictureBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pictureBox1.BackColor = Color.Black;
             pictureBox1.Location = new Point(116, 6);
             pictureBox1.Name = "pictureBox1";
@@ -164,6 +170,7 @@
             // 
             // trackBar1
             // 
+            trackBar1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             trackBar1.Location = new Point(0, 231);
             trackBar1.Name = "trackBar1";
             trackBar1.Size = new Size(609, 45);
@@ -171,6 +178,7 @@
             // 
             // button7
             // 
+            button7.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             button7.BackColor = Color.FromArgb(198, 100, 114);
             button7.FlatStyle = FlatStyle.Popup;
             button7.Font = new Font("맑은 고딕", 12F, FontStyle.Bold, GraphicsUnit.Point, 129);
@@ -184,6 +192,7 @@
             // 
             // button5
             // 
+            button5.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             button5.BackColor = Color.FromArgb(56, 52, 52);
             button5.FlatStyle = FlatStyle.Popup;
             button5.Font = new Font("바탕", 14.25F, FontStyle.Bold);
@@ -197,6 +206,7 @@
             // 
             // button6
             // 
+            button6.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             button6.BackColor = Color.FromArgb(56, 52, 52);
             button6.FlatStyle = FlatStyle.Popup;
             button6.Font = new Font("바탕", 14.25F, FontStyle.Bold);
@@ -210,6 +220,7 @@
             // 
             // button4
             // 
+            button4.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             button4.BackColor = Color.FromArgb(56, 52, 52);
             button4.FlatStyle = FlatStyle.Popup;
             button4.Font = new Font("바탕", 14.25F, FontStyle.Bold);
@@ -223,6 +234,7 @@
             // 
             // button3
             // 
+            button3.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             button3.BackColor = Color.FromArgb(56, 52, 52);
             button3.FlatStyle = FlatStyle.Popup;
             button3.Font = new Font("바탕", 14.25F, FontStyle.Bold);
@@ -236,6 +248,7 @@
             // 
             // label9
             // 
+            label9.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label9.AutoSize = true;
             label9.Font = new Font("맑은 고딕", 18F, FontStyle.Bold, GraphicsUnit.Point, 129);
             label9.ForeColor = SystemColors.ButtonHighlight;
@@ -247,6 +260,7 @@
             // 
             // label8
             // 
+            label8.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             label8.AutoSize = true;
             label8.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             label8.ForeColor = SystemColors.ButtonHighlight;
@@ -324,6 +338,7 @@
             // 
             // panel3
             // 
+            panel3.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel3.BackColor = Color.FromArgb(33, 28, 29);
             panel3.Controls.Add(listBox1);
             panel3.Controls.Add(statusStrip1);
@@ -340,73 +355,64 @@
             panel3.Size = new Size(609, 245);
             panel3.TabIndex = 2;
             // 
-            // button12
+            // listBox1
             // 
-            button12.BackColor = Color.FromArgb(53, 48, 49);
-            button12.FlatStyle = FlatStyle.Popup;
-            button12.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button12.ForeColor = SystemColors.ButtonHighlight;
-            button12.Location = new Point(483, 6);
-            button12.Name = "button12";
-            button12.Size = new Size(103, 23);
-            button12.TabIndex = 8;
-            button12.Text = "필터 적용";
-            button12.UseVisualStyleBackColor = false;
+            listBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            listBox1.FormattingEnabled = true;
+            listBox1.Location = new Point(10, 40);
+            listBox1.Name = "listBox1";
+            listBox1.Size = new Size(120, 154);
+            listBox1.TabIndex = 3;
             // 
-            // button10
+            // statusStrip1
             // 
-            button10.BackColor = Color.FromArgb(53, 48, 49);
-            button10.FlatStyle = FlatStyle.Popup;
-            button10.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button10.ForeColor = SystemColors.ButtonHighlight;
-            button10.Location = new Point(374, 6);
-            button10.Name = "button10";
-            button10.Size = new Size(103, 23);
-            button10.TabIndex = 7;
-            button10.Text = "복구";
-            button10.UseVisualStyleBackColor = false;
+            statusStrip1.BackColor = Color.Black;
+            statusStrip1.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1 });
+            statusStrip1.Location = new Point(0, 223);
+            statusStrip1.Name = "statusStrip1";
+            statusStrip1.Size = new Size(609, 22);
+            statusStrip1.TabIndex = 12;
+            statusStrip1.Text = "statusStrip1";
             // 
-            // button11
+            // toolStripStatusLabel1
             // 
-            button11.BackColor = Color.FromArgb(53, 48, 49);
-            button11.FlatStyle = FlatStyle.Popup;
-            button11.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button11.ForeColor = SystemColors.ButtonHighlight;
-            button11.Location = new Point(265, 6);
-            button11.Name = "button11";
-            button11.Size = new Size(103, 23);
-            button11.TabIndex = 6;
-            button11.Text = "선택구간 삭제";
-            button11.UseVisualStyleBackColor = false;
+            toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
+            toolStripStatusLabel1.Name = "toolStripStatusLabel1";
+            toolStripStatusLabel1.Size = new Size(194, 17);
+            toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
             // 
-            // button9
+            // button14
             // 
-            button9.BackColor = Color.FromArgb(53, 48, 49);
-            button9.FlatStyle = FlatStyle.Popup;
-            button9.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button9.ForeColor = SystemColors.ButtonHighlight;
-            button9.Location = new Point(156, 6);
-            button9.Name = "button9";
-            button9.Size = new Size(103, 23);
-            button9.TabIndex = 5;
-            button9.Text = "끝점 설정";
-            button9.UseVisualStyleBackColor = false;
+            button14.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button14.BackColor = Color.FromArgb(53, 48, 49);
+            button14.FlatStyle = FlatStyle.Popup;
+            button14.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button14.ForeColor = SystemColors.ButtonHighlight;
+            button14.Location = new Point(507, 117);
+            button14.Name = "button14";
+            button14.Size = new Size(91, 51);
+            button14.TabIndex = 11;
+            button14.Text = " 브라우저    분석";
+            button14.UseVisualStyleBackColor = false;
             // 
-            // button8
+            // button13
             // 
-            button8.BackColor = Color.FromArgb(53, 48, 49);
-            button8.FlatStyle = FlatStyle.Popup;
-            button8.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button8.ForeColor = SystemColors.ButtonHighlight;
-            button8.Location = new Point(47, 6);
-            button8.Name = "button8";
-            button8.Size = new Size(103, 23);
-            button8.TabIndex = 4;
-            button8.Text = "시작점 설정";
-            button8.UseVisualStyleBackColor = false;
+            button13.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button13.BackColor = Color.FromArgb(53, 48, 49);
+            button13.FlatStyle = FlatStyle.Popup;
+            button13.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button13.ForeColor = SystemColors.ButtonHighlight;
+            button13.Location = new Point(507, 60);
+            button13.Name = "button13";
+            button13.Size = new Size(91, 51);
+            button13.TabIndex = 10;
+            button13.Text = "새로고침";
+            button13.UseVisualStyleBackColor = false;
             // 
             // chart1
             // 
+            chart1.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chart1.BackColor = Color.FromArgb(48, 42, 41);
             chartArea1.Name = "ChartArea1";
             chart1.ChartAreas.Add(chartArea1);
@@ -429,57 +435,75 @@
             chart1.TabIndex = 9;
             chart1.Text = "chart1";
             // 
-            // button13
+            // button12
             // 
-            button13.BackColor = Color.FromArgb(53, 48, 49);
-            button13.FlatStyle = FlatStyle.Popup;
-            button13.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button13.ForeColor = SystemColors.ButtonHighlight;
-            button13.Location = new Point(507, 60);
-            button13.Name = "button13";
-            button13.Size = new Size(91, 51);
-            button13.TabIndex = 10;
-            button13.Text = "새로고침";
-            button13.UseVisualStyleBackColor = false;
+            button12.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button12.BackColor = Color.FromArgb(53, 48, 49);
+            button12.FlatStyle = FlatStyle.Popup;
+            button12.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button12.ForeColor = SystemColors.ButtonHighlight;
+            button12.Location = new Point(483, 6);
+            button12.Name = "button12";
+            button12.Size = new Size(103, 23);
+            button12.TabIndex = 8;
+            button12.Text = "필터 적용";
+            button12.UseVisualStyleBackColor = false;
             // 
-            // button14
+            // button10
             // 
-            button14.BackColor = Color.FromArgb(53, 48, 49);
-            button14.FlatStyle = FlatStyle.Popup;
-            button14.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button14.ForeColor = SystemColors.ButtonHighlight;
-            button14.Location = new Point(507, 117);
-            button14.Name = "button14";
-            button14.Size = new Size(91, 51);
-            button14.TabIndex = 11;
-            button14.Text = " 브라우저    분석";
-            button14.UseVisualStyleBackColor = false;
+            button10.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button10.BackColor = Color.FromArgb(53, 48, 49);
+            button10.FlatStyle = FlatStyle.Popup;
+            button10.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button10.ForeColor = SystemColors.ButtonHighlight;
+            button10.Location = new Point(374, 6);
+            button10.Name = "button10";
+            button10.Size = new Size(103, 23);
+            button10.TabIndex = 7;
+            button10.Text = "복구";
+            button10.UseVisualStyleBackColor = false;
             // 
-            // statusStrip1
+            // button11
             // 
-            statusStrip1.BackColor = Color.Black;
-            statusStrip1.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1 });
-            statusStrip1.Location = new Point(0, 223);
-            statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(609, 22);
-            statusStrip1.TabIndex = 12;
-            statusStrip1.Text = "statusStrip1";
+            button11.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button11.BackColor = Color.FromArgb(53, 48, 49);
+            button11.FlatStyle = FlatStyle.Popup;
+            button11.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button11.ForeColor = SystemColors.ButtonHighlight;
+            button11.Location = new Point(265, 6);
+            button11.Name = "button11";
+            button11.Size = new Size(103, 23);
+            button11.TabIndex = 6;
+            button11.Text = "선택구간 삭제";
+            button11.UseVisualStyleBackColor = false;
             // 
-            // toolStripStatusLabel1
+            // button9
             // 
-            toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
-            toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(194, 17);
-            toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
+            button9.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button9.BackColor = Color.FromArgb(53, 48, 49);
+            button9.FlatStyle = FlatStyle.Popup;
+            button9.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button9.ForeColor = SystemColors.ButtonHighlight;
+            button9.Location = new Point(156, 6);
+            button9.Name = "button9";
+            button9.Size = new Size(103, 23);
+            button9.TabIndex = 5;
+            button9.Text = "끝점 설정";
+            button9.UseVisualStyleBackColor = false;
             // 
-            // listBox1
+            // button8
             // 
-            listBox1.FormattingEnabled = true;
-            listBox1.Location = new Point(10, 40);
-            listBox1.Name = "listBox1";
-            listBox1.Size = new Size(120, 154);
-            listBox1.TabIndex = 3;
+            button8.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            button8.BackColor = Color.FromArgb(53, 48, 49);
+            button8.FlatStyle = FlatStyle.Popup;
+            button8.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            button8.ForeColor = SystemColors.ButtonHighlight;
+            button8.Location = new Point(47, 6);
+            button8.Name = "button8";
+            button8.Size = new Size(103, 23);
+            button8.TabIndex = 4;
+            button8.Text = "시작점 설정";
+            button8.UseVisualStyleBackColor = false;
             // 
             // Form1
             // 
@@ -499,9 +523,9 @@
             ((System.ComponentModel.ISupportInitialize)trackBar1).EndInit();
             panel3.ResumeLayout(false);
             panel3.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)chart1).EndInit();
             statusStrip1.ResumeLayout(false);
             statusStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)chart1).EndInit();
             ResumeLayout(false);
         }
 
