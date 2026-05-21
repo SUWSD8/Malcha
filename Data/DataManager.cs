@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using Malcha.Model;
 
 namespace Malcha.Data
@@ -26,6 +27,19 @@ namespace Malcha.Data
             return new List<Frame>();
         }
 
+        public Frame ParseFrameJson(string jsonString)
+        {
+            try
+            {
+                // 문자열을 Frame 객체로 변환해서 리턴
+                return JsonSerializer.Deserialize<Frame>(jsonString);
+            }
+            catch (JsonException)
+            {
+                // JSON 형식이 깨진 에러가 나면 null 리턴
+                return null;
+            }
+        }
         private List<TrainedData> Train(){
             return new List<TrainedData>();
         }
