@@ -28,10 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
             panel1 = new Panel();
             btnDataManagement = new Button();
             btnTrainModel = new Button();
@@ -125,7 +125,7 @@
             txtFilePath.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             txtFilePath.Location = new Point(230, 47);
             txtFilePath.Name = "txtFilePath";
-            txtFilePath.Size = new Size(368, 23);
+            txtFilePath.Size = new Size(368, 39);
             txtFilePath.TabIndex = 3;
             // 
             // btnSelectData
@@ -163,7 +163,7 @@
             lblTitle.ForeColor = Color.FromArgb(227, 98, 132);
             lblTitle.Location = new Point(12, 9);
             lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(138, 32);
+            lblTitle.Size = new Size(278, 65);
             lblTitle.TabIndex = 0;
             lblTitle.Text = "DonkeyCar";
             // 
@@ -206,7 +206,7 @@
             trbTimeline.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             trbTimeline.Location = new Point(0, 231);
             trbTimeline.Name = "trbTimeline";
-            trbTimeline.Size = new Size(609, 45);
+            trbTimeline.Size = new Size(609, 90);
             trbTimeline.TabIndex = 2;
             // 
             // btnPlayPause
@@ -287,7 +287,7 @@
             lblRecordCount.ForeColor = SystemColors.ButtonHighlight;
             lblRecordCount.Location = new Point(464, 34);
             lblRecordCount.Name = "lblRecordCount";
-            lblRecordCount.Size = new Size(98, 32);
+            lblRecordCount.Size = new Size(196, 65);
             lblRecordCount.TabIndex = 7;
             lblRecordCount.Text = "000000";
             // 
@@ -299,7 +299,7 @@
             lblRecordTitle.ForeColor = SystemColors.ButtonHighlight;
             lblRecordTitle.Location = new Point(464, 14);
             lblRecordTitle.Name = "lblRecordTitle";
-            lblRecordTitle.Size = new Size(58, 20);
+            lblRecordTitle.Size = new Size(119, 41);
             lblRecordTitle.TabIndex = 6;
             lblRecordTitle.Text = "Record";
             // 
@@ -310,7 +310,7 @@
             lblModeValue.ForeColor = SystemColors.ButtonHighlight;
             lblModeValue.Location = new Point(27, 165);
             lblModeValue.Name = "lblModeValue";
-            lblModeValue.Size = new Size(39, 20);
+            lblModeValue.Size = new Size(78, 41);
             lblModeValue.TabIndex = 5;
             lblModeValue.Text = "user";
             // 
@@ -321,7 +321,7 @@
             lblThrottleValue.ForeColor = SystemColors.ButtonHighlight;
             lblThrottleValue.Location = new Point(27, 104);
             lblThrottleValue.Name = "lblThrottleValue";
-            lblThrottleValue.Size = new Size(69, 20);
+            lblThrottleValue.Size = new Size(133, 41);
             lblThrottleValue.TabIndex = 4;
             lblThrottleValue.Text = "+00.000";
             // 
@@ -332,7 +332,7 @@
             lblAngleValue.ForeColor = SystemColors.ButtonHighlight;
             lblAngleValue.Location = new Point(27, 44);
             lblAngleValue.Name = "lblAngleValue";
-            lblAngleValue.Size = new Size(69, 20);
+            lblAngleValue.Size = new Size(133, 41);
             lblAngleValue.TabIndex = 3;
             lblAngleValue.Text = "+00.000";
             // 
@@ -343,7 +343,7 @@
             lblModeTitle.ForeColor = SystemColors.ButtonHighlight;
             lblModeTitle.Location = new Point(10, 135);
             lblModeTitle.Name = "lblModeTitle";
-            lblModeTitle.Size = new Size(86, 20);
+            lblModeTitle.Size = new Size(173, 41);
             lblModeTitle.TabIndex = 2;
             lblModeTitle.Text = "user/mode";
             // 
@@ -354,7 +354,7 @@
             lblThrottleTitle.ForeColor = SystemColors.ButtonHighlight;
             lblThrottleTitle.Location = new Point(10, 74);
             lblThrottleTitle.Name = "lblThrottleTitle";
-            lblThrottleTitle.Size = new Size(100, 20);
+            lblThrottleTitle.Size = new Size(200, 41);
             lblThrottleTitle.TabIndex = 1;
             lblThrottleTitle.Text = "user/throttle";
             // 
@@ -365,7 +365,7 @@
             lblAngleTitle.ForeColor = SystemColors.ButtonHighlight;
             lblAngleTitle.Location = new Point(10, 14);
             lblAngleTitle.Name = "lblAngleTitle";
-            lblAngleTitle.Size = new Size(84, 20);
+            lblAngleTitle.Size = new Size(168, 41);
             lblAngleTitle.TabIndex = 0;
             lblAngleTitle.Text = "user/angle";
             // 
@@ -394,17 +394,18 @@
             lstDataList.FormattingEnabled = true;
             lstDataList.Location = new Point(10, 55);
             lstDataList.Name = "lstDataList";
-            lstDataList.Size = new Size(120, 169);
+            lstDataList.Size = new Size(120, 164);
             lstDataList.TabIndex = 3;
             // 
             // lblStatus
             // 
             lblStatus.BackColor = Color.Black;
             lblStatus.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            lblStatus.ImageScalingSize = new Size(32, 32);
             lblStatus.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1 });
-            lblStatus.Location = new Point(0, 242);
+            lblStatus.Location = new Point(0, 222);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(609, 22);
+            lblStatus.Size = new Size(609, 42);
             lblStatus.TabIndex = 12;
             lblStatus.Text = "statusStrip1";
             // 
@@ -412,7 +413,7 @@
             // 
             toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(194, 17);
+            toolStripStatusLabel1.Size = new Size(389, 32);
             toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
             // 
             // btnBrowserAnalyze
@@ -447,23 +448,23 @@
             // 
             chtDataGraph.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chtDataGraph.BackColor = Color.FromArgb(48, 42, 41);
-            chartArea1.Name = "ChartArea1";
-            chtDataGraph.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            chtDataGraph.Legends.Add(legend1);
+            chartArea2.Name = "ChartArea1";
+            chtDataGraph.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            chtDataGraph.Legends.Add(legend2);
             chtDataGraph.Location = new Point(142, 46);
             chtDataGraph.Name = "chtDataGraph";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Legend = "Legend1";
-            series1.Name = "user/angle";
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Color = Color.Red;
-            series2.Legend = "Legend1";
-            series2.Name = "user/throttle";
-            chtDataGraph.Series.Add(series1);
-            chtDataGraph.Series.Add(series2);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Legend = "Legend1";
+            series3.Name = "user/angle";
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series4.Color = Color.Red;
+            series4.Legend = "Legend1";
+            series4.Name = "user/throttle";
+            chtDataGraph.Series.Add(series3);
+            chtDataGraph.Series.Add(series4);
             chtDataGraph.Size = new Size(353, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
@@ -540,7 +541,7 @@
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(610, 623);
             Controls.Add(panel3);
