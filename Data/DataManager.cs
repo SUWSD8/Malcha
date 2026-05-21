@@ -46,15 +46,7 @@ namespace Malcha.Data
             }
             return frames;
         }
-        private Frame ParseFrameJson(string json)
-        {
-            return null;
-        }
-        private List<Frame> ReadCatalog()
-        {             // Implement logic to read the catalog and return a list of Frame objects
-            return new List<Frame>();
-        }
-
+     
         public Frame ParseFrameJson(string jsonString)
         {
             try
