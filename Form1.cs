@@ -7,6 +7,7 @@ namespace Malcha
             InitializeComponent();
         }
 
+        
         private void btnTrainModel_Click(object sender, EventArgs e)
         {
             // 1. 새로 만든 모델 학습 폼(FormTrain)의 인스턴스를 생성합니다.

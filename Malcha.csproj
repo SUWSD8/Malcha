@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Controller\" />
+    <Folder Include="Repository\" />
     <PackageReference Include="WinForms.DataVisualization" Version="1.10.2" />
   </ItemGroup>
 
