@@ -266,6 +266,7 @@
             // 
             dgvPilotList.AllowUserToAddRows = false;
             dgvPilotList.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvPilotList.BackgroundColor = Color.FromArgb(103, 98, 98);
             dgvPilotList.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvPilotList.Columns.AddRange(new DataGridViewColumn[] { 번호, 모델이름, 모델종류, 사용한주행데이터폴더, 생성시간, 메모, 어떤모델을기반으로학습했는지 });
             dgvPilotList.Location = new Point(0, 29);
