@@ -84,13 +84,13 @@
             panel1.Controls.Add(label1);
             panel1.Location = new Point(0, 0);
             panel1.Name = "panel1";
-            panel1.Size = new Size(612, 100);
+            panel1.Size = new Size(612, 81);
             panel1.TabIndex = 0;
             // 
             // textBox1
             // 
             textBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            textBox1.Location = new Point(230, 60);
+            textBox1.Location = new Point(230, 47);
             textBox1.Name = "textBox1";
             textBox1.Size = new Size(368, 23);
             textBox1.TabIndex = 3;
@@ -102,7 +102,7 @@
             button2.FlatStyle = FlatStyle.Popup;
             button2.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button2.ForeColor = SystemColors.ButtonHighlight;
-            button2.Location = new Point(121, 59);
+            button2.Location = new Point(121, 45);
             button2.Name = "button2";
             button2.Size = new Size(103, 23);
             button2.TabIndex = 2;
@@ -116,7 +116,7 @@
             button1.FlatStyle = FlatStyle.Popup;
             button1.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button1.ForeColor = SystemColors.ButtonHighlight;
-            button1.Location = new Point(12, 59);
+            button1.Location = new Point(12, 45);
             button1.Name = "button1";
             button1.Size = new Size(103, 23);
             button1.TabIndex = 1;
@@ -153,7 +153,7 @@
             panel2.Controls.Add(label4);
             panel2.Controls.Add(label3);
             panel2.Controls.Add(label2);
-            panel2.Location = new Point(0, 100);
+            panel2.Location = new Point(0, 81);
             panel2.Name = "panel2";
             panel2.Size = new Size(612, 278);
             panel2.TabIndex = 1;
@@ -350,18 +350,18 @@
             panel3.Controls.Add(button11);
             panel3.Controls.Add(button9);
             panel3.Controls.Add(button8);
-            panel3.Location = new Point(0, 378);
+            panel3.Location = new Point(0, 359);
             panel3.Name = "panel3";
-            panel3.Size = new Size(609, 245);
+            panel3.Size = new Size(609, 264);
             panel3.TabIndex = 2;
             // 
             // listBox1
             // 
             listBox1.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             listBox1.FormattingEnabled = true;
-            listBox1.Location = new Point(10, 40);
+            listBox1.Location = new Point(10, 55);
             listBox1.Name = "listBox1";
-            listBox1.Size = new Size(120, 154);
+            listBox1.Size = new Size(120, 169);
             listBox1.TabIndex = 3;
             // 
             // statusStrip1
@@ -369,7 +369,7 @@
             statusStrip1.BackColor = Color.Black;
             statusStrip1.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
             statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1 });
-            statusStrip1.Location = new Point(0, 223);
+            statusStrip1.Location = new Point(0, 242);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Size = new Size(609, 22);
             statusStrip1.TabIndex = 12;
@@ -418,7 +418,7 @@
             chart1.ChartAreas.Add(chartArea1);
             legend1.Name = "Legend1";
             chart1.Legends.Add(legend1);
-            chart1.Location = new Point(142, 40);
+            chart1.Location = new Point(142, 46);
             chart1.Name = "chart1";
             series1.ChartArea = "ChartArea1";
             series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
@@ -431,7 +431,7 @@
             series2.Name = "user/throttle";
             chart1.Series.Add(series1);
             chart1.Series.Add(series2);
-            chart1.Size = new Size(353, 163);
+            chart1.Size = new Size(353, 178);
             chart1.TabIndex = 9;
             chart1.Text = "chart1";
             chart1.Click += chart1_Click;
@@ -443,7 +443,7 @@
             button12.FlatStyle = FlatStyle.Popup;
             button12.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button12.ForeColor = SystemColors.ButtonHighlight;
-            button12.Location = new Point(483, 6);
+            button12.Location = new Point(483, 11);
             button12.Name = "button12";
             button12.Size = new Size(103, 23);
             button12.TabIndex = 8;
@@ -457,7 +457,7 @@
             button10.FlatStyle = FlatStyle.Popup;
             button10.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button10.ForeColor = SystemColors.ButtonHighlight;
-            button10.Location = new Point(374, 6);
+            button10.Location = new Point(374, 11);
             button10.Name = "button10";
             button10.Size = new Size(103, 23);
             button10.TabIndex = 7;
@@ -471,7 +471,7 @@
             button11.FlatStyle = FlatStyle.Popup;
             button11.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button11.ForeColor = SystemColors.ButtonHighlight;
-            button11.Location = new Point(265, 6);
+            button11.Location = new Point(265, 11);
             button11.Name = "button11";
             button11.Size = new Size(103, 23);
             button11.TabIndex = 6;
@@ -485,7 +485,7 @@
             button9.FlatStyle = FlatStyle.Popup;
             button9.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button9.ForeColor = SystemColors.ButtonHighlight;
-            button9.Location = new Point(156, 6);
+            button9.Location = new Point(156, 11);
             button9.Name = "button9";
             button9.Size = new Size(103, 23);
             button9.TabIndex = 5;
@@ -499,7 +499,7 @@
             button8.FlatStyle = FlatStyle.Popup;
             button8.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             button8.ForeColor = SystemColors.ButtonHighlight;
-            button8.Location = new Point(47, 6);
+            button8.Location = new Point(47, 11);
             button8.Name = "button8";
             button8.Size = new Size(103, 23);
             button8.TabIndex = 4;
