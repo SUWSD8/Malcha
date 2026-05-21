@@ -28,11 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea8 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend8 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series15 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series16 = new System.Windows.Forms.DataVisualization.Charting.Series();
             panel1 = new Panel();
+            btnDataManagement = new Button();
+            btnTrainModel = new Button();
             txtFilePath = new TextBox();
             btnSelectData = new Button();
             btnLoadConfig = new Button();
@@ -65,8 +67,6 @@
             btnDeleteSelection = new Button();
             btnSetEndPoint = new Button();
             btnSetStartPoint = new Button();
-            btnTrainModel = new Button();
-            btnDataManagement = new Button();
             panel1.SuspendLayout();
             panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picVideoScreen).BeginInit();
@@ -86,10 +86,39 @@
             panel1.Controls.Add(btnSelectData);
             panel1.Controls.Add(btnLoadConfig);
             panel1.Controls.Add(lblTitle);
-            panel1.Location = new Point(0, 0);
+            panel1.Location = new Point(0, -2);
             panel1.Name = "panel1";
-            panel1.Size = new Size(612, 81);
+            panel1.Size = new Size(612, 83);
             panel1.TabIndex = 0;
+            // 
+            // btnDataManagement
+            // 
+            btnDataManagement.Anchor = AnchorStyles.Left;
+            btnDataManagement.BackColor = Color.FromArgb(53, 48, 49);
+            btnDataManagement.FlatStyle = FlatStyle.Popup;
+            btnDataManagement.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnDataManagement.ForeColor = SystemColors.ButtonHighlight;
+            btnDataManagement.Location = new Point(242, 15);
+            btnDataManagement.Name = "btnDataManagement";
+            btnDataManagement.Size = new Size(103, 23);
+            btnDataManagement.TabIndex = 5;
+            btnDataManagement.Text = "데이터 관리";
+            btnDataManagement.UseVisualStyleBackColor = false;
+            // 
+            // btnTrainModel
+            // 
+            btnTrainModel.Anchor = AnchorStyles.Left;
+            btnTrainModel.BackColor = Color.FromArgb(53, 48, 49);
+            btnTrainModel.FlatStyle = FlatStyle.Popup;
+            btnTrainModel.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnTrainModel.ForeColor = SystemColors.ButtonHighlight;
+            btnTrainModel.Location = new Point(351, 14);
+            btnTrainModel.Name = "btnTrainModel";
+            btnTrainModel.Size = new Size(103, 23);
+            btnTrainModel.TabIndex = 4;
+            btnTrainModel.Text = "모델 학습";
+            btnTrainModel.UseVisualStyleBackColor = false;
+            btnTrainModel.Click += btnTrainModel_Click;
             // 
             // txtFilePath
             // 
@@ -106,7 +135,7 @@
             btnSelectData.FlatStyle = FlatStyle.Popup;
             btnSelectData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSelectData.ForeColor = SystemColors.ButtonHighlight;
-            btnSelectData.Location = new Point(121, 45);
+            btnSelectData.Location = new Point(121, 46);
             btnSelectData.Name = "btnSelectData";
             btnSelectData.Size = new Size(103, 23);
             btnSelectData.TabIndex = 2;
@@ -120,7 +149,7 @@
             btnLoadConfig.FlatStyle = FlatStyle.Popup;
             btnLoadConfig.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnLoadConfig.ForeColor = SystemColors.ButtonHighlight;
-            btnLoadConfig.Location = new Point(12, 45);
+            btnLoadConfig.Location = new Point(12, 46);
             btnLoadConfig.Name = "btnLoadConfig";
             btnLoadConfig.Size = new Size(103, 23);
             btnLoadConfig.TabIndex = 1;
@@ -418,23 +447,23 @@
             // 
             chtDataGraph.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chtDataGraph.BackColor = Color.FromArgb(48, 42, 41);
-            chartArea2.Name = "ChartArea1";
-            chtDataGraph.ChartAreas.Add(chartArea2);
-            legend2.Name = "Legend1";
-            chtDataGraph.Legends.Add(legend2);
+            chartArea8.Name = "ChartArea1";
+            chtDataGraph.ChartAreas.Add(chartArea8);
+            legend8.Name = "Legend1";
+            chtDataGraph.Legends.Add(legend8);
             chtDataGraph.Location = new Point(142, 46);
             chtDataGraph.Name = "chtDataGraph";
-            series3.ChartArea = "ChartArea1";
-            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series3.Legend = "Legend1";
-            series3.Name = "user/angle";
-            series4.ChartArea = "ChartArea1";
-            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series4.Color = Color.Red;
-            series4.Legend = "Legend1";
-            series4.Name = "user/throttle";
-            chtDataGraph.Series.Add(series3);
-            chtDataGraph.Series.Add(series4);
+            series15.ChartArea = "ChartArea1";
+            series15.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series15.Legend = "Legend1";
+            series15.Name = "user/angle";
+            series16.ChartArea = "ChartArea1";
+            series16.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series16.Color = Color.Red;
+            series16.Legend = "Legend1";
+            series16.Name = "user/throttle";
+            chtDataGraph.Series.Add(series15);
+            chtDataGraph.Series.Add(series16);
             chtDataGraph.Size = new Size(353, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
@@ -508,34 +537,6 @@
             btnSetStartPoint.TabIndex = 4;
             btnSetStartPoint.Text = "시작점 설정";
             btnSetStartPoint.UseVisualStyleBackColor = false;
-            // 
-            // btnTrainModel
-            // 
-            btnTrainModel.Anchor = AnchorStyles.Left;
-            btnTrainModel.BackColor = Color.FromArgb(53, 48, 49);
-            btnTrainModel.FlatStyle = FlatStyle.Popup;
-            btnTrainModel.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnTrainModel.ForeColor = SystemColors.ButtonHighlight;
-            btnTrainModel.Location = new Point(351, 13);
-            btnTrainModel.Name = "btnTrainModel";
-            btnTrainModel.Size = new Size(103, 23);
-            btnTrainModel.TabIndex = 4;
-            btnTrainModel.Text = "모델 학습";
-            btnTrainModel.UseVisualStyleBackColor = false;
-            // 
-            // btnDataManagement
-            // 
-            btnDataManagement.Anchor = AnchorStyles.Left;
-            btnDataManagement.BackColor = Color.FromArgb(53, 48, 49);
-            btnDataManagement.FlatStyle = FlatStyle.Popup;
-            btnDataManagement.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnDataManagement.ForeColor = SystemColors.ButtonHighlight;
-            btnDataManagement.Location = new Point(242, 14);
-            btnDataManagement.Name = "btnDataManagement";
-            btnDataManagement.Size = new Size(103, 23);
-            btnDataManagement.TabIndex = 5;
-            btnDataManagement.Text = "데이터 관리";
-            btnDataManagement.UseVisualStyleBackColor = false;
             // 
             // Form1
             // 

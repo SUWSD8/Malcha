@@ -113,6 +113,7 @@
             // 
             // panel2
             // 
+            panel2.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             panel2.BackColor = Color.FromArgb(20, 20, 20);
             panel2.Controls.Add(btnStartTrain);
             panel2.Controls.Add(btnChooseTransferModel);
@@ -213,7 +214,7 @@
             // 
             // btnChooseTransferModel
             // 
-            btnChooseTransferModel.Anchor = AnchorStyles.Left;
+            btnChooseTransferModel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnChooseTransferModel.BackColor = Color.FromArgb(53, 48, 49);
             btnChooseTransferModel.FlatStyle = FlatStyle.Popup;
             btnChooseTransferModel.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
@@ -227,7 +228,7 @@
             // 
             // btnStartTrain
             // 
-            btnStartTrain.Anchor = AnchorStyles.Left;
+            btnStartTrain.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnStartTrain.BackColor = Color.FromArgb(198, 100, 114);
             btnStartTrain.FlatStyle = FlatStyle.Popup;
             btnStartTrain.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
@@ -265,6 +266,7 @@
             // dgvPilotList
             // 
             dgvPilotList.AllowUserToAddRows = false;
+            dgvPilotList.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             dgvPilotList.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvPilotList.BackgroundColor = Color.FromArgb(103, 98, 98);
             dgvPilotList.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
@@ -277,6 +279,7 @@
             // 
             // lblGroupTubs
             // 
+            lblGroupTubs.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblGroupTubs.BackColor = Color.FromArgb(53, 48, 49);
             lblGroupTubs.BorderStyle = BorderStyle.FixedSingle;
             lblGroupTubs.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
@@ -289,7 +292,7 @@
             // 
             // btnGroupTubs
             // 
-            btnGroupTubs.Anchor = AnchorStyles.Left;
+            btnGroupTubs.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnGroupTubs.BackColor = Color.FromArgb(103, 98, 98);
             btnGroupTubs.FlatStyle = FlatStyle.Popup;
             btnGroupTubs.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
