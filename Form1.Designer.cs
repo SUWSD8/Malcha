@@ -323,7 +323,7 @@
             label3.Name = "label3";
             label3.Size = new Size(100, 20);
             label3.TabIndex = 1;
-            label3.Text = "user/thtottle";
+            label3.Text = "user/throttle";
             // 
             // label2
             // 
@@ -428,12 +428,13 @@
             series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
             series2.Color = Color.Red;
             series2.Legend = "Legend1";
-            series2.Name = "user/thtottle";
+            series2.Name = "user/throttle";
             chart1.Series.Add(series1);
             chart1.Series.Add(series2);
             chart1.Size = new Size(353, 163);
             chart1.TabIndex = 9;
             chart1.Text = "chart1";
+            chart1.Click += chart1_Click;
             // 
             // button12
             // 
