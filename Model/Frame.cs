@@ -7,21 +7,12 @@ namespace Malcha.Model
 {
     internal class Frame
     {
-        // 데이터 고유 인덱스
-        [JsonPropertyName("_index")]
-        public int Index { get; set; }
-
-        // 세션 식별자
-        [JsonPropertyName("_session_id")]
-        public string SessionId { get; set; }
-
-        // 밀리초 단위 타임스탬프 (시간순 정렬 및 재생 속도 조절에 유용)
-        [JsonPropertyName("_timestamp_ms")]
-        public long TimestampMs { get; set; }
-
-        // 이미지 파일명
-        [JsonPropertyName("cam/image_array")]
-        public string ImagePath { get; set; }
+        private string id { get; set; }
+        private long timestamp { get; set; }
+        private string imagePath { get; set; }
+        private double angle { get; set; }
+        private string model { get; set; }
+        private double throttle { get; set; }
 
         // 조향각
         [JsonPropertyName("user/angle")]
