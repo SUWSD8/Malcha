@@ -65,6 +65,8 @@
             btnDeleteSelection = new Button();
             btnSetEndPoint = new Button();
             btnSetStartPoint = new Button();
+            btnTrainModel = new Button();
+            btnDataManagement = new Button();
             panel1.SuspendLayout();
             panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picVideoScreen).BeginInit();
@@ -78,6 +80,8 @@
             // 
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             panel1.BackColor = Color.FromArgb(33, 28, 29);
+            panel1.Controls.Add(btnDataManagement);
+            panel1.Controls.Add(btnTrainModel);
             panel1.Controls.Add(txtFilePath);
             panel1.Controls.Add(btnSelectData);
             panel1.Controls.Add(btnLoadConfig);
@@ -434,7 +438,6 @@
             chtDataGraph.Size = new Size(353, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
-            chtDataGraph.Click += chart1_Click;
             // 
             // btnApplyFilter
             // 
@@ -506,6 +509,34 @@
             btnSetStartPoint.Text = "시작점 설정";
             btnSetStartPoint.UseVisualStyleBackColor = false;
             // 
+            // btnTrainModel
+            // 
+            btnTrainModel.Anchor = AnchorStyles.Left;
+            btnTrainModel.BackColor = Color.FromArgb(53, 48, 49);
+            btnTrainModel.FlatStyle = FlatStyle.Popup;
+            btnTrainModel.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnTrainModel.ForeColor = SystemColors.ButtonHighlight;
+            btnTrainModel.Location = new Point(351, 13);
+            btnTrainModel.Name = "btnTrainModel";
+            btnTrainModel.Size = new Size(103, 23);
+            btnTrainModel.TabIndex = 4;
+            btnTrainModel.Text = "모델 학습";
+            btnTrainModel.UseVisualStyleBackColor = false;
+            // 
+            // btnDataManagement
+            // 
+            btnDataManagement.Anchor = AnchorStyles.Left;
+            btnDataManagement.BackColor = Color.FromArgb(53, 48, 49);
+            btnDataManagement.FlatStyle = FlatStyle.Popup;
+            btnDataManagement.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnDataManagement.ForeColor = SystemColors.ButtonHighlight;
+            btnDataManagement.Location = new Point(242, 14);
+            btnDataManagement.Name = "btnDataManagement";
+            btnDataManagement.Size = new Size(103, 23);
+            btnDataManagement.TabIndex = 5;
+            btnDataManagement.Text = "데이터 관리";
+            btnDataManagement.UseVisualStyleBackColor = false;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -565,5 +596,7 @@
         private StatusStrip lblStatus;
         private ToolStripStatusLabel toolStripStatusLabel1;
         private ListBox lstDataList;
+        private Button btnTrainModel;
+        private Button btnDataManagement;
     }
 }
