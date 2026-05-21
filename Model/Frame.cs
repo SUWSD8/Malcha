@@ -6,6 +6,10 @@ namespace Malcha.Model
 {
     internal class Frame
     {
+        /*public Frame()
+        {
+           파싱테스트용
+        }*/
         private string id { get; set; }
         private long timestamp { get; set; }
         private string imagePath { get; set; }

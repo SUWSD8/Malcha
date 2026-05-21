@@ -14,4 +14,4 @@ namespace Malcha
             Application.Run(new Form1());
         }
     }
-}
+}//커밋용
