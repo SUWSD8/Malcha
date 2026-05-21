@@ -73,5 +73,41 @@ namespace Malcha
                 }
             }
         }
+
+        private async void btnTrain_Click(object sender, EventArgs e)
+        {
+            // 1. 중복 클릭 방지 (버튼 비활성화)
+            btnTrain.Enabled = false;
+            btnTrain.Text = "WSL에서 모델 학습 중... (시간이 소요됩니다)";
+
+            
+
+            try
+            {
+                // 2. 비동기로 학습 메서드 호출 (데이터 폴더명과 생성될 모델 파일명 전달)
+                // 실제 data/ 폴더 안에 있는 tub 폴더 이름과 원하는 모델 이름을 적어주세요.
+                bool isSuccess = await DataManager.Instance.TrainModelInWslAsync("data", "mypilot.h5");
+
+                // 3. 결과 확인
+                if (isSuccess)
+                {
+                    MessageBox.Show("WSL 환경에서의 모델 학습이 성공적으로 완료되었습니다!", "학습 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    MessageBox.Show("학습 중 오류가 발생했습니다. 경로 및 데이터 상태를 확인하세요.", "학습 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"예상치 못한 에러가 발생했습니다: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                // 4. 작업 완료 후 버튼 상태 복구
+                btnTrain.Enabled = true;
+                btnTrain.Text = "모델 학습 시작";
+            }
+        }
     }
 }
