@@ -28,12 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            SuspendLayout();
-            // 
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea8 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend8 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series15 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.Series series16 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             panel1 = new Panel();
             btnDataManagement = new Button();
             btnTrainModel = new Button();
@@ -449,23 +447,23 @@
             // 
             chtDataGraph.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chtDataGraph.BackColor = Color.FromArgb(48, 42, 41);
-            chartArea8.Name = "ChartArea1";
-            chtDataGraph.ChartAreas.Add(chartArea8);
-            legend8.Name = "Legend1";
-            chtDataGraph.Legends.Add(legend8);
+            chartArea1.Name = "ChartArea1";
+            chtDataGraph.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            chtDataGraph.Legends.Add(legend1);
             chtDataGraph.Location = new Point(142, 46);
             chtDataGraph.Name = "chtDataGraph";
-            series15.ChartArea = "ChartArea1";
-            series15.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series15.Legend = "Legend1";
-            series15.Name = "user/angle";
-            series16.ChartArea = "ChartArea1";
-            series16.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series16.Color = Color.Red;
-            series16.Legend = "Legend1";
-            series16.Name = "user/throttle";
-            chtDataGraph.Series.Add(series15);
-            chtDataGraph.Series.Add(series16);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Legend = "Legend1";
+            series1.Name = "user/angle";
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series2.Color = Color.Red;
+            series2.Legend = "Legend1";
+            series2.Name = "user/throttle";
+            chtDataGraph.Series.Add(series1);
+            chtDataGraph.Series.Add(series2);
             chtDataGraph.Size = new Size(353, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
