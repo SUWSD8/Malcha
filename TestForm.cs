@@ -92,33 +92,7 @@ namespace Malcha
                 // 3. 결과 확인
                 if (isSuccess)
                 {
-                    // WSL 내부의 database.json 절대 경로 세팅
-                    string dbPath = @"\\wsl.localhost\Ubuntu-22.04\home\eodbs\mycar\models\database.json";
-
-                    // 앞서 만든 파싱 메서드 호출 (대괄호/딕셔너리 구조에 맞춘 메서드)
-                    List<TrainedData> history = await DataManager.Instance.LoadTrainingHistoryAsync(dbPath, "mypilot");
-
-                    if (history != null && history.Count > 0)
-                    {
-                        // 마지막 에포크(최종 학습 결과) 데이터 추출
-                        TrainedData lastEpoch = history.Last();
-
-                        // 메시지 박스로 간단하게 결과 요약 출력
-                        string resultMessage = $"WSL 환경에서의 모델 학습이 성공적으로 완료되었습니다!\n\n" +
-                                               $"[학습 결과 요약]\n" +
-                                               $"- 총 진행된 Epoch: {history.Count}회\n" +
-                                               $"- 최종 훈련 손실(Loss): {lastEpoch.Loss:F4}\n" +
-                                               $"- 최종 검증 손실(Val_Loss): {lastEpoch.ValLoss:F4}";
-
-                        MessageBox.Show(resultMessage, "학습 및 파싱 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                        // (선택) 성공적으로 파싱한 데이터를 Repository에 캐싱해둡니다.
-                        // DataRepository.Instance.SetTrainedData(history);
-                    }
-                    else
-                    {
-                        MessageBox.Show("학습 중 오류가 발생했습니다. 경로 및 데이터 상태를 확인하세요.", "학습 실패", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    MessageBox.Show("WSL 환경에서의 모델 학습이 성공적으로 완료되었습니다!", "학습 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
             catch (Exception ex)

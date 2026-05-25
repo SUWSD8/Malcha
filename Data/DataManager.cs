@@ -104,14 +104,17 @@ namespace Malcha.Data
             List<TrainedData> trainedDataList = new List<TrainedData>();
             try
             {
-                if (!File.Exists(path)) {  return trainedDataList; }
-
+                if (!File.Exists(path)) { throw new FileNotFoundException("database.json 파일을 찾을 수 없습니다."); }
+                // 파일을 비동기적으로 읽어들여 JSON 문자열로 저장
                 string jsonContent = await File.ReadAllTextAsync(path);
 
-                var entries = JsonSerializer.Deserialize<Dictionary<string, DatabaseEntry>>(jsonContent);
-                if (entries == null) return trainedDataList;
-                var targetEntry = entries.Values.FirstOrDefault(e => e.Name == targetModelName);
-                if(targetEntry != null && targetEntry.History != null)
+                // 2. ⭐ 전체 데이터를 List<DatabaseEntry> 형태(배열)로 직렬화하여 가져옵니다.
+                var entries = JsonSerializer.Deserialize<List<DatabaseEntry>>(jsonContent);
+
+                // 3. ⭐ 리스트 안에 있는 여러 모델 중, 우리가 찾는 모델 이름("mypilot")과 일치하는 것 하나만 쏙 골라냅니다.
+                var targetEntry = entries?.FirstOrDefault(e => e.Name == targetModelName);
+
+                if (targetEntry != null && targetEntry.History != null)
                 {
                     var losses = targetEntry.History.Loss;
                     var valLosses = targetEntry.History.ValLoss;
