@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -46,15 +47,150 @@ namespace Malcha
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += TrbTimeline_Scroll;
 
+            // PictureBox에 별도의 오버레이를 가볍게 그리기 위해 Paint 이벤트 연결
+            picVideoScreen.Paint += PicVideoScreen_Paint;
+
             trbTimeline.Enabled = false;
 
             // PictureBox가 이미지 크기와 달라도 채워지도록 설정
             // (StretchImage: PictureBox 전체를 채우도록 이미지를 늘리거나 줄입니다)
+            picVideoScreen.SizeMode = PictureBoxSizeMode.StretchImage;
+
+        }
+
+        // PictureBox의 Paint 이벤트에서 오버레이(화살표)를 그립니다. 이미지 그리기는 PictureBox.Image가 담당합니다.
+        private void PicVideoScreen_Paint(object sender, PaintEventArgs e)
+        {
             try
             {
-                picVideoScreen.SizeMode = PictureBoxSizeMode.StretchImage;
+                if (_currentFrames == null || _currentFrames.Count == 0) return;
+                if (_currentIndex < 0 || _currentIndex >= _currentFrames.Count) return;
+
+                var f = _currentFrames[_currentIndex];
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                int w = picVideoScreen.ClientSize.Width;
+                int h = picVideoScreen.ClientSize.Height;
+                // 화살표 크기: 화면에 더 잘 보이도록 충분히 크게 설정
+                int arrowLen = Math.Max(64, Math.Min(w, h) / 3);
+                int arrowWidth = Math.Max(16, arrowLen / 3);
+                int headHeight = Math.Max(16, arrowLen / 3);
+                float centerX = w / 2f;
+                // Anchor the arrow near the bottom edge so it appears attached to the frame boundary
+                float centerY = h - (headHeight * 0.15f);
+                float maxDeg = 45f;
+                float angleDeg = (float)f.Angle * maxDeg;
+
+                // Make the arrow appear attached to the bottom border (slightly inset so it remains visible)
+                centerY = h - (headHeight * 0.15f);
+
+                g.TranslateTransform(centerX, centerY);
+                g.RotateTransform(angleDeg);
+
+                // 그림자(아래쪽으로 약간 오프셋된 검정 반투명)를 먼저 그림
+                using (var shadowBrush = new SolidBrush(Color.FromArgb(160, 0, 0, 0)))
+                using (var shadowPen = new Pen(Color.FromArgb(160, 0, 0, 0), Math.Max(4, arrowWidth / 4)))
+                {
+                    g.TranslateTransform(2f, 2f);
+                    g.DrawLine(shadowPen, 0f, 0f, 0f, -arrowLen + headHeight);
+                    PointF[] triShadow = new PointF[] {
+                        new PointF(0f, -arrowLen),
+                        new PointF(arrowWidth/2f, -arrowLen + headHeight),
+                        new PointF(-arrowWidth/2f, -arrowLen + headHeight)
+                    };
+                    g.FillPolygon(shadowBrush, triShadow);
+                    g.DrawPolygon(shadowPen, triShadow);
+                    g.ResetTransform();
+                    // 다시 원점으로 옮겨서 실제 화살표를 그릴 준비
+                    g.TranslateTransform(centerX, centerY);
+                    g.RotateTransform(angleDeg);
+                }
+
+                // 메인 화살표 (테두리 제거하여 더 깔끔하게 표시)
+                using (var brush = new SolidBrush(Color.FromArgb(230, 255, 140, 0))) // 밝은 오렌지
+                {
+                    // 샤프트 (채워진 선으로 표시, 테두리 없이)
+                    using (var shaftBrush = new SolidBrush(Color.FromArgb(230, 255, 140, 0)))
+                    {
+                        g.DrawLine(new Pen(shaftBrush), 0f, 0f, 0f, -arrowLen + headHeight);
+                    }
+                    PointF[] tri = new PointF[] {
+                        new PointF(0f, -arrowLen),
+                        new PointF(arrowWidth/2f, -arrowLen + headHeight),
+                        new PointF(-arrowWidth/2f, -arrowLen + headHeight)
+                    };
+                    g.FillPolygon(brush, tri);
+                }
+
+                // After drawing arrow, draw throttle overlay on the image (right-bottom)
+                try
+                {
+                    // Compute throttle bar geometry relative to PictureBox client size
+                    float barWidth = Math.Max(8, w / 80f);
+                    float barHeight = Math.Max(40, h / 4f);
+                    float margin = 10f;
+                    float barX = w - margin - barWidth;
+                    float barY = h - margin - barHeight;
+
+                    float t = Math.Max(-1f, Math.Min(1f, (float)f.Throttle));
+                    float tNorm = (t + 1f) / 2f;
+                    float fillH = barHeight * tNorm;
+                    RectangleF bgRect = new RectangleF(barX, barY, barWidth, barHeight);
+                    RectangleF fillRect = new RectangleF(barX, barY + (barHeight - fillH), barWidth, fillH);
+
+                    using (var bgBrush = new SolidBrush(Color.FromArgb(160, 0, 0, 0)))
+                    using (var borderPen = new Pen(Color.FromArgb(220, 200, 200, 200), 1f))
+                    using (var fillBrush = new SolidBrush(Color.FromArgb(220, 60, 180, 75)))
+                    using (var txtBrush = new SolidBrush(Color.FromArgb(230, 255, 255, 255)))
+                    using (var font = new Font("Segoe UI", Math.Max(8f, w / 60f), FontStyle.Bold))
+                    using (var sf = new StringFormat())
+                    {
+                        g.ResetTransform(); // ensure coordinates are in control space
+                        g.FillRectangle(bgBrush, bgRect);
+                        g.DrawRectangle(borderPen, bgRect.X, bgRect.Y, bgRect.Width, bgRect.Height);
+                        g.FillRectangle(fillBrush, fillRect);
+
+                        sf.Alignment = StringAlignment.Far;
+                        sf.LineAlignment = StringAlignment.Far;
+                        var txtPt = new PointF(barX - 6f, h - margin);
+                        string txt = f.Throttle.ToString("+#0.000;-#0.000;0.000");
+                        g.DrawString(txt, font, txtBrush, txtPt, sf);
+                    }
+                }
+                catch { }
+
+                g.ResetTransform();
             }
             catch { }
+        }
+
+        // 안전하게 파일에서 이미지 로드 (FileStream 사용으로 파일 잠금 최소화)
+        private Image LoadImageFromFile(string path)
+        {
+            using (var fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                var img = Image.FromStream(fs);
+                // 반환 전에 복사하여 원 스트림 닫아도 사용 가능하도록 함
+                var bmp = new Bitmap(img);
+                img.Dispose();
+                return bmp;
+            }
+        }
+
+        // 이미지를 PictureBox 크기에 맞게 스케일한 비트맵을 생성합니다.
+        private Image CreateScaledBitmap(Image src, Size target)
+        {
+            if (src == null) return null;
+            int w = Math.Max(1, target.Width);
+            int h = Math.Max(1, target.Height);
+            var bmp = new Bitmap(w, h);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.DrawImage(src, new Rectangle(0, 0, w, h));
+            }
+            return bmp;
         }
 
         // 데이터 선택 버튼 클릭: 폴더 선택 후 카탈로그 로드
@@ -191,6 +327,51 @@ namespace Malcha
                     ClearPlayback();
                 }
 
+                // 초기 프리로드: 처음 몇 프레임을 미리 로드하여 첫 전환 끊김을 줄임
+                int initialPreload = Math.Min(5, _frameImagePaths.Count);
+                for (int i = 0; i < initialPreload; i++)
+                {
+                    var p = _frameImagePaths[i];
+                    if (!string.IsNullOrEmpty(p) && File.Exists(p))
+                    {
+                        // 백그라운드에서 읽어서 캐시에 추가
+                        int idx = i;
+                        Task.Run(() =>
+                        {
+                            try
+                            {
+                                var im = LoadImageFromFile(p);
+                                // 스케일해서 캐시 (PictureBox 크기에 맞춤)
+                                var target = picVideoScreen.ClientSize;
+                                if (target.Width <= 0 || target.Height <= 0) target = new Size(320, 240);
+                                var scaled = CreateScaledBitmap(im, target);
+                                im.Dispose();
+                                // Compose HUD (arrow + throttle) on top of scaled image
+                                Image composed = null;
+                                try
+                                {
+                                    var frame = _currentFrames[idx];
+                                    composed = ComposeFrameImage(scaled, frame, target);
+                                }
+                                catch
+                                {
+                                    // fallback to scaled if compose fails
+                                    composed = scaled;
+                                    scaled = null;
+                                }
+
+                                if (scaled != null)
+                                {
+                                    try { scaled.Dispose(); } catch { }
+                                }
+
+                                AddToCache(idx, composed);
+                            }
+                            catch { }
+                        });
+                    }
+                }
+
                 // 차트에 angle / throttle 데이터 채우기
                 try
                 {
@@ -269,6 +450,12 @@ namespace Malcha
             _playCts = new CancellationTokenSource();
             btnPlayPause.Text = "정지";
             var token = _playCts.Token;
+
+            // If currently at the last frame, reset index so playback restarts from the beginning
+            if (_currentFrames != null && _currentFrames.Count > 0 && _currentIndex >= _currentFrames.Count - 1)
+            {
+                _currentIndex = -1;
+            }
 
             try
             {
@@ -353,33 +540,73 @@ namespace Malcha
                 }
 
                 Image img = null;
-                if (!string.IsNullOrEmpty(resolved) && File.Exists(resolved))
-                {
-                    lock (_cacheLock)
+                    if (!string.IsNullOrEmpty(resolved) && File.Exists(resolved))
                     {
-                        if (_imageCache.TryGetValue(_currentIndex, out var cached))
+                        lock (_cacheLock)
                         {
-                            img = cached;
-                            // LRU 갱신
-                            UpdateLru(_currentIndex);
+                            if (_imageCache.TryGetValue(_currentIndex, out var cached))
+                            {
+                                img = cached;
+                                // LRU 갱신
+                                UpdateLru(_currentIndex);
+                            }
+                        }
+
+                        if (img == null)
+                        {
+                            // 로드(동기) - 먼저 FileStream으로 읽고 PictureBox 크기에 맞게 스케일,
+                            // HUD(화살표+쓰로틀)를 합성한 뒤 캐시에 넣음
+                            var raw = LoadImageFromFile(resolved);
+                            try
+                            {
+                                var target = picVideoScreen.ClientSize;
+                                if (target.Width <= 0 || target.Height <= 0) target = new Size(320, 240);
+                                var scaled = CreateScaledBitmap(raw, target);
+                                try
+                                {
+                                    // Compose HUD using frame data
+                                    var composed = ComposeFrameImage(scaled, f, target);
+                                    img = composed;
+                                    AddToCache(_currentIndex, img);
+                                }
+                                catch
+                                {
+                                    // If compose fails, fall back to scaled image
+                                    img = scaled;
+                                    AddToCache(_currentIndex, img);
+                                }
+                                finally
+                                {
+                                    // scaled disposed if it was consumed by ComposeFrameImage; otherwise dispose here when not cached
+                                    // (AddToCache stores the image we passed, so only dispose if scaled wasn't cached)
+                                }
+                            }
+                            finally
+                            {
+                                try { raw.Dispose(); } catch { }
+                            }
                         }
                     }
 
-                    if (img == null)
+                    // 기본 이미지는 캐시에 보관된 스케일된 이미지(또는 방금 생성한 이미지)를 사용
+                    var old = picVideoScreen.Image;
+                    picVideoScreen.Image = img;
+                    // 이전 이미지가 캐시에 없는 임시 이미지면 Dispose
+                    if (old != null)
                     {
-                        // 로드(동기) - 빠르게 로드하고 캐시에 넣음
-                        img = Image.FromFile(resolved);
-                        AddToCache(_currentIndex, img);
+                        bool isCached = false;
+                        lock (_cacheLock)
+                        {
+                            isCached = _imageCache.Values.Contains(old);
+                        }
+                        if (!isCached)
+                        {
+                            try { old.Dispose(); } catch { }
+                        }
                     }
 
-                    // PictureBox에 할당 (이전 이미지 Dispose는 캐시 관리에서 담당)
-                    picVideoScreen.Image = img;
-                }
-                else
-                {
-                    // 이미지 없음
-                    picVideoScreen.Image = null;
-                }
+                    // 오버레이(화살표)는 Paint 이벤트에서 그리므로 강제 리프레시
+                    picVideoScreen.Invalidate();
 
                 // 프리로드: 다음 프레임 미리 로드 (비동기)
                 int next = _currentIndex + 1;
@@ -396,8 +623,37 @@ namespace Malcha
                                 {
                                     try
                                     {
-                                        var im = Image.FromFile(nextPath);
-                                        AddToCache(next, im);
+                                        var im = LoadImageFromFile(nextPath);
+                                        try
+                                        {
+                                            var target = picVideoScreen.ClientSize;
+                                            if (target.Width <= 0 || target.Height <= 0) target = new Size(320, 240);
+                                            var scaledNext = CreateScaledBitmap(im, target);
+                                            try
+                                            {
+                                                var nextFrame = _currentFrames[next];
+                                                Image composedNext = null;
+                                                try
+                                                {
+                                                    composedNext = ComposeFrameImage(scaledNext, nextFrame, target);
+                                                }
+                                                catch
+                                                {
+                                                    composedNext = scaledNext;
+                                                    scaledNext = null;
+                                                }
+
+                                                AddToCache(next, composedNext);
+                                            }
+                                            finally
+                                            {
+                                                try { if (scaledNext != null) scaledNext.Dispose(); } catch { }
+                                            }
+                                        }
+                                        finally
+                                        {
+                                            try { im.Dispose(); } catch { }
+                                        }
                                     }
                                     catch { }
                                 });
@@ -478,6 +734,112 @@ namespace Malcha
                 }
                 _imageCache.Clear();
                 _lruList.Clear();
+            }
+        }
+
+        // 이미지 위에 HUD 오버레이(각도, 쓰로틀)를 그려서 반환합니다.
+        private Image ComposeFrameImage(Image baseImg, Frame f, Size targetSize)
+        {
+            // 타겟 크기의 비트맵을 만들고 baseImg를 Fit하여 그립니다.
+            Bitmap bmp = new Bitmap(Math.Max(1, targetSize.Width), Math.Max(1, targetSize.Height));
+            try
+            {
+                using (var g = Graphics.FromImage(bmp))
+                {
+                    g.Clear(Color.Black);
+
+                    // 이미지 비율에 맞춰 채움
+                    var dest = new Rectangle(0, 0, bmp.Width, bmp.Height);
+                    g.DrawImage(baseImg, dest);
+
+                    // 하단 중앙에 차량의 조향을 나타내는 화살표(앵글)를 그림
+                    // UI 라벨에 숫자형 정보가 있기 때문에 프레임 위에는 시각적 화살표만 보여줍니다.
+                    g.SmoothingMode = SmoothingMode.AntiAlias;
+
+                    // 화살표 크기 설정(화면 크기에 비례)
+                    int arrowLen = Math.Max(24, Math.Min(bmp.Width, bmp.Height) / 6); // 전체 길이
+                    int arrowWidth = Math.Max(8, arrowLen / 4);
+                    int headHeight = Math.Max(8, arrowLen / 4);
+
+                    // 중심 위치: 하단 중앙에 가깝게 고정하여 화살표가 경계에 붙어 보이도록 함
+                    float centerX = bmp.Width / 2f;
+                    float centerY = bmp.Height - (headHeight * 0.15f);
+
+                    // 각도 매핑: Frame.Angle이 대개 -1..1 범위라 가정하여 도 단위로 변환
+                    float maxDeg = 45f; // 최대 회전 각도
+                    float angleDeg = (float)f.Angle * maxDeg;
+
+                    // 그리기: 좌표계를 화살표 중심으로 이동하고 회전시킨 뒤 화살표를 그림
+                    g.TranslateTransform(centerX, centerY);
+                    g.RotateTransform(angleDeg);
+
+                    using (var brush = new SolidBrush(Color.FromArgb(220, 255, 215, 64)))
+                    using (var pen = new Pen(Color.FromArgb(255, 255, 215, 64), Math.Max(2, arrowWidth / 6)))
+                    {
+                        // 샤프트(중심에서 위로)
+                        g.DrawLine(pen, 0f, 0f, 0f, -arrowLen + headHeight);
+
+                        // 화살촉(삼각형)
+                        PointF[] tri = new PointF[] {
+                            new PointF(0f, -arrowLen),
+                            new PointF(arrowWidth/2f, -arrowLen + headHeight),
+                            new PointF(-arrowWidth/2f, -arrowLen + headHeight)
+                        };
+                        g.FillPolygon(brush, tri);
+                        g.DrawPolygon(pen, tri);
+                    }
+
+                    // 변환 상태 원복
+                    g.ResetTransform();
+
+                    // 쓰로틀 시각화: 우측 하단에 수직 바와 숫자를 그림
+                    try
+                    {
+                        float barWidth = Math.Max(8, bmp.Width / 80f);
+                        float barHeight = Math.Max(40, bmp.Height / 4f);
+                        float margin = 10f;
+                        float barX = bmp.Width - margin - barWidth;
+                        float barY = bmp.Height - margin - barHeight;
+
+                        // 쓰로틀 값은 -1..1 범위를 가질 수 있으므로 0..1로 매핑 (음수는 아래로 표시)
+                        float t = Math.Max(-1f, Math.Min(1f, (float)f.Throttle));
+                        float tNorm = (t + 1f) / 2f; // 0..1
+
+                        // 바의 채워진 높이 계산 (아래에서 위로 채움)
+                        float fillH = barHeight * tNorm;
+                        RectangleF bgRect = new RectangleF(barX, barY, barWidth, barHeight);
+                        RectangleF fillRect = new RectangleF(barX, barY + (barHeight - fillH), barWidth, fillH);
+
+                        using (var bgBrush = new SolidBrush(Color.FromArgb(160, 0, 0, 0)))
+                        using (var borderPen = new Pen(Color.FromArgb(220, 200, 200, 200), 1f))
+                        using (var fillBrush = new SolidBrush(Color.FromArgb(220, 60, 180, 75)))
+                        {
+                            g.FillRectangle(bgBrush, bgRect);
+                            g.DrawRectangle(borderPen, bgRect.X, bgRect.Y, bgRect.Width, bgRect.Height);
+                            g.FillRectangle(fillBrush, fillRect);
+                        }
+
+                        // 숫자 라벨
+                        string txt = f.Throttle.ToString("+#0.000;-#0.000;0.000");
+                        using (var sf = new StringFormat())
+                        using (var font = new Font("Segoe UI", Math.Max(8f, bmp.Width / 60f), FontStyle.Bold))
+                        using (var txtBrush = new SolidBrush(Color.FromArgb(230, 255, 255, 255)))
+                        {
+                            sf.Alignment = StringAlignment.Far;
+                            sf.LineAlignment = StringAlignment.Far;
+                            var txtPt = new PointF(barX - 6f, bmp.Height - margin);
+                            g.DrawString(txt, font, txtBrush, txtPt, sf);
+                        }
+                    }
+                    catch { }
+                }
+
+                return bmp;
+            }
+            catch
+            {
+                try { bmp.Dispose(); } catch { }
+                throw;
             }
         }
 
