@@ -22,6 +22,12 @@ namespace Malcha
         // 각 프레임에 대응하는 이미지 파일(해결된 절대 경로)을 캐시합니다. 없는 경우 null
         private List<string> _frameImagePaths = new List<string>();
         private int _currentIndex = 0;
+        // 이미지 캐시: 인덱스 -> Image
+        private Dictionary<int, Image> _imageCache = new Dictionary<int, Image>();
+        // LRU 관리를 위한 연결 리스트(앞쪽이 최근 사용)
+        private LinkedList<int> _lruList = new LinkedList<int>();
+        private readonly object _cacheLock = new object();
+        private int _cacheMaxSize = 100; // 필요시 조절
         private CancellationTokenSource _playCts;
         private Image _previewImage;
 
@@ -64,17 +70,29 @@ namespace Malcha
             }
         }
 
-        // 새로고침 버튼 클릭: 현재 경로 또는 기본 경로 재로드
+        // 새로고침 버튼 클릭: 모든 상태 초기화 (완전 리셋)
+        // 설명: 사용자가 새로고침 버튼을 누르면 현재 재생 중지, 캐시 해제, 목록 및 UI 초기화를 수행합니다.
         private async void BtnRefresh_Click(object sender, EventArgs e)
         {
-            var path = txtFilePath.Text;
-            if (string.IsNullOrWhiteSpace(path))
+            // 재생 중이면 중지
+            try
             {
-                path = Path.Combine(Environment.CurrentDirectory, "Data\\TestData");
-                txtFilePath.Text = path;
+                _playCts?.Cancel();
             }
+            catch { }
 
-            await LoadAndShowCatalogAsync(path);
+            // 캐시 및 상태 초기화
+            ClearImageCache();
+            _catalogs.Clear();
+            _currentFrames.Clear();
+            _frameImagePaths.Clear();
+
+            // UI 초기화
+            lstDataList.Items.Clear();
+            ClearPlayback();
+            txtFilePath.Text = string.Empty;
+
+            await Task.CompletedTask;
         }
 
         // 디렉터리에서 카탈로그 파일들을 로드하고 첫 카탈로그의 프레임 목록을 리스트에 표시
@@ -83,6 +101,9 @@ namespace Malcha
             btnSelectData.Enabled = false;
             try
             {
+                // 새로운 폴더 로드 전 기존 캐시 정리
+                ClearImageCache();
+
                 _catalogs = await DataManager.Instance.LoadCatalogsAsync(directory);
 
                 // 간단한 UX: 여러 카탈로그가 있으면 첫 번째 것을 기본으로 사용
@@ -266,34 +287,67 @@ namespace Malcha
             trbTimeline.Enabled = _currentFrames.Count > 0;
             trbTimeline.Value = _currentIndex;
 
-            // 이미지 로드: 카탈로그 파일과 동일한 폴더를 기준으로 상대경로 해석
+            // 이미지 로드: 캐시 우선, 없으면 로드 후 캐시에 저장
             try
             {
-                // 이미지 경로는 미리 계산된 _frameImagePaths에서 사용
                 string resolved = null;
                 if (_frameImagePaths != null && _frameImagePaths.Count > _currentIndex)
                 {
                     resolved = _frameImagePaths[_currentIndex];
                 }
 
+                Image img = null;
                 if (!string.IsNullOrEmpty(resolved) && File.Exists(resolved))
                 {
-                    _previewImage?.Dispose();
-                    _previewImage = null;
-
-                    using (var fs = File.OpenRead(resolved))
+                    lock (_cacheLock)
                     {
-                        using var tmp = Image.FromStream(fs);
-                        _previewImage = new Bitmap(tmp);
+                        if (_imageCache.TryGetValue(_currentIndex, out var cached))
+                        {
+                            img = cached;
+                            // LRU 갱신
+                            UpdateLru(_currentIndex);
+                        }
                     }
 
-                    picVideoScreen.Image?.Dispose();
-                    picVideoScreen.Image = _previewImage;
+                    if (img == null)
+                    {
+                        // 로드(동기) - 빠르게 로드하고 캐시에 넣음
+                        img = Image.FromFile(resolved);
+                        AddToCache(_currentIndex, img);
+                    }
+
+                    // PictureBox에 할당 (이전 이미지 Dispose는 캐시 관리에서 담당)
+                    picVideoScreen.Image = img;
                 }
                 else
                 {
-                    picVideoScreen.Image?.Dispose();
+                    // 이미지 없음
                     picVideoScreen.Image = null;
+                }
+
+                // 프리로드: 다음 프레임 미리 로드 (비동기)
+                int next = _currentIndex + 1;
+                if (next < _frameImagePaths.Count)
+                {
+                    var nextPath = _frameImagePaths[next];
+                    if (!string.IsNullOrEmpty(nextPath) && File.Exists(nextPath))
+                    {
+                        lock (_cacheLock)
+                        {
+                            if (!_imageCache.ContainsKey(next))
+                            {
+                                Task.Run(() =>
+                                {
+                                    try
+                                    {
+                                        var im = Image.FromFile(nextPath);
+                                        AddToCache(next, im);
+                                    }
+                                    catch { }
+                                });
+                            }
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -316,6 +370,59 @@ namespace Malcha
             lblModeValue.Text = string.Empty;
             lblRecordCount.Text = "0";
             lstDataList.Items.Clear();
+            ClearImageCache();
+        }
+
+        // 캐시 관리 유틸리티
+        private void AddToCache(int index, Image img)
+        {
+            lock (_cacheLock)
+            {
+                if (_imageCache.ContainsKey(index)) return;
+                _imageCache[index] = img;
+                _lruList.Remove(index);
+                _lruList.AddFirst(index);
+
+                // 크기 제한 적용
+                while (_imageCache.Count > _cacheMaxSize)
+                {
+                    RemoveOldest();
+                }
+            }
+        }
+
+        private void UpdateLru(int index)
+        {
+            lock (_cacheLock)
+            {
+                _lruList.Remove(index);
+                _lruList.AddFirst(index);
+            }
+        }
+
+        private void RemoveOldest()
+        {
+            if (_lruList.Count == 0) return;
+            var last = _lruList.Last.Value;
+            _lruList.RemoveLast();
+            if (_imageCache.TryGetValue(last, out var img))
+            {
+                try { img.Dispose(); } catch { }
+                _imageCache.Remove(last);
+            }
+        }
+
+        private void ClearImageCache()
+        {
+            lock (_cacheLock)
+            {
+                foreach (var kv in _imageCache)
+                {
+                    try { kv.Value.Dispose(); } catch { }
+                }
+                _imageCache.Clear();
+                _lruList.Clear();
+            }
         }
 
         private void btnTrainModel_Click(object sender, EventArgs e)
