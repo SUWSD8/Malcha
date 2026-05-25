@@ -307,7 +307,7 @@ namespace Malcha
             lstDataList.DrawMode = DrawMode.OwnerDrawFixed;
             lstDataList.DrawItem += LstDataList_DrawItem;
 
-            // TrackBar: allow marking range via Shift-click (or Ctrl-click to mark start/end)
+            // TrackBar: Ctrl+클릭=구간 표시, Shift+클릭=구간 해제 (일반 드래그는 기본 동작)
             trbTimeline.MouseDown += TrbTimeline_MouseDown;
             // track context menu for deleting marked range
             _trackContextMenu = new ContextMenuStrip();
@@ -349,52 +349,47 @@ namespace Malcha
         {
             if (_currentFrames == null || _currentFrames.Count == 0) return;
 
-            // compute clicked value from mouse position
-            var tb = (TrackBar)sender;
-            int mouseX = e.X;
-            int trackWidth = tb.ClientSize.Width - 8; // leave some padding
-            float ratio = Math.Max(0f, Math.Min(1f, (float)mouseX / (float)Math.Max(1, trackWidth)));
-            int value = (int)Math.Round(ratio * (tb.Maximum - tb.Minimum)) + tb.Minimum;
+            bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
+            bool shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
+            if (!ctrl && !shift)
+                return;
 
-            // Ctrl-click sets start/end marker; Shift-click clears
-            if ((ModifierKeys & Keys.Control) == Keys.Control)
+            var tb = (TrackBar)sender;
+            int trackWidth = Math.Max(1, tb.ClientSize.Width - 8);
+            float ratio = Math.Max(0f, Math.Min(1f, (float)e.X / trackWidth));
+            int value = (int)Math.Round(ratio * (tb.Maximum - tb.Minimum)) + tb.Minimum;
+            value = Math.Max(tb.Minimum, Math.Min(tb.Maximum, value));
+
+            if (ctrl)
             {
-                if (_selectionManager.Start < 0) _selectionManager.SetStart(value);
-                else _selectionManager.SetEnd(value);
+                if (_selectionManager.Start < 0)
+                    _selectionManager.SetStart(value);
+                else
+                    _selectionManager.SetEnd(value);
             }
-            else if ((ModifierKeys & Keys.Shift) == Keys.Shift)
+            else if (shift)
             {
                 _selectionManager.Clear();
             }
-            else
-            {
-                // simple click - jump to value
-                ShowFrame(value);
-                lstDataList.SelectedIndex = _currentIndex;
-            }
 
-            // Update UI to reflect marks (select in listbox)
-            var r2 = _selectionManager.GetRange();
-            if (r2.s >= 0)
-            {
-                lstDataList.SelectedIndex = Math.Max(0, Math.Min(lstDataList.Items.Count - 1, r2.s));
-            }
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
         }
 
         private void BtnSetStartPoint_Click(object sender, EventArgs e)
         {
             if (_currentFrames == null || _currentFrames.Count == 0) return;
             _selectionManager.SetStart(_currentIndex);
-            // highlight in list
-            lstDataList.SelectedIndex = _currentIndex;
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
         }
 
         private void BtnSetEndPoint_Click(object sender, EventArgs e)
         {
             if (_currentFrames == null || _currentFrames.Count == 0) return;
             _selectionManager.SetEnd(_currentIndex);
-            // highlight in list
-            lstDataList.SelectedIndex = _currentIndex;
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
         }
 
         private async void BtnApplyFilter_Click(object sender, EventArgs e)
@@ -956,6 +951,8 @@ namespace Malcha
         {
             if (_currentFrames == null || _currentFrames.Count == 0) return;
             ShowFrame(trbTimeline.Value);
+            if (lstDataList.SelectedIndex != _currentIndex)
+                lstDataList.SelectedIndex = _currentIndex;
         }
 
         private void BtnNextFrame_Click(object sender, EventArgs e)
