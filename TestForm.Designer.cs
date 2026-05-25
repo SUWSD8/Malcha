@@ -30,13 +30,15 @@
         {
             btnTest = new Button();
             btnTrain = new Button();
+            btnTest3 = new Button();
             SuspendLayout();
             // 
             // btnTest
             // 
-            btnTest.Location = new Point(60, 60);
+            btnTest.Location = new Point(30, 28);
+            btnTest.Margin = new Padding(2, 1, 2, 1);
             btnTest.Name = "btnTest";
-            btnTest.Size = new Size(150, 46);
+            btnTest.Size = new Size(75, 22);
             btnTest.TabIndex = 0;
             btnTest.Text = "테스트";
             btnTest.UseVisualStyleBackColor = true;
@@ -44,21 +46,34 @@
             // 
             // btnTrain
             // 
-            btnTrain.Location = new Point(277, 60);
+            btnTrain.Location = new Point(138, 28);
+            btnTrain.Margin = new Padding(2, 1, 2, 1);
             btnTrain.Name = "btnTrain";
-            btnTrain.Size = new Size(150, 46);
+            btnTrain.Size = new Size(75, 22);
             btnTrain.TabIndex = 1;
             btnTrain.Text = "테스트2";
             btnTrain.UseVisualStyleBackColor = true;
             btnTrain.Click += btnTrain_Click;
             // 
+            // btnTest3
+            // 
+            btnTest3.Location = new Point(246, 28);
+            btnTest3.Name = "btnTest3";
+            btnTest3.Size = new Size(75, 23);
+            btnTest3.TabIndex = 2;
+            btnTest3.Text = "테스트3";
+            btnTest3.UseVisualStyleBackColor = true;
+            btnTest3.Click += btnTest3_Click;
+            // 
             // TestForm
             // 
-            AutoScaleDimensions = new SizeF(14F, 32F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(400, 211);
+            Controls.Add(btnTest3);
             Controls.Add(btnTrain);
             Controls.Add(btnTest);
+            Margin = new Padding(2, 1, 2, 1);
             Name = "TestForm";
             Text = "TestForm";
             ResumeLayout(false);
@@ -68,5 +83,6 @@
 
         private Button btnTest;
         private Button btnTrain;
+        private Button btnTest3;
     }
 }

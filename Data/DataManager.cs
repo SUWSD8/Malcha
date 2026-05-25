@@ -97,5 +97,45 @@ namespace Malcha.Data
                 }
             });
         }
+        // JSON 파일에서 특정 모델의 훈련 기록을 읽어와 TrainedData 리스트로 반환하는 메서드
+
+        public async Task<List<TrainedData>> LoadTrainingHistoryAsync(string path, string targetModelName)
+        {
+            List<TrainedData> trainedDataList = new List<TrainedData>();
+            try
+            {
+                if (!File.Exists(path)) {  return trainedDataList; }
+
+                string jsonContent = await File.ReadAllTextAsync(path);
+
+                var entries = JsonSerializer.Deserialize<Dictionary<string, DatabaseEntry>>(jsonContent);
+                if (entries == null) return trainedDataList;
+                var targetEntry = entries.Values.FirstOrDefault(e => e.Name == targetModelName);
+                if(targetEntry != null && targetEntry.History != null)
+                {
+                    var losses = targetEntry.History.Loss;
+                    var valLosses = targetEntry.History.ValLoss;
+                    if (losses != null)
+                    {
+                        // Epoch는 1부터 시작하므로 인덱스(i) + 1을 해줍니다.
+                        for (int i = 0; i < losses.Count; i++)
+                        {
+                            trainedDataList.Add(new TrainedData
+                            {
+                                Epoch = i + 1,
+                                Loss = losses[i],
+                                // 만약 valLoss 배열의 길이가 더 짧거나 없을 경우를 대비한 안전 처리
+                                ValLoss = (valLosses != null && i < valLosses.Count) ? valLosses[i] : 0
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"JSON 파싱 중 에러 발생: {ex.Message}");
+            }
+            return trainedDataList;
+        }
     }
 }
