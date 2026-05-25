@@ -21,6 +21,28 @@ namespace Malcha.Data
             }
         }
 
+        // 저장: 주어진 프레임 리스트를 한 줄 JSON(각 라인 하나의 JSON) 형식으로 저장합니다.
+        public async Task<bool> SaveFramesAsync(string outPath, List<Frame> frames)
+        {
+            try
+            {
+                using (var sw = new StreamWriter(outPath, false))
+                {
+                    foreach (var f in frames)
+                    {
+                        var json = JsonSerializer.Serialize(f);
+                        await sw.WriteLineAsync(json);
+                    }
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"SaveFramesAsync error: {ex.Message}");
+                return false;
+            }
+        }
+
         private DataManager()
         {
             // Private constructor to prevent instantiation
@@ -79,7 +101,10 @@ namespace Malcha.Data
                 return result;
             }
 
-            var catalogFiles = Directory.GetFiles(resolvedDir, "*.catalog").OrderBy(p => p).ToArray();
+            var catalogFiles = Directory.GetFiles(resolvedDir, "*.catalog")
+                .Where(CatalogPaths.IsWorkingCatalog)
+                .OrderBy(p => p)
+                .ToArray();
 
             foreach (var file in catalogFiles)
             {
