@@ -1,5 +1,6 @@
 ﻿using Malcha.Data;
 using Malcha.Model;
+using Malcha.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -40,7 +41,7 @@ namespace Malcha
 
                         // 3. DataManager를 통해 비동기로 데이터 로드
                         List<Frame> parsedData = await DataManager.Instance.LoadFrameAsync(selectedFilePath);
-
+                        DonkeyRepository.Instance.SetFrames(parsedData); // Repository에 파싱된 데이터 저장
                         // 4. 파싱 결과 확인용 메시지 박스 출력
                         if (parsedData.Count > 0)
                         {
