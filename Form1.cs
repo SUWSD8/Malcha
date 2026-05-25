@@ -30,6 +30,8 @@ namespace Malcha
         private int _cacheMaxSize = 100; // 필요시 조절
         private CancellationTokenSource _playCts;
         private Image _previewImage;
+        // 차트에서 마지막으로 강조한 포인트 인덱스
+        private int _lastChartIndex = -1;
 
         public Form1()
         {
@@ -188,6 +190,33 @@ namespace Malcha
                 {
                     ClearPlayback();
                 }
+
+                // 차트에 angle / throttle 데이터 채우기
+                try
+                {
+                    chtDataGraph.Series["user/angle"].Points.Clear();
+                    chtDataGraph.Series["user/throttle"].Points.Clear();
+
+                    for (int i = 0; i < _currentFrames.Count; i++)
+                    {
+                        var f = _currentFrames[i];
+                        // X는 인덱스로 사용
+                        chtDataGraph.Series["user/angle"].Points.AddXY(i, f.Angle);
+                        chtDataGraph.Series["user/throttle"].Points.AddXY(i, f.Throttle);
+                    }
+
+                    var area = chtDataGraph.ChartAreas.Count > 0 ? chtDataGraph.ChartAreas[0] : null;
+                    if (area != null)
+                    {
+                        area.AxisX.Minimum = 0;
+                        area.AxisX.Maximum = Math.Max(0, _currentFrames.Count - 1);
+                        area.RecalculateAxesScale();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Chart update error: {ex.Message}");
+                }
             }
             finally
             {
@@ -286,6 +315,33 @@ namespace Malcha
             trbTimeline.Maximum = Math.Max(0, _currentFrames.Count - 1);
             trbTimeline.Enabled = _currentFrames.Count > 0;
             trbTimeline.Value = _currentIndex;
+
+            // 차트에서 현재 인덱스 포인트 강조
+            try
+            {
+                var seriesAngle = chtDataGraph.Series["user/angle"];
+                var seriesThrottle = chtDataGraph.Series["user/throttle"];
+
+                if (_lastChartIndex >= 0 && _lastChartIndex < seriesAngle.Points.Count)
+                {
+                    seriesAngle.Points[_lastChartIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.None;
+                    seriesAngle.Points[_lastChartIndex].Color = System.Drawing.Color.White;
+                    seriesThrottle.Points[_lastChartIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.None;
+                    seriesThrottle.Points[_lastChartIndex].Color = System.Drawing.Color.Red;
+                }
+
+                if (_currentIndex >= 0 && _currentIndex < seriesAngle.Points.Count)
+                {
+                    seriesAngle.Points[_currentIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
+                    seriesAngle.Points[_currentIndex].MarkerSize = 8;
+                    seriesAngle.Points[_currentIndex].Color = System.Drawing.Color.Yellow;
+                    seriesThrottle.Points[_currentIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
+                    seriesThrottle.Points[_currentIndex].MarkerSize = 8;
+                    seriesThrottle.Points[_currentIndex].Color = System.Drawing.Color.Orange;
+                    _lastChartIndex = _currentIndex;
+                }
+            }
+            catch { }
 
             // 이미지 로드: 캐시 우선, 없으면 로드 후 캐시에 저장
             try
