@@ -99,9 +99,9 @@ namespace Malcha.Data
         }
         // JSON 파일에서 특정 모델의 훈련 기록을 읽어와 TrainedData 리스트로 반환하는 메서드
 
-        public async Task<List<TrainedData>> LoadTrainingHistoryAsync(string path, string targetModelName)
+        public async Task<TrainedModelInfo> LoadTrainingHistoryAsync(string path, string targetModelName)
         {
-            List<TrainedData> trainedDataList = new List<TrainedData>();
+            TrainedModelInfo resultInfo = null; // 최종 반환할 상위 객체
             try
             {
                 if (!File.Exists(path)) { throw new FileNotFoundException("database.json 파일을 찾을 수 없습니다."); }
@@ -114,31 +114,44 @@ namespace Malcha.Data
                 // 3. ⭐ 리스트 안에 있는 여러 모델 중, 우리가 찾는 모델 이름("mypilot")과 일치하는 것 하나만 쏙 골라냅니다.
                 var targetEntry = entries?.FirstOrDefault(e => e.Name == targetModelName);
 
-                if (targetEntry != null && targetEntry.History != null)
+                if (targetEntry != null)
                 {
-                    var losses = targetEntry.History.Loss;
-                    var valLosses = targetEntry.History.ValLoss;
-                    if (losses != null)
+                    // 1. 메타데이터 옮겨 담기
+                    resultInfo = new TrainedModelInfo
                     {
-                        // Epoch는 1부터 시작하므로 인덱스(i) + 1을 해줍니다.
+                        Number = targetEntry.Number,
+                        Name = targetEntry.Name,
+                        Pilot = targetEntry.Pilot,
+                        Type = targetEntry.Type,
+                        Tubs = targetEntry.Tubs,
+                        Time = targetEntry.Time,
+                        Transfer = targetEntry.Transfer,
+                        Comment = targetEntry.Comment
+                    };
+                    // 2. 차트용 데이터 재포장해서 리스트에 담기
+                    if (targetEntry.History != null && targetEntry.History.Loss != null)
+                    {
+                        var losses = targetEntry.History.Loss;
+                        var valLosses = targetEntry.History.ValLoss;
+
                         for (int i = 0; i < losses.Count; i++)
                         {
-                            trainedDataList.Add(new TrainedData
+                            resultInfo.History.Add(new TrainedData
                             {
                                 Epoch = i + 1,
                                 Loss = losses[i],
-                                // 만약 valLoss 배열의 길이가 더 짧거나 없을 경우를 대비한 안전 처리
                                 ValLoss = (valLosses != null && i < valLosses.Count) ? valLosses[i] : 0
                             });
                         }
                     }
                 }
+                
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"JSON 파싱 중 에러 발생: {ex.Message}");
             }
-            return trainedDataList;
+            return resultInfo;
         }
     }
 }

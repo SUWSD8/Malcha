@@ -14,5 +14,7 @@ namespace Malcha.Model
 
         // 차트의 Y축 두 번째 선에 들어갈 값 (검증 손실)
         public double ValLoss { get; set; }
+
+        // n_outputs0_loss, val_n_outputs0_loss 등 추가 가능
     }
 }
