@@ -16,7 +16,7 @@ namespace Malcha.Controller
         private TrainModelController() { }
         // 모델 훈련 결과 분석 실행 메서드
 
-        public async Task<bool> RunTraining(string path, string targetModelName)
+        public async Task<bool> TrainedModelAnalasys(string path, string targetModelName)
         {
             try
             {
