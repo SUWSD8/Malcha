@@ -2,6 +2,7 @@
 using Malcha.Data;
 using Malcha.Model;
 using Malcha.Repository;
+using Malcha.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -9,6 +10,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace Malcha
 {
@@ -17,7 +19,9 @@ namespace Malcha
         public TestForm()
         {
             InitializeComponent();
+            ChartAdapter.InitializeLossChart(chartLoss);
         }
+        
 
         private async void btnTest_Click(object sender, EventArgs e)
         {
@@ -133,6 +137,12 @@ namespace Malcha
                 // (선택) 성공적으로 파싱한 데이터를 Repository에 캐싱해둡니다.
                 // DataRepository.Instance.SetTrainedData(history);
             }
+        }
+
+        private void btnTest4_Click(object sender, EventArgs e)
+        {
+            ChartAdapter.DrawLossChart(chartLoss, DonkeyRepository.Instance.GetAllTrainedModels()[0]);
+
         }
     }
 }

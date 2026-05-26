@@ -1,0 +1,59 @@
+﻿using Malcha.Model;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Windows.Forms.DataVisualization.Charting;
+
+namespace Malcha.UI
+{
+    internal static class ChartAdapter
+    {
+        public static void InitializeLossChart(Chart targetChart)
+        {
+            targetChart.ChartAreas.Clear();
+            targetChart.Legends.Clear();
+
+            ChartArea chartArea = new ChartArea("MainArea");
+            chartArea.AxisX.Title = "Epoch (에포크)";
+            chartArea.AxisY.Title = "Loss (손실값)";
+            chartArea.AxisX.Minimum = 1;
+            targetChart.ChartAreas.Add(chartArea);
+
+            Legend legend = new Legend("DefaultLegend");
+            legend.Docking = Docking.Top;
+            targetChart.Legends.Add(legend);
+        }
+        // 2. 실제 데이터를 차트에 그리기
+        public static void DrawLossChart(Chart targetChart, TrainedModelInfo modelInfo)
+        {
+            if (modelInfo == null || modelInfo.History == null || modelInfo.History.Count == 0) return;
+
+            targetChart.Series.Clear();
+
+            Series seriesLoss = new Series("훈련 손실 (Loss)")
+            {
+                ChartType = SeriesChartType.Line,
+                BorderWidth = 2,
+                Color = Color.Blue,
+                MarkerStyle = MarkerStyle.Circle
+            };
+
+            Series seriesValLoss = new Series("검증 손실 (Val_Loss)")
+            {
+                ChartType = SeriesChartType.Line,
+                BorderWidth = 2,
+                Color = Color.Orange,
+                MarkerStyle = MarkerStyle.Square
+            };
+
+            foreach (var data in modelInfo.History)
+            {
+                seriesLoss.Points.AddXY(data.Epoch, data.Loss);
+                seriesValLoss.Points.AddXY(data.Epoch, data.ValLoss);
+            }
+
+            targetChart.Series.Add(seriesLoss);
+            targetChart.Series.Add(seriesValLoss);
+        }
+    }
+}
