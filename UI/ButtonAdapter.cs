@@ -68,7 +68,7 @@ namespace Malcha.UI
             }
         }
         // 모델 학습 실행 메서드
-        public static async Task RunModelTraining(Button btn)
+        public static async Task RunModelTraining(Button btn,string name)
         {
             // 1. 중복 클릭 방지 (버튼 비활성화)
             btn.Enabled = false;
@@ -77,7 +77,7 @@ namespace Malcha.UI
             {
                 // 2. 비동기로 학습 메서드 호출 (데이터 폴더명과 생성될 모델 파일명 전달)
                 // 실제 data/ 폴더 안에 있는 tub 폴더 이름과 원하는 모델 이름을 적어주세요.
-                bool isSuccess = await DataManager.Instance.TrainModelInWslAsync("data", "mypilot.h5");
+                bool isSuccess = await DataManager.Instance.TrainModelInWslAsync("data", $"{name}.h5");
 
                 // 3. 결과 확인
                 if (isSuccess)
