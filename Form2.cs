@@ -57,6 +57,7 @@ namespace Malcha
 
         private void btnRunAnalysis_Click(object sender, EventArgs e)
         {
+            ButtonAdapter.RunModelTraining(btnRunTraining);
             ButtonAdapter.ParseTrainingHistory(btnRunTraining, "mypilot");
         }
     }
