@@ -67,8 +67,8 @@
             lblModelType = new Label();
             pnlTrainer = new Panel();
             btnRunTraining = new Button();
-            btnMyPilot = new Button();
             pnlspace = new Panel();
+            txtMyPilot = new TextBox();
             pnlHeader.SuspendLayout();
             pnlConfiguration.SuspendLayout();
             pnlList.SuspendLayout();
@@ -508,8 +508,8 @@
             // 
             pnlTrainer.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlTrainer.BackColor = Color.FromArgb(20, 20, 20);
+            pnlTrainer.Controls.Add(txtMyPilot);
             pnlTrainer.Controls.Add(btnRunTraining);
-            pnlTrainer.Controls.Add(btnMyPilot);
             pnlTrainer.Controls.Add(lbll2);
             pnlTrainer.Controls.Add(cmbModelType);
             pnlTrainer.Controls.Add(lblTrainer);
@@ -534,20 +534,6 @@
             btnRunTraining.Text = "학습 시작";
             btnRunTraining.UseVisualStyleBackColor = false;
             // 
-            // btnMyPilot
-            // 
-            btnMyPilot.Anchor = AnchorStyles.Top | AnchorStyles.Bottom;
-            btnMyPilot.BackColor = Color.FromArgb(53, 48, 49);
-            btnMyPilot.FlatStyle = FlatStyle.Popup;
-            btnMyPilot.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnMyPilot.ForeColor = SystemColors.ButtonHighlight;
-            btnMyPilot.Location = new Point(12, 110);
-            btnMyPilot.Name = "btnMyPilot";
-            btnMyPilot.Size = new Size(475, 29);
-            btnMyPilot.TabIndex = 26;
-            btnMyPilot.Text = "내 파일럿";
-            btnMyPilot.UseVisualStyleBackColor = false;
-            // 
             // pnlspace
             // 
             pnlspace.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -556,6 +542,19 @@
             pnlspace.Name = "pnlspace";
             pnlspace.Size = new Size(973, 10);
             pnlspace.TabIndex = 6;
+            // 
+            // txtMyPilot
+            // 
+            txtMyPilot.BackColor = Color.FromArgb(53, 48, 49);
+            txtMyPilot.BorderStyle = BorderStyle.None;
+            txtMyPilot.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            txtMyPilot.ForeColor = Color.White;
+            txtMyPilot.Location = new Point(13, 114);
+            txtMyPilot.Name = "txtMyPilot";
+            txtMyPilot.Size = new Size(474, 20);
+            txtMyPilot.TabIndex = 28;
+            txtMyPilot.Text = "내 파일럿";
+            txtMyPilot.TextAlign = HorizontalAlignment.Center;
             // 
             // Form2
             // 
@@ -627,5 +626,6 @@
         private Button btnEnableDelete;
         private Button btnViewMyPilot;
         private Label lbll3;
+        private TextBox txtMyPilot;
     }
 }
