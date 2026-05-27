@@ -673,14 +673,20 @@ namespace Malcha
         private async Task LoadAndShowCatalogFileAsync(string catalogFilePath)
         {
             btnSelectData.Enabled = false;
+            toolStripStatusLabel1.Text = "카탈로그 불러오는 중…";
             try
             {
+                try { _playCts?.Cancel(); } catch { }
+
                 ClearImageCache();
+                _selectionManager.Clear();
+                _chartController.ResetHighlight();
 
                 var frames = await _catalogManager.LoadCatalogFileAsync(catalogFilePath);
                 if (frames == null || frames.Count == 0)
                 {
                     ClearPlayback();
+                    toolStripStatusLabel1.Text = "카탈로그를 불러오지 못했습니다.";
                     MessageBox.Show(this, "카탈로그가 비어 있거나 읽을 수 없습니다.", "알림",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
@@ -690,15 +696,28 @@ namespace Malcha
                 _session.Catalogs.Clear();
                 _session.Catalogs[catalogFilePath] = frames;
                 _session.CurrentFrames = frames;
+                _session.FrameImagePaths = _catalogManager.ResolveFrameImagePaths(
+                    _session.CurrentCatalogPath, _session.CurrentFrames);
 
-                _session.FrameImagePaths = _catalogManager.ResolveFrameImagePaths(_session.CurrentCatalogPath, _session.CurrentFrames);
                 _catalogManager.PopulateListBoxWithFrames(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+                RefreshChartFromFrames();
+                UpdateCatalogPathDisplay();
 
-                if (lstDataList.Items.Count > 0)
+                // 리스트 이벤트/동일 인덱스(0)에도 첫 프레임을 반드시 표시
+                _session.CurrentIndex = -1;
+                ShowFrame(0);
+                if (lstDataList.SelectedIndex != 0)
                     lstDataList.SelectedIndex = 0;
-                else
-                    ClearPlayback();
 
+                lstDataList.Invalidate();
+                trbTimeline.Invalidate();
+                picVideoScreen.Invalidate();
+
+                var label = CatalogPaths.GetDisplayLabel(catalogFilePath);
+                toolStripStatusLabel1.Text =
+                    $"{label} {Path.GetFileName(catalogFilePath)} — {frames.Count:N0} 프레임 로드 완료";
+
+                // 첫 화면 표시 후 나머지 프레임 프리로드
                 await _catalogManager.PreloadImagesAsync(_session.FrameImagePaths, _session.CurrentFrames, 5, (path, idx) =>
                 {
                     try
@@ -710,18 +729,6 @@ namespace Malcha
                     }
                     catch { return null; }
                 }, _imageController.AddToCache);
-
-                RefreshChartFromFrames();
-                UpdateCatalogPathDisplay();
-
-                if (CatalogPaths.IsBackupCatalog(catalogFilePath) || CatalogPaths.IsUnderBackupsFolder(catalogFilePath))
-                {
-                    toolStripStatusLabel1.Text = "백업 카탈로그를 열었습니다. 정제 저장 시 이 파일이 덮어씌워집니다.";
-                }
-                else
-                {
-                    toolStripStatusLabel1.Text = "작업용 카탈로그를 열었습니다.";
-                }
             }
             finally
             {
