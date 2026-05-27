@@ -318,7 +318,7 @@ namespace Malcha
 
             // list context menu for deletion
             _listContextMenu = new ContextMenuStrip();
-            _listContextMenu.Items.Add("Delete Selected", null, (s, e) => DeleteSelectedListItems());
+            _listContextMenu.Items.Add("선택 항목 삭제", null, (s, e) => DeleteSelectedListItems());
             lstDataList.ContextMenuStrip = _listContextMenu;
             lstDataList.KeyDown += (s, e) => { if (e.KeyCode == Keys.Delete) DeleteSelectedListItems(); };
             // owner-draw to show range highlights
@@ -336,8 +336,10 @@ namespace Malcha
             _trackContextMenu.Items.Add("선택된 구간 삭제", null, (s, e) =>
             {
                 var r = _selectionManager.GetRange();
-                if (r.s >= 0 && r.e >= 0) DeleteRange(r.s, r.e);
-                else if (r.s >= 0) DeleteRange(r.s, r.s);
+                if (r.s < 0) return;
+                int eidx = r.e >= 0 ? r.e : r.s;
+                if (!ConfirmDelete(r.s, eidx)) return;
+                DeleteRange(r.s, eidx);
             });
             trbTimeline.ContextMenuStrip = _trackContextMenu;
             trbTimeline.Paint += TrbTimeline_Paint;
@@ -716,9 +718,19 @@ namespace Malcha
         private void BtnDeleteSelection_Click(object sender, EventArgs e)
         {
             var r = _selectionManager.GetRange();
-            if (r.s < 0) return;
+            if (r.s < 0)
+            {
+                ShowAppMessage(
+                    "삭제할 구간이 없습니다.\n\n" +
+                    "타임라인에서 Ctrl+드래그하거나 [ ] 키로 구간을 설정해 주세요.",
+                    "선택구간 삭제", icon: MessageBoxIcon.Information);
+                return;
+            }
+
             int s = r.s;
             int eidx = r.e >= 0 ? r.e : r.s;
+            if (!ConfirmDelete(s, eidx)) return;
+
             DeleteRange(s, eidx);
 
             // persist deleted range info to a JSON file in Data folder
@@ -738,12 +750,65 @@ namespace Malcha
         {
             if (lstDataList.SelectedIndices.Count == 0) return;
 
-            // collect indices to remove (descending order so removal indices remain valid)
             var idxs = lstDataList.SelectedIndices.Cast<int>().OrderByDescending(i => i).ToList();
+            if (!ConfirmDeleteIndices(idxs)) return;
+
             foreach (var idx in idxs)
-            {
                 DeleteRange(idx, idx);
-            }
+        }
+
+        private bool ConfirmDelete(int start, int end)
+        {
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0)
+                return false;
+
+            start = Math.Max(0, Math.Min(start, _session.CurrentFrames.Count - 1));
+            end = Math.Max(0, Math.Min(end, _session.CurrentFrames.Count - 1));
+            if (end < start) (start, end) = (end, start);
+
+            int count = end - start + 1;
+            return ConfirmDeleteCore(count, start, end, null);
+        }
+
+        private bool ConfirmDeleteIndices(IReadOnlyList<int> indices)
+        {
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0)
+                return false;
+            if (indices.Count == 0) return false;
+
+            if (indices.Count == 1)
+                return ConfirmDelete(indices[0], indices[0]);
+
+            var sorted = indices.OrderBy(i => i).ToList();
+            int min = sorted[0];
+            int max = sorted[^1];
+            bool isContiguous = sorted.Count == max - min + 1;
+            if (isContiguous)
+                return ConfirmDelete(min, max);
+
+            return ConfirmDeleteCore(sorted.Count, min, max,
+                $"선택한 {sorted.Count:N0}개 프레임 (비연속)");
+        }
+
+        private bool ConfirmDeleteCore(int count, int start, int end, string? headline)
+        {
+            int remaining = Math.Max(0, _session.CurrentFrames.Count - count);
+            var fileName = string.IsNullOrEmpty(_session.CurrentCatalogPath)
+                ? "(열린 파일 없음)"
+                : Path.GetFileName(_session.CurrentCatalogPath);
+
+            string target = headline ?? (count == 1
+                ? $"프레임 #{start}"
+                : $"구간 {start}~{end} ({count:N0}프레임)");
+
+            var message =
+                $"{target}을(를) 삭제합니다.\n\n" +
+                $"파일: {fileName}\n" +
+                $"현재 {_session.CurrentFrames.Count:N0}프레임 → 삭제 후 {remaining:N0}프레임\n\n" +
+                "복구 버튼으로 직전 상태를 되돌릴 수 있습니다.";
+
+            return ShowAppMessage(message, "프레임 삭제",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
         }
 
         private void DeleteRange(int start, int end)
