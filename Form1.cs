@@ -28,6 +28,40 @@ namespace Malcha
         private PlaybackController _playbackController;
         private CatalogEditorService _editorService;
         private SelectionManager _selectionManager = new();
+        private bool _timelineRangeDrag;
+
+        private int GetTimelineIndexFromMouse(TrackBar tb, int mouseX)
+        {
+            int trackWidth = Math.Max(1, tb.ClientSize.Width - 8);
+            float ratio = Math.Max(0f, Math.Min(1f, (float)mouseX / trackWidth));
+            int value = (int)Math.Round(ratio * (tb.Maximum - tb.Minimum)) + tb.Minimum;
+            return Math.Max(tb.Minimum, Math.Min(tb.Maximum, value));
+        }
+
+        private void RefreshSelectionUi()
+        {
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            UpdateRangeStatusText();
+        }
+
+        private void UpdateRangeStatusText()
+        {
+            if (!_selectionManager.HasSelection) return;
+            var (s, e) = _selectionManager.GetRange();
+            toolStripStatusLabel1.Text =
+                $"구간 {s}~{e} ({_selectionManager.FrameCount:N0}프레임) · Esc 해제";
+        }
+
+        private void ClearRangeSelection()
+        {
+            if (!_selectionManager.HasSelection) return;
+            _selectionManager.Clear();
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            if (_session.CurrentFrames.Count > 0)
+                toolStripStatusLabel1.Text = $"{_session.CurrentFrames.Count:N0} 프레임";
+        }
 
         private void LstDataList_DrawItem(object sender, DrawItemEventArgs e)
         {
@@ -291,11 +325,15 @@ namespace Malcha
             lstDataList.DrawMode = DrawMode.OwnerDrawFixed;
             lstDataList.DrawItem += LstDataList_DrawItem;
 
-            // TrackBar: Ctrl+클릭=구간 표시, Shift+클릭=구간 해제 (일반 드래그는 기본 동작)
+            // TrackBar: Ctrl+클릭/드래그=시작, Ctrl+Shift+클릭=끝, Shift+클릭=구간 해제
             trbTimeline.MouseDown += TrbTimeline_MouseDown;
+            trbTimeline.MouseMove += TrbTimeline_MouseMove;
+            trbTimeline.MouseUp += TrbTimeline_MouseUp;
+            // list: Ctrl=시작, Ctrl+Shift=끝
+            lstDataList.MouseDown += LstDataList_MouseDown;
             // track context menu for deleting marked range
             _trackContextMenu = new ContextMenuStrip();
-            _trackContextMenu.Items.Add("Delete Marked Range", null, (s, e) =>
+            _trackContextMenu.Items.Add("선택된 구간 삭제", null, (s, e) =>
             {
                 var r = _selectionManager.GetRange();
                 if (r.s >= 0 && r.e >= 0) DeleteRange(r.s, r.e);
@@ -303,6 +341,18 @@ namespace Malcha
             });
             trbTimeline.ContextMenuStrip = _trackContextMenu;
             trbTimeline.Paint += TrbTimeline_Paint;
+
+            KeyPreview = true;
+            KeyDown += Form1_KeyDown;
+
+            var rangeTips = new ToolTip { AutoPopDelay = 8000, InitialDelay = 400 };
+            rangeTips.SetToolTip(btnSetStartPoint, "현재 프레임을 구간 시작으로 설정 ([ 키)");
+            rangeTips.SetToolTip(btnSetEndPoint, "현재 프레임을 구간 끝으로 설정 (] 키)");
+            rangeTips.SetToolTip(btnDeleteSelection, "주황색으로 표시된 구간 삭제");
+            rangeTips.SetToolTip(trbTimeline,
+                "Ctrl+드래그: 구간 선택\nCtrl+클릭: 시작점\nCtrl+Shift+클릭: 끝점\nShift+클릭: 구간 해제");
+            rangeTips.SetToolTip(lstDataList, "Ctrl+클릭: 시작 · Ctrl+Shift+클릭: 끝");
+            rangeTips.SetToolTip(btnHelper, "F1 · 사용 안내");
 
             // 이벤트 연결
             btnSelectData.Click += BtnSelectData_Click;
@@ -317,6 +367,7 @@ namespace Malcha
             btnPrevFrame.Click += BtnPrevFrame_Click;
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += TrbTimeline_Scroll;
+            btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
 
             // PictureBox에 별도의 오버레이를 가볍게 그리기 위해 Paint 이벤트 연결
             picVideoScreen.Paint += PicVideoScreen_Paint;
@@ -329,51 +380,142 @@ namespace Malcha
 
         }
 
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F1)
+            {
+                HelpDialog.ShowFor(this);
+                e.Handled = true;
+                return;
+            }
+
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
+
+            if (e.KeyCode == Keys.Space)
+            {
+                BtnPlayPause_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.Left)
+            {
+                BtnPrevFrame_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.Right)
+            {
+                BtnNextFrame_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.Escape)
+            {
+                ClearRangeSelection();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.OemOpenBrackets)
+            {
+                _selectionManager.SetStart(_session.CurrentIndex);
+                RefreshSelectionUi();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.OemCloseBrackets)
+            {
+                _selectionManager.SetEnd(_session.CurrentIndex);
+                RefreshSelectionUi();
+                e.Handled = true;
+            }
+        }
+
+        private void LstDataList_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+            bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
+            if (!ctrl) return;
+
+            int idx = lstDataList.IndexFromPoint(e.Location);
+            if (idx < 0) return;
+
+            bool shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
+            if (shift)
+                _selectionManager.SetEnd(idx);
+            else
+                _selectionManager.SetStart(idx);
+
+            RefreshSelectionUi();
+        }
+
         private void TrbTimeline_MouseDown(object sender, MouseEventArgs e)
         {
             if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
+            if (e.Button != MouseButtons.Left) return;
 
             bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
             bool shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
-            if (!ctrl && !shift)
+
+            if (shift && !ctrl)
+            {
+                ClearRangeSelection();
                 return;
+            }
+
+            if (!ctrl) return;
 
             var tb = (TrackBar)sender;
-            int trackWidth = Math.Max(1, tb.ClientSize.Width - 8);
-            float ratio = Math.Max(0f, Math.Min(1f, (float)e.X / trackWidth));
-            int value = (int)Math.Round(ratio * (tb.Maximum - tb.Minimum)) + tb.Minimum;
-            value = Math.Max(tb.Minimum, Math.Min(tb.Maximum, value));
+            int value = GetTimelineIndexFromMouse(tb, e.X);
 
-            if (ctrl)
+            if (shift)
             {
-                if (_selectionManager.Start < 0)
-                    _selectionManager.SetStart(value);
-                else
-                    _selectionManager.SetEnd(value);
-            }
-            else if (shift)
-            {
-                _selectionManager.Clear();
+                _selectionManager.SetEnd(value);
+                RefreshSelectionUi();
+                return;
             }
 
-            trbTimeline.Invalidate();
-            lstDataList.Invalidate();
+            _selectionManager.SetStart(value);
+            _timelineRangeDrag = true;
+            tb.Capture = true;
+            RefreshSelectionUi();
+        }
+
+        private void TrbTimeline_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_timelineRangeDrag || e.Button != MouseButtons.Left) return;
+            if ((ModifierKeys & Keys.Control) != Keys.Control) return;
+
+            var tb = (TrackBar)sender;
+            _selectionManager.SetEnd(GetTimelineIndexFromMouse(tb, e.X));
+            RefreshSelectionUi();
+        }
+
+        private void TrbTimeline_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (!_timelineRangeDrag) return;
+
+            _timelineRangeDrag = false;
+            var tb = (TrackBar)sender;
+            tb.Capture = false;
+            _selectionManager.SetEnd(GetTimelineIndexFromMouse(tb, e.X));
+            RefreshSelectionUi();
         }
 
         private void BtnSetStartPoint_Click(object sender, EventArgs e)
         {
             if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
             _selectionManager.SetStart(_session.CurrentIndex);
-            trbTimeline.Invalidate();
-            lstDataList.Invalidate();
+            RefreshSelectionUi();
         }
 
         private void BtnSetEndPoint_Click(object sender, EventArgs e)
         {
             if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
             _selectionManager.SetEnd(_session.CurrentIndex);
-            trbTimeline.Invalidate();
-            lstDataList.Invalidate();
+            RefreshSelectionUi();
         }
 
         private async void BtnApplyFilter_Click(object sender, EventArgs e)
@@ -612,6 +754,7 @@ namespace Malcha
             try { _playCts?.Cancel(); } catch { }
 
             _imageController?.DeleteRangeIndices(result.Start, result.Count);
+            _selectionManager.OnFramesRemoved(result.Start, result.Count);
             _catalogManager.PopulateListBoxWithFrames(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
             _chartController.RemoveRange(result.Start, result.Count);
 
@@ -619,6 +762,11 @@ namespace Malcha
                 ClearPlayback();
             else
                 ShowFrame(_session.CurrentIndex);
+
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            if (!_selectionManager.HasSelection && _session.CurrentFrames.Count > 0)
+                toolStripStatusLabel1.Text = $"{_session.CurrentFrames.Count:N0} 프레임";
 
             EnsureFormVisible();
         }
