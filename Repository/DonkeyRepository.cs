@@ -15,9 +15,11 @@ namespace Malcha.Repository
         }
 
         private List<Frame> _frames;
+        private List<TrainedModelInfo> _trainedModels;
         private DonkeyRepository()
         {
             _frames = new List<Frame>();
+            _trainedModels = new List<TrainedModelInfo>();
         }
 
         public void SetFrames(List<Frame> frames)
@@ -27,6 +29,19 @@ namespace Malcha.Repository
         public List<Frame> GetFrames()
         {
             return _frames;
+        }
+
+        public void SetTrainedModels(List<TrainedModelInfo> models)
+        {
+            _trainedModels = models;
+        }
+        public List<TrainedModelInfo> GetAllTrainedModels()
+        {
+            return _trainedModels;
+        }
+        public void AddTrainedModel(TrainedModelInfo model)
+        {
+            _trainedModels.Add(model);
         }
     }
 }
