@@ -165,11 +165,11 @@ namespace Malcha
             PushUndoSnapshot();
 
             ProgressDialog progress = null;
-            Enabled = false;
+            SetUiBusy(true);
             try
             {
                 progress = new ProgressDialog("백업 병합");
-                progress.Show(this);
+                progress.ShowFor(this);
                 progress.Refresh();
 
                 List<Frame> backupFrames;
@@ -180,8 +180,9 @@ namespace Malcha
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, $"백업을 읽지 못했습니다.\n{ex.Message}", "복구",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    CloseProgressDialog(ref progress);
+                    ShowAppMessage($"백업을 읽지 못했습니다.\n{ex.Message}", "복구",
+                        icon: MessageBoxIcon.Error);
                     return;
                 }
 
@@ -209,7 +210,8 @@ namespace Malcha
                 toolStripStatusLabel1.Text =
                     $"복구 병합: {mergeResult.Frames.Count:N0} 프레임 (복원 {mergeResult.Frames.Count - refinedFrames.Count:N0})";
 
-                MessageBox.Show(this,
+                CloseProgressDialog(ref progress);
+                ShowAppMessage(
                     $"병합이 완료되었습니다.\n\n" +
                     $"백업 원본: {backupFrames.Count:N0} 프레임\n" +
                     $"정제 파일: {refinedFrames.Count:N0} 프레임\n" +
@@ -217,24 +219,25 @@ namespace Malcha
                     $"정제본 우선 적용: {mergeResult.RefinedOverrides:N0}\n" +
                     $"정제에만 있던 추가: {mergeResult.FromRefinedOnly:N0}\n\n" +
                     $"저장: {workingPath}",
-                    "복구", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "복구");
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show(this, "병합이 취소되었습니다.", "복구",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CloseProgressDialog(ref progress);
+                ShowAppMessage("병합이 취소되었습니다.", "복구");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Recover merge error: {ex.Message}");
-                MessageBox.Show(this, $"복구 중 오류가 발생했습니다.\n{ex.Message}", "복구",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                CloseProgressDialog(ref progress);
+                ShowAppMessage($"복구 중 오류가 발생했습니다.\n{ex.Message}", "복구",
+                    icon: MessageBoxIcon.Error);
             }
             finally
             {
-                progress?.Close();
-                progress?.Dispose();
-                Enabled = true;
+                CloseProgressDialog(ref progress);
+                SetUiBusy(false);
+                EnsureFormVisible();
             }
         }
 
@@ -408,13 +411,13 @@ namespace Malcha
             try { _playCts?.Cancel(); } catch { }
 
             ProgressDialog progress = null;
-            Enabled = false;
+            SetUiBusy(true);
 
             try
             {
                 var framesCopy = _session.CurrentFrames.ToList();
                 progress = new ProgressDialog("데이터 정제");
-                progress.Show(this);
+                progress.ShowFor(this);
                 progress.Refresh();
 
                 var uiProgress = new Progress<FrameRefinementFilter.ProgressReport>(r =>
@@ -428,15 +431,16 @@ namespace Malcha
                 }
                 catch (OperationCanceledException)
                 {
-                    MessageBox.Show(this, "정제가 취소되었습니다.", "필터 적용",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    CloseProgressDialog(ref progress);
+                    ShowAppMessage("정제가 취소되었습니다.", "필터 적용");
                     return;
                 }
 
                 if (refineResult.Frames.Count == 0)
                 {
-                    MessageBox.Show(this, "정제 후 남은 프레임이 없습니다. 기준을 완화하거나 원본을 복구해 주세요.",
-                        "필터 적용", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    CloseProgressDialog(ref progress);
+                    ShowAppMessage("정제 후 남은 프레임이 없습니다. 기준을 완화하거나 원본을 복구해 주세요.",
+                        "필터 적용", icon: MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -469,29 +473,65 @@ namespace Malcha
                     ? string.Empty
                     : $"\n백업: {backupPath}";
 
-                MessageBox.Show(this,
+                CloseProgressDialog(ref progress);
+                ShowAppMessage(
                     $"정제가 완료되었습니다.\n\n" +
                     $"원본: {refineResult.OriginalCount:N0} 프레임\n" +
                     $"결과: {refineResult.Frames.Count:N0} 프레임\n" +
                     $"제거: {refineResult.RemovedTotal:N0} (중복 {refineResult.RemovedDuplicate:N0}, " +
                     $"스파이크 {refineResult.RemovedSpike:N0}, 범위초과 {refineResult.RemovedOutOfRange:N0})" +
                     backupNote,
-                    "필터 적용",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "필터 적용");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Filter apply error: {ex.Message}");
-                MessageBox.Show(this, $"정제 중 오류가 발생했습니다.\n{ex.Message}", "필터 적용",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                CloseProgressDialog(ref progress);
+                ShowAppMessage($"정제 중 오류가 발생했습니다.\n{ex.Message}", "필터 적용",
+                    icon: MessageBoxIcon.Error);
             }
             finally
             {
-                progress?.Close();
-                progress?.Dispose();
-                Enabled = true;
+                CloseProgressDialog(ref progress);
+                SetUiBusy(false);
+                EnsureFormVisible();
             }
+        }
+
+        private void CloseProgressDialog(ref ProgressDialog progress)
+        {
+            if (progress == null) return;
+            try { progress.Close(); } catch { }
+            try { progress.Dispose(); } catch { }
+            progress = null;
+        }
+
+        private void SetUiBusy(bool busy)
+        {
+            UseWaitCursor = busy;
+            btnApplyFilter.Enabled = !busy;
+            btnRecover.Enabled = !busy;
+            btnDeleteSelection.Enabled = !busy;
+            btnSelectData.Enabled = !busy;
+            btnPlayPause.Enabled = !busy;
+            btnRefresh.Enabled = !busy;
+        }
+
+        private void EnsureFormVisible()
+        {
+            if (WindowState == FormWindowState.Minimized)
+                WindowState = FormWindowState.Normal;
+            ShowInTaskbar = true;
+            Activate();
+            BringToFront();
+        }
+
+        private DialogResult ShowAppMessage(string text, string caption,
+            MessageBoxButtons buttons = MessageBoxButtons.OK,
+            MessageBoxIcon icon = MessageBoxIcon.Information)
+        {
+            EnsureFormVisible();
+            return MessageBox.Show(this, text, caption, buttons, icon);
         }
 
         private void PushUndoSnapshot() => _session.PushUndo();
@@ -579,6 +619,8 @@ namespace Malcha
                 ClearPlayback();
             else
                 ShowFrame(_session.CurrentIndex);
+
+            EnsureFormVisible();
         }
 
         private void PicVideoScreen_Paint(object sender, PaintEventArgs e)
