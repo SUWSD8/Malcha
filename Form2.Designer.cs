@@ -87,6 +87,7 @@
             btnDataManagement.TabIndex = 6;
             btnDataManagement.Text = "데이터 관리";
             btnDataManagement.UseVisualStyleBackColor = false;
+            btnDataManagement.Click += btnDataManagement_Click;
             // 
             // btnTrainModel
             // 

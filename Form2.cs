@@ -14,5 +14,10 @@ namespace Malcha
         {
             InitializeComponent();
         }
+
+        private void btnDataManagement_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
     }
 }
