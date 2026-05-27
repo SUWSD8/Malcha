@@ -820,29 +820,46 @@ namespace Malcha
             }
         }
 
-        // 새로고침 버튼 클릭: 모든 상태 초기화 (완전 리셋)
-        // 설명: 사용자가 새로고침 버튼을 누르면 현재 재생 중지, 캐시 해제, 목록 및 UI 초기화를 수행합니다.
+        private void StopPlayback()
+        {
+            try { _playCts?.Cancel(); } catch { }
+            _playCts = null;
+            btnPlayPause.Text = "재생 / 정지";
+        }
+
+        private void ResetAllUi()
+        {
+            StopPlayback();
+            _session.Reset();
+            _selectionManager.Clear();
+            ClearImageCache();
+            lstDataList.Items.Clear();
+            _playbackController.ClearDisplay();
+            _chartController.RefreshFromFrames(_session.CurrentFrames);
+            txtFilePath.Text = string.Empty;
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            picVideoScreen.Invalidate();
+            toolStripStatusLabel1.Text = "초기화됨";
+        }
+
+        // 새로고침: 열린 카탈로그를 디스크에서 다시 불러옴 (없으면 전체 초기화)
         private async void BtnRefresh_Click(object sender, EventArgs e)
         {
-            // 재생 중이면 중지
-            try
+            StopPlayback();
+
+            var path = _session.CurrentCatalogPath;
+            if (!string.IsNullOrEmpty(path) && File.Exists(path))
             {
-                _playCts?.Cancel();
+                _session.ClearUndo();
+                await LoadAndShowCatalogFileAsync(path);
+                var label = CatalogPaths.GetDisplayLabel(path);
+                toolStripStatusLabel1.Text =
+                    $"{label} {Path.GetFileName(path)} — {_session.CurrentFrames.Count:N0} 프레임 새로고침 완료";
+                return;
             }
-            catch { }
 
-            // 캐시 및 상태 초기화
-            ClearImageCache();
-            _session.Catalogs.Clear();
-            _session.CurrentFrames.Clear();
-            _session.FrameImagePaths.Clear();
-
-            // UI 초기화
-            lstDataList.Items.Clear();
-            ClearPlayback();
-            txtFilePath.Text = string.Empty;
-
-            await Task.CompletedTask;
+            ResetAllUi();
         }
 
         private void UpdateCatalogPathDisplay()
@@ -868,6 +885,7 @@ namespace Malcha
             {
                 try { _playCts?.Cancel(); } catch { }
 
+                _session.ClearUndo();
                 ClearImageCache();
                 _selectionManager.Clear();
                 _chartController.ResetHighlight();
@@ -1006,10 +1024,13 @@ namespace Malcha
             _session.CurrentFrames = new List<Frame>();
             _session.CurrentCatalogPath = string.Empty;
             _session.CurrentIndex = 0;
+            _selectionManager.Clear();
             lstDataList.Items.Clear();
             _playbackController.ClearDisplay();
-            _chartController.ResetHighlight();
+            _chartController.RefreshFromFrames(_session.CurrentFrames);
             ClearImageCache();
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
         }
 
         private void btnTrainModel_Click(object sender, EventArgs e)
