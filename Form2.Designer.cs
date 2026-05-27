@@ -60,7 +60,6 @@
             lblModelType = new Label();
             pnlTrainer = new Panel();
             btnRunTraining = new Button();
-            btnMyPilot = new Button();
             pnlspace = new Panel();
             번호 = new DataGridViewTextBoxColumn();
             이름 = new DataGridViewTextBoxColumn();
@@ -508,8 +507,8 @@
             // 
             pnlTrainer.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlTrainer.BackColor = Color.FromArgb(20, 20, 20);
+            pnlTrainer.Controls.Add(txtMyPilot);
             pnlTrainer.Controls.Add(btnRunTraining);
-            pnlTrainer.Controls.Add(btnMyPilot);
             pnlTrainer.Controls.Add(lbll2);
             pnlTrainer.Controls.Add(cmbModelType);
             pnlTrainer.Controls.Add(lblTrainer);
@@ -537,21 +536,6 @@
             btnRunTraining.UseVisualStyleBackColor = false;
             btnRunTraining.Click += btnRunAnalysis_Click;
             // 
-            // btnMyPilot
-            // 
-            btnMyPilot.Anchor = AnchorStyles.Top | AnchorStyles.Bottom;
-            btnMyPilot.BackColor = Color.FromArgb(53, 48, 49);
-            btnMyPilot.FlatStyle = FlatStyle.Popup;
-            btnMyPilot.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnMyPilot.ForeColor = SystemColors.ButtonHighlight;
-            btnMyPilot.Location = new Point(24, 235);
-            btnMyPilot.Margin = new Padding(6, 6, 6, 6);
-            btnMyPilot.Name = "btnMyPilot";
-            btnMyPilot.Size = new Size(950, 62);
-            btnMyPilot.TabIndex = 26;
-            btnMyPilot.Text = "내 파일럿";
-            btnMyPilot.UseVisualStyleBackColor = false;
-            // 
             // pnlspace
             // 
             pnlspace.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -562,75 +546,18 @@
             pnlspace.Size = new Size(1946, 21);
             pnlspace.TabIndex = 6;
             // 
-            // 번호
+            // txtMyPilot
             // 
-            번호.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            번호.DataPropertyName = "Number";
-            번호.Frozen = true;
-            번호.HeaderText = "번호";
-            번호.MinimumWidth = 10;
-            번호.Name = "번호";
-            번호.ReadOnly = true;
-            번호.Width = 200;
-            // 
-            // 이름
-            // 
-            이름.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-            이름.DataPropertyName = "Name";
-            이름.Frozen = true;
-            이름.HeaderText = "이름";
-            이름.MinimumWidth = 10;
-            이름.Name = "이름";
-            이름.ReadOnly = true;
-            이름.Width = 279;
-            // 
-            // 파일럿
-            // 
-            파일럿.DataPropertyName = "Pilot";
-            파일럿.HeaderText = "파일럿";
-            파일럿.MinimumWidth = 10;
-            파일럿.Name = "파일럿";
-            파일럿.ReadOnly = true;
-            // 
-            // 타입
-            // 
-            타입.DataPropertyName = "Type";
-            타입.HeaderText = "타입";
-            타입.MinimumWidth = 10;
-            타입.Name = "타입";
-            타입.ReadOnly = true;
-            // 
-            // 데이터저장소
-            // 
-            데이터저장소.DataPropertyName = "Tubs";
-            데이터저장소.HeaderText = "데이터 저장소";
-            데이터저장소.MinimumWidth = 10;
-            데이터저장소.Name = "데이터저장소";
-            데이터저장소.ReadOnly = true;
-            // 
-            // 시간
-            // 
-            시간.DataPropertyName = "Time";
-            시간.HeaderText = "시간";
-            시간.MinimumWidth = 10;
-            시간.Name = "시간";
-            시간.ReadOnly = true;
-            // 
-            // 전이학습
-            // 
-            전이학습.DataPropertyName = "Transfer";
-            전이학습.HeaderText = "전이 학습";
-            전이학습.MinimumWidth = 10;
-            전이학습.Name = "전이학습";
-            전이학습.ReadOnly = true;
-            // 
-            // 설명
-            // 
-            설명.DataPropertyName = "Comment";
-            설명.HeaderText = "설명";
-            설명.MinimumWidth = 10;
-            설명.Name = "설명";
-            설명.ReadOnly = true;
+            txtMyPilot.BackColor = Color.FromArgb(53, 48, 49);
+            txtMyPilot.BorderStyle = BorderStyle.None;
+            txtMyPilot.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            txtMyPilot.ForeColor = Color.White;
+            txtMyPilot.Location = new Point(13, 114);
+            txtMyPilot.Name = "txtMyPilot";
+            txtMyPilot.Size = new Size(474, 20);
+            txtMyPilot.TabIndex = 28;
+            txtMyPilot.Text = "내 파일럿";
+            txtMyPilot.TextAlign = HorizontalAlignment.Center;
             // 
             // Form2
             // 
