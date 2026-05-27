@@ -374,6 +374,7 @@
             button8.TabIndex = 36;
             button8.Text = "코멘트 수정";
             button8.UseVisualStyleBackColor = false;
+            button8.Click += btnUpdateComment_Click;
             // 
             // button7
             // 
@@ -388,6 +389,7 @@
             button7.TabIndex = 35;
             button7.Text = "파일럿 삭제";
             button7.UseVisualStyleBackColor = false;
+            button7.Click += btnDeleteModel_Click;
             // 
             // button6
             // 
