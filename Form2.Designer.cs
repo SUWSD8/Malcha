@@ -96,10 +96,9 @@
             btnDataManagement.FlatStyle = FlatStyle.Popup;
             btnDataManagement.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnDataManagement.ForeColor = SystemColors.ButtonHighlight;
-            btnDataManagement.Location = new Point(1504, 21);
-            btnDataManagement.Margin = new Padding(6);
+            btnDataManagement.Location = new Point(752, 10);
             btnDataManagement.Name = "btnDataManagement";
-            btnDataManagement.Size = new Size(206, 49);
+            btnDataManagement.Size = new Size(103, 23);
             btnDataManagement.TabIndex = 6;
             btnDataManagement.Text = "데이터 관리";
             btnDataManagement.UseVisualStyleBackColor = false;
@@ -112,10 +111,9 @@
             btnTrainModel.FlatStyle = FlatStyle.Popup;
             btnTrainModel.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnTrainModel.ForeColor = SystemColors.ButtonHighlight;
-            btnTrainModel.Location = new Point(1722, 21);
-            btnTrainModel.Margin = new Padding(6);
+            btnTrainModel.Location = new Point(861, 10);
             btnTrainModel.Name = "btnTrainModel";
-            btnTrainModel.Size = new Size(206, 49);
+            btnTrainModel.Size = new Size(103, 23);
             btnTrainModel.TabIndex = 4;
             btnTrainModel.Text = "모델 학습";
             btnTrainModel.UseVisualStyleBackColor = false;
@@ -125,10 +123,9 @@
             lblTitle.AutoSize = true;
             lblTitle.Font = new Font("맑은 고딕", 18F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblTitle.ForeColor = Color.FromArgb(227, 98, 132);
-            lblTitle.Location = new Point(24, 19);
-            lblTitle.Margin = new Padding(6, 0, 6, 0);
+            lblTitle.Location = new Point(12, 9);
             lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(278, 65);
+            lblTitle.Size = new Size(138, 32);
             lblTitle.TabIndex = 0;
             lblTitle.Text = "DonkeyCar";
             // 
@@ -151,10 +148,9 @@
             // 
             // panel6
             // 
-            panel6.Location = new Point(0, 224);
-            panel6.Margin = new Padding(6);
+            panel6.Location = new Point(0, 105);
             panel6.Name = "panel6";
-            panel6.Size = new Size(1276, 21);
+            panel6.Size = new Size(638, 10);
             panel6.TabIndex = 0;
             // 
             // btnSaveMyConfig
@@ -242,10 +238,9 @@
             lblAngleTitle.AutoSize = true;
             lblAngleTitle.Font = new Font("맑은 고딕", 14.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblAngleTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblAngleTitle.Location = new Point(144, 36);
-            lblAngleTitle.Margin = new Padding(6, 0, 6, 0);
+            lblAngleTitle.Location = new Point(72, 17);
             lblAngleTitle.Name = "lblAngleTitle";
-            lblAngleTitle.Size = new Size(225, 51);
+            lblAngleTitle.Size = new Size(114, 25);
             lblAngleTitle.TabIndex = 1;
             lblAngleTitle.Text = "설정 편집기";
             // 
@@ -268,54 +263,45 @@
             dgvPilotList.BackgroundColor = Color.FromArgb(103, 98, 98);
             dgvPilotList.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvPilotList.Columns.AddRange(new DataGridViewColumn[] { 이름, 파일럿, 타입, 데이터저장소, 시간, 전이학습, 설명 });
-            dgvPilotList.Location = new Point(0, 62);
-            dgvPilotList.Margin = new Padding(6);
+            dgvPilotList.Location = new Point(0, 29);
             dgvPilotList.Name = "dgvPilotList";
             dgvPilotList.RowHeadersVisible = false;
-            dgvPilotList.RowHeadersWidth = 82;
-            dgvPilotList.Size = new Size(1954, 813);
+            dgvPilotList.Size = new Size(977, 381);
             dgvPilotList.TabIndex = 12;
             // 
             // 이름
             // 
             이름.HeaderText = "이름";
-            이름.MinimumWidth = 10;
             이름.Name = "이름";
             // 
             // 파일럿
             // 
             파일럿.HeaderText = "파일럿";
-            파일럿.MinimumWidth = 10;
             파일럿.Name = "파일럿";
             // 
             // 타입
             // 
             타입.HeaderText = "타입";
-            타입.MinimumWidth = 10;
             타입.Name = "타입";
             // 
             // 데이터저장소
             // 
             데이터저장소.HeaderText = "데이터 저장소";
-            데이터저장소.MinimumWidth = 10;
             데이터저장소.Name = "데이터저장소";
             // 
             // 시간
             // 
             시간.HeaderText = "시간";
-            시간.MinimumWidth = 10;
             시간.Name = "시간";
             // 
             // 전이학습
             // 
             전이학습.HeaderText = "전이 학습";
-            전이학습.MinimumWidth = 10;
             전이학습.Name = "전이학습";
             // 
             // 설명
             // 
             설명.HeaderText = "설명";
-            설명.MinimumWidth = 10;
             설명.Name = "설명";
             // 
             // lblViewPilots
@@ -324,10 +310,9 @@
             lblViewPilots.AutoSize = true;
             lblViewPilots.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblViewPilots.ForeColor = SystemColors.ButtonHighlight;
-            lblViewPilots.Location = new Point(830, 13);
-            lblViewPilots.Margin = new Padding(6, 0, 6, 0);
+            lblViewPilots.Location = new Point(415, 6);
             lblViewPilots.Name = "lblViewPilots";
-            lblViewPilots.Size = new Size(250, 41);
+            lblViewPilots.Size = new Size(124, 20);
             lblViewPilots.TabIndex = 11;
             lblViewPilots.Text = "학습된 모델 목록";
             // 
@@ -361,6 +346,7 @@
             btnTrainingLogs.TabIndex = 38;
             btnTrainingLogs.Text = "학습 기록";
             btnTrainingLogs.UseVisualStyleBackColor = false;
+            btnTrainingLogs.Click += btnShowTrainingHistory_Click;
             // 
             // btnViewConfig
             // 
@@ -389,6 +375,7 @@
             btnEditComment.TabIndex = 36;
             btnEditComment.Text = "코멘트 수정";
             btnEditComment.UseVisualStyleBackColor = false;
+            btnEditComment.Click += btnUpdateComment_Click;
             // 
             // btnDeletePilot
             // 
@@ -403,6 +390,7 @@
             btnDeletePilot.TabIndex = 35;
             btnDeletePilot.Text = "파일럿 삭제";
             btnDeletePilot.UseVisualStyleBackColor = false;
+            btnDeletePilot.Click += btnDeleteModel_Click;
             // 
             // btnEnableDelete
             // 
@@ -548,6 +536,7 @@
             btnRunTraining.TabIndex = 27;
             btnRunTraining.Text = "학습 시작";
             btnRunTraining.UseVisualStyleBackColor = false;
+            btnRunTraining.Click += btnRunAnalysis_Click;
             // 
             // btnMyPilot
             // 
@@ -574,7 +563,7 @@
             // 
             // Form2
             // 
-            AutoScaleDimensions = new SizeF(14F, 32F);
+            AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(976, 852);
             Controls.Add(pnlspace);
