@@ -333,13 +333,16 @@ namespace Malcha
             lstDataList.MouseDown += LstDataList_MouseDown;
             // track context menu for deleting marked range
             _trackContextMenu = new ContextMenuStrip();
-            _trackContextMenu.Items.Add("선택된 구간 삭제", null, (s, e) =>
+            _trackContextMenu.Items.Add("선택된 구간 삭제", null, async (s, e) =>
             {
                 var r = _selectionManager.GetRange();
                 if (r.s < 0) return;
                 int eidx = r.e >= 0 ? r.e : r.s;
                 if (!ConfirmDelete(r.s, eidx)) return;
-                DeleteRange(r.s, eidx);
+                var savePath = _session.CurrentCatalogPath;
+                int removed = DeleteRange(r.s, eidx, persistAfter: false);
+                if (removed > 0 && !string.IsNullOrEmpty(savePath))
+                    await PersistCatalogAfterEditAsync(removed, savePath);
             });
             trbTimeline.ContextMenuStrip = _trackContextMenu;
             trbTimeline.Paint += TrbTimeline_Paint;
@@ -715,7 +718,7 @@ namespace Malcha
             trbTimeline.Invalidate();
         }
 
-        private void BtnDeleteSelection_Click(object sender, EventArgs e)
+        private async void BtnDeleteSelection_Click(object sender, EventArgs e)
         {
             var r = _selectionManager.GetRange();
             if (r.s < 0)
@@ -731,7 +734,10 @@ namespace Malcha
             int eidx = r.e >= 0 ? r.e : r.s;
             if (!ConfirmDelete(s, eidx)) return;
 
-            DeleteRange(s, eidx);
+            var savePath = _session.CurrentCatalogPath;
+            int removed = DeleteRange(s, eidx, persistAfter: false);
+            if (removed > 0 && !string.IsNullOrEmpty(savePath))
+                await PersistCatalogAfterEditAsync(removed, savePath);
 
             // persist deleted range info to a JSON file in Data folder
             try
@@ -746,15 +752,20 @@ namespace Malcha
             catch { }
         }
 
-        private void DeleteSelectedListItems()
+        private async void DeleteSelectedListItems()
         {
             if (lstDataList.SelectedIndices.Count == 0) return;
 
             var idxs = lstDataList.SelectedIndices.Cast<int>().OrderByDescending(i => i).ToList();
             if (!ConfirmDeleteIndices(idxs)) return;
 
+            var savePath = _session.CurrentCatalogPath;
+            int removed = 0;
             foreach (var idx in idxs)
-                DeleteRange(idx, idx);
+                removed += DeleteRange(idx, idx, persistAfter: false);
+
+            if (removed > 0 && !string.IsNullOrEmpty(savePath))
+                await PersistCatalogAfterEditAsync(removed, savePath);
         }
 
         private bool ConfirmDelete(int start, int end)
@@ -805,16 +816,19 @@ namespace Malcha
                 $"{target}을(를) 삭제합니다.\n\n" +
                 $"파일: {fileName}\n" +
                 $"현재 {_session.CurrentFrames.Count:N0}프레임 → 삭제 후 {remaining:N0}프레임\n\n" +
+                "삭제 후 파일에 저장되며, backups/ 폴더에 백업이 생성됩니다.\n" +
                 "복구 버튼으로 직전 상태를 되돌릴 수 있습니다.";
 
             return ShowAppMessage(message, "프레임 삭제",
                 MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
         }
 
-        private void DeleteRange(int start, int end)
+        /// <returns>삭제된 프레임 수 (실패 시 0)</returns>
+        private int DeleteRange(int start, int end, bool persistAfter = true)
         {
+            var savePath = _session.CurrentCatalogPath;
             var result = _session.DeleteRange(start, end);
-            if (result == null) return;
+            if (result == null) return 0;
 
             try { _playCts?.Cancel(); } catch { }
 
@@ -834,6 +848,60 @@ namespace Malcha
                 toolStripStatusLabel1.Text = $"{_session.CurrentFrames.Count:N0} 프레임";
 
             EnsureFormVisible();
+
+            if (persistAfter && !string.IsNullOrEmpty(savePath))
+                _ = PersistCatalogAfterEditAsync(result.Count, savePath);
+
+            return result.Count;
+        }
+
+        private async Task PersistCatalogAfterEditAsync(int removedCount, string? catalogPath = null)
+        {
+            catalogPath ??= _session.CurrentCatalogPath;
+            if (string.IsNullOrEmpty(catalogPath))
+            {
+                if (_session.CurrentFrames.Count == 0)
+                    toolStripStatusLabel1.Text = "삭제됨 (저장할 파일 없음)";
+                return;
+            }
+
+            SetUiBusy(true);
+            try
+            {
+                toolStripStatusLabel1.Text = "삭제 내용 저장 중…";
+
+                string backupPath = string.Empty;
+                try { backupPath = CatalogPaths.CreateTimestampedBackup(catalogPath); } catch { }
+
+                var ok = await _editorService.SaveCatalogAsync(catalogPath, _session.CurrentFrames);
+                if (!string.IsNullOrEmpty(_session.CurrentCatalogPath))
+                    UpdateCatalogPathDisplay();
+
+                if (ok)
+                {
+                    toolStripStatusLabel1.Text =
+                        $"삭제 저장: {_session.CurrentFrames.Count:N0} 프레임 ({removedCount:N0}개 제거)";
+                }
+                else
+                {
+                    toolStripStatusLabel1.Text = "저장 실패";
+                    ShowAppMessage(
+                        "삭제는 적용됐지만 카탈로그 파일을 저장하지 못했습니다.\n" +
+                        "새로고침하면 디스크 내용으로 되돌아갈 수 있습니다.",
+                        "저장", icon: MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"PersistCatalogAfterEdit error: {ex.Message}");
+                toolStripStatusLabel1.Text = "저장 실패";
+                ShowAppMessage($"저장 중 오류가 발생했습니다.\n{ex.Message}", "저장",
+                    icon: MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetUiBusy(false);
+            }
         }
 
         private void PicVideoScreen_Paint(object sender, PaintEventArgs e)

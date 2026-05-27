@@ -51,7 +51,7 @@ namespace Malcha
             return new List<Frame>(memoryFrames);
         }
 
-        public Task SaveCatalogAsync(string path, List<Frame> frames) =>
+        public Task<bool> SaveCatalogAsync(string path, List<Frame> frames) =>
             DataManager.Instance.SaveFramesAsync(path, frames);
     }
 }
