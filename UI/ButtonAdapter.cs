@@ -68,7 +68,7 @@ namespace Malcha.UI
             }
         }
         // 모델 학습 실행 메서드
-        public static async void RunModelTraining(Button btn)
+        public static async Task RunModelTraining(Button btn)
         {
             // 1. 중복 클릭 방지 (버튼 비활성화)
             btn.Enabled = false;
@@ -97,7 +97,7 @@ namespace Malcha.UI
             }
         }
         
-        public static async void ParseTrainingHistory(Button btn, string modelName)
+        public static async Task ParseTrainingHistory(Button btn, string modelName)
         {
             // WSL 내부의 database.json 절대 경로 세팅
             string dbPath = @"\\wsl.localhost\Ubuntu-22.04\home\eodbs\mycar\models\database.json";
