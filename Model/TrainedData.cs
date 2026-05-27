@@ -6,13 +6,15 @@ namespace Malcha.Model
 {
     internal class TrainedData
     {
-        private string name { get; set; }
-        private string pilot { get; set; }
-        private string type { get; set; }
-        private string tubs { get; set; }
-        private string time { get; set; }
-        private string transfer { get; set; }
-        private string comment { get; set; }
-        private string graph { get; set; }
+        // 차트의 X축에 들어갈 값 (1, 2, 3...)
+        public int Epoch { get; set; }
+
+        // 차트의 Y축 첫 번째 선에 들어갈 값 (훈련 손실)
+        public double Loss { get; set; }
+
+        // 차트의 Y축 두 번째 선에 들어갈 값 (검증 손실)
+        public double ValLoss { get; set; }
+
+        // n_outputs0_loss, val_n_outputs0_loss 등 추가 가능
     }
 }
