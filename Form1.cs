@@ -943,6 +943,8 @@ namespace Malcha
         {
             if (lstDataList.SelectedIndex < 0) return;
             int idx = lstDataList.SelectedIndex;
+            // TrackBar/코드에 의해 SelectedIndex가 동기화될 때 중복 ShowFrame 호출을 막습니다.
+            if (idx == _currentIndex) return;
             ShowFrame(idx);
         }
 
@@ -1036,7 +1038,9 @@ namespace Malcha
             trbTimeline.Minimum = 0;
             trbTimeline.Maximum = Math.Max(0, _currentFrames.Count - 1);
             trbTimeline.Enabled = _currentFrames.Count > 0;
-            trbTimeline.Value = _currentIndex;
+            // Scroll/조작 이벤트 중에는 Value를 불필요하게 다시 세팅하지 않도록 가드
+            if (trbTimeline.Value != _currentIndex)
+                trbTimeline.Value = _currentIndex;
 
             // 차트에서 현재 인덱스 포인트 강조
             try
@@ -1044,22 +1048,30 @@ namespace Malcha
                 var seriesAngle = chtDataGraph.Series["user/angle"];
                 var seriesThrottle = chtDataGraph.Series["user/throttle"];
 
+                // 재생/이동 중 차트 포인트가 사라지거나(0개) 프레임 수와 불일치하면 즉시 재구성
+                if (seriesAngle.Points.Count != _currentFrames.Count || seriesThrottle.Points.Count != _currentFrames.Count)
+                {
+                    RefreshChartFromFrames();
+                    seriesAngle = chtDataGraph.Series["user/angle"];
+                    seriesThrottle = chtDataGraph.Series["user/throttle"];
+                }
+
                 if (_lastChartIndex >= 0 && _lastChartIndex < seriesAngle.Points.Count)
                 {
                     seriesAngle.Points[_lastChartIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.None;
-                    seriesAngle.Points[_lastChartIndex].Color = System.Drawing.Color.White;
                     seriesThrottle.Points[_lastChartIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.None;
-                    seriesThrottle.Points[_lastChartIndex].Color = System.Drawing.Color.Red;
                 }
 
                 if (_currentIndex >= 0 && _currentIndex < seriesAngle.Points.Count)
                 {
                     seriesAngle.Points[_currentIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
                     seriesAngle.Points[_currentIndex].MarkerSize = 8;
-                    seriesAngle.Points[_currentIndex].Color = System.Drawing.Color.Yellow;
+                    seriesAngle.Points[_currentIndex].MarkerColor = System.Drawing.Color.Yellow;
+                    seriesAngle.Points[_currentIndex].MarkerBorderColor = System.Drawing.Color.Black;
                     seriesThrottle.Points[_currentIndex].MarkerStyle = System.Windows.Forms.DataVisualization.Charting.MarkerStyle.Circle;
                     seriesThrottle.Points[_currentIndex].MarkerSize = 8;
-                    seriesThrottle.Points[_currentIndex].Color = System.Drawing.Color.Orange;
+                    seriesThrottle.Points[_currentIndex].MarkerColor = System.Drawing.Color.Orange;
+                    seriesThrottle.Points[_currentIndex].MarkerBorderColor = System.Drawing.Color.Black;
                     _lastChartIndex = _currentIndex;
                 }
             }
