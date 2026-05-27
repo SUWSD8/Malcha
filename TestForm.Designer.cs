@@ -28,9 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             btnTest = new Button();
             btnTrain = new Button();
             btnTest3 = new Button();
@@ -41,10 +41,10 @@
             // 
             // btnTest
             // 
-            btnTest.Location = new Point(30, 28);
-            btnTest.Margin = new Padding(2, 1, 2, 1);
+            btnTest.Location = new Point(60, 60);
+            btnTest.Margin = new Padding(4, 2, 4, 2);
             btnTest.Name = "btnTest";
-            btnTest.Size = new Size(75, 22);
+            btnTest.Size = new Size(150, 47);
             btnTest.TabIndex = 0;
             btnTest.Text = "테스트";
             btnTest.UseVisualStyleBackColor = true;
@@ -52,10 +52,10 @@
             // 
             // btnTrain
             // 
-            btnTrain.Location = new Point(138, 28);
-            btnTrain.Margin = new Padding(2, 1, 2, 1);
+            btnTrain.Location = new Point(276, 60);
+            btnTrain.Margin = new Padding(4, 2, 4, 2);
             btnTrain.Name = "btnTrain";
-            btnTrain.Size = new Size(75, 22);
+            btnTrain.Size = new Size(150, 47);
             btnTrain.TabIndex = 1;
             btnTrain.Text = "테스트2";
             btnTrain.UseVisualStyleBackColor = true;
@@ -63,9 +63,10 @@
             // 
             // btnTest3
             // 
-            btnTest3.Location = new Point(246, 28);
+            btnTest3.Location = new Point(492, 60);
+            btnTest3.Margin = new Padding(6, 6, 6, 6);
             btnTest3.Name = "btnTest3";
-            btnTest3.Size = new Size(75, 23);
+            btnTest3.Size = new Size(150, 49);
             btnTest3.TabIndex = 2;
             btnTest3.Text = "테스트3";
             btnTest3.UseVisualStyleBackColor = true;
@@ -73,25 +74,27 @@
             // 
             // chartLoss
             // 
-            chartArea2.Name = "ChartArea1";
-            chartLoss.ChartAreas.Add(chartArea2);
-            legend2.Name = "Legend1";
-            chartLoss.Legends.Add(legend2);
-            chartLoss.Location = new Point(30, 69);
+            chartArea1.Name = "ChartArea1";
+            chartLoss.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            chartLoss.Legends.Add(legend1);
+            chartLoss.Location = new Point(60, 147);
+            chartLoss.Margin = new Padding(6, 6, 6, 6);
             chartLoss.Name = "chartLoss";
-            series2.ChartArea = "ChartArea1";
-            series2.Legend = "Legend1";
-            series2.Name = "Series1";
-            chartLoss.Series.Add(series2);
-            chartLoss.Size = new Size(291, 249);
+            series1.ChartArea = "ChartArea1";
+            series1.Legend = "Legend1";
+            series1.Name = "Series1";
+            chartLoss.Series.Add(series1);
+            chartLoss.Size = new Size(937, 531);
             chartLoss.TabIndex = 3;
             chartLoss.Text = "chart1";
             // 
             // btnTest4
             // 
-            btnTest4.Location = new Point(340, 28);
+            btnTest4.Location = new Point(680, 60);
+            btnTest4.Margin = new Padding(6, 6, 6, 6);
             btnTest4.Name = "btnTest4";
-            btnTest4.Size = new Size(75, 23);
+            btnTest4.Size = new Size(150, 49);
             btnTest4.TabIndex = 4;
             btnTest4.Text = "테스트4";
             btnTest4.UseVisualStyleBackColor = true;
@@ -99,15 +102,15 @@
             // 
             // TestForm
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(506, 349);
+            ClientSize = new Size(1012, 745);
             Controls.Add(btnTest4);
             Controls.Add(chartLoss);
             Controls.Add(btnTest3);
             Controls.Add(btnTrain);
             Controls.Add(btnTest);
-            Margin = new Padding(2, 1, 2, 1);
+            Margin = new Padding(4, 2, 4, 2);
             Name = "TestForm";
             Text = "TestForm";
             ((System.ComponentModel.ISupportInitialize)chartLoss).EndInit();

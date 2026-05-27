@@ -97,23 +97,26 @@ namespace Malcha.UI
             }
         }
         
-        public static async void ParseTrainingHistory(Button btn)
+        public static async void ParseTrainingHistory(Button btn, string modelName)
         {
             // WSL 내부의 database.json 절대 경로 세팅
             string dbPath = @"\\wsl.localhost\Ubuntu-22.04\home\eodbs\mycar\models\database.json";
 
-            bool isSuccess = await TrainModelController.Instance.TrainedModelAnalasys(dbPath, "mypilot");
+            bool isSuccess = await TrainModelController.Instance.TrainedModelAnalasys(dbPath, modelName);
 
             if (isSuccess != null)
             {
-                List<TrainedModelInfo> modelInfo = DonkeyRepository.Instance.GetAllTrainedModels();
+                TrainedModelInfo model = DonkeyRepository.Instance.FindByName(modelName);
+                var history = model.History;
+                
                 // 마지막 에포크(최종 학습 결과) 데이터 추출
-                TrainedData lastEpoch = modelInfo[0].History.Last();
+                TrainedData lastEpoch = history.Last();
 
                 // 메시지 박스로 간단하게 결과 요약 출력
                 string resultMessage = $"WSL 환경에서의 모델 학습이 성공적으로 완료되었습니다!\n\n" +
                                        $"[학습 결과 요약]\n" +
-                                       $"- 총 진행된 Epoch: {modelInfo[0].History.Count}회\n" +
+                                       $"[모델 이름] {model.Name}\n" +
+                                       $"- 총 진행된 Epoch: {model.History.Count}회\n" +
                                        $"- 최종 훈련 손실(Loss): {lastEpoch.Loss:F4}\n" +
                                        $"- 최종 검증 손실(Val_Loss): {lastEpoch.ValLoss:F4}";
 

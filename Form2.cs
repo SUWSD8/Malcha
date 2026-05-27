@@ -25,7 +25,7 @@ namespace Malcha
 
         private void btnUpdateComment_Click(object sender, EventArgs e)
         {
-            bool success = TrainModelController.Instance.UpdateModelComment("ModelName", "New comment for the model.");
+            bool success = TrainModelController.Instance.UpdateModelComment("mypilot", "New comment for the model.");
             if (success)
             {
                 MessageBox.Show("Model comment updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -37,7 +37,7 @@ namespace Malcha
         }
         private void btnDeleteModel_Click(object sender, EventArgs e)
         {
-            bool success = TrainModelController.Instance.DeleteModel("ModelName");
+            bool success = TrainModelController.Instance.DeleteModel("mypilot");
             if (success)
             {
                 MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -50,8 +50,14 @@ namespace Malcha
 
         private void btnShowTrainingHistory_Click(object sender, EventArgs e)
         {
-            
+
             TestForm2 chartForm = new TestForm2();
             chartForm.Show();
         }
+
+        private void btnRunAnalysis_Click(object sender, EventArgs e)
+        {
+            ButtonAdapter.ParseTrainingHistory(button4, "mypilot");
+        }
+    }
 }

@@ -28,8 +28,12 @@ namespace Malcha.UI
         // 2. 실제 데이터를 차트에 그리기
         public static void DrawLossChart(Chart targetChart, List<TrainedData> history)
         {
-           
-            if (history == null || history.Count == 0) return;
+
+            if (history == null || history.Count == 0)
+            {
+                throw new Exception("훈련 기록이 없습니다. 모델 학습이 제대로 이루어졌는지 확인하세요.");
+                return;
+            }
 
             targetChart.Series.Clear();
 

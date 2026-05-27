@@ -19,7 +19,7 @@ namespace Malcha
         }
         public void TestForm2_Load(object sender, EventArgs e)
         {
-            var model = DonkeyRepository.Instance.FindByName("ModelName");
+            var model = DonkeyRepository.Instance.FindByName("mypilot");
             var history = model?.History;
             ChartAdapter.InitializeLossChart(chartLoss);
             ChartAdapter.DrawLossChart(chartLoss, history);

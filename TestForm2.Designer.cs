@@ -41,24 +41,27 @@
             chartLoss.ChartAreas.Add(chartArea1);
             legend1.Name = "Legend1";
             chartLoss.Legends.Add(legend1);
-            chartLoss.Location = new Point(26, 31);
+            chartLoss.Location = new Point(52, 66);
+            chartLoss.Margin = new Padding(6, 6, 6, 6);
             chartLoss.Name = "chartLoss";
             series1.ChartArea = "ChartArea1";
             series1.Legend = "Legend1";
             series1.Name = "Series1";
             chartLoss.Series.Add(series1);
-            chartLoss.Size = new Size(613, 245);
+            chartLoss.Size = new Size(1226, 523);
             chartLoss.TabIndex = 4;
             chartLoss.Text = "chart1";
             // 
             // TestForm2
             // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleDimensions = new SizeF(14F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 450);
+            ClientSize = new Size(1600, 960);
             Controls.Add(chartLoss);
+            Margin = new Padding(6, 6, 6, 6);
             Name = "TestForm2";
             Text = "TestForm2";
+            Load += TestForm2_Load;
             ((System.ComponentModel.ISupportInitialize)chartLoss).EndInit();
             ResumeLayout(false);
         }
