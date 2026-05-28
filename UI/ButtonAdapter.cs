@@ -107,6 +107,11 @@ namespace Malcha.UI
             if (isSuccess != null)
             {
                 TrainedModelInfo model = DonkeyRepository.Instance.FindByName(modelName);
+                if(model == null)
+                {
+                    MessageBox.Show($"모델 이름 '{modelName}'에 해당하는 학습 결과를 찾을 수 없습니다. 데이터베이스를 확인하세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
                 var history = model.History;
                 
                 // 마지막 에포크(최종 학습 결과) 데이터 추출
