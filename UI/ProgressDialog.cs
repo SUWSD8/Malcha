@@ -65,6 +65,16 @@ namespace Malcha
             Controls.Add(_cancelButton);
         }
 
+        public void ShowFor(Form owner)
+        {
+            Owner = owner;
+            StartPosition = FormStartPosition.CenterParent;
+            TopMost = true;
+            Show(owner);
+            Activate();
+            BringToFront();
+        }
+
         public void Report(int percent, string message)
         {
             void Apply()

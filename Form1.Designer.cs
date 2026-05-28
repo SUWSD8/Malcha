@@ -28,10 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
             panel1 = new Panel();
             btnDataManagement = new Button();
             btnTrainModel = new Button();
@@ -59,7 +59,7 @@
             lstDataList = new ListBox();
             lblStatus = new StatusStrip();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
-            btnBrowserAnalyze = new Button();
+            btnHelper = new Button();
             btnRefresh = new Button();
             chtDataGraph = new System.Windows.Forms.DataVisualization.Charting.Chart();
             btnApplyFilter = new Button();
@@ -375,7 +375,7 @@
             panel3.BackColor = Color.FromArgb(33, 28, 29);
             panel3.Controls.Add(lstDataList);
             panel3.Controls.Add(lblStatus);
-            panel3.Controls.Add(btnBrowserAnalyze);
+            panel3.Controls.Add(btnHelper);
             panel3.Controls.Add(btnRefresh);
             panel3.Controls.Add(chtDataGraph);
             panel3.Controls.Add(btnApplyFilter);
@@ -415,19 +415,19 @@
             toolStripStatusLabel1.Size = new Size(194, 17);
             toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
             // 
-            // btnBrowserAnalyze
+            // btnHelper
             // 
-            btnBrowserAnalyze.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBrowserAnalyze.BackColor = Color.FromArgb(53, 48, 49);
-            btnBrowserAnalyze.FlatStyle = FlatStyle.Popup;
-            btnBrowserAnalyze.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnBrowserAnalyze.ForeColor = SystemColors.ButtonHighlight;
-            btnBrowserAnalyze.Location = new Point(876, 117);
-            btnBrowserAnalyze.Name = "btnBrowserAnalyze";
-            btnBrowserAnalyze.Size = new Size(91, 51);
-            btnBrowserAnalyze.TabIndex = 11;
-            btnBrowserAnalyze.Text = " 브라우저    분석";
-            btnBrowserAnalyze.UseVisualStyleBackColor = false;
+            btnHelper.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnHelper.BackColor = Color.FromArgb(53, 48, 49);
+            btnHelper.FlatStyle = FlatStyle.Popup;
+            btnHelper.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnHelper.ForeColor = SystemColors.ButtonHighlight;
+            btnHelper.Location = new Point(876, 117);
+            btnHelper.Name = "btnHelper";
+            btnHelper.Size = new Size(91, 51);
+            btnHelper.TabIndex = 11;
+            btnHelper.Text = " 도움말";
+            btnHelper.UseVisualStyleBackColor = false;
             // 
             // btnRefresh
             // 
@@ -447,23 +447,23 @@
             // 
             chtDataGraph.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chtDataGraph.BackColor = Color.FromArgb(48, 42, 41);
-            chartArea1.Name = "ChartArea1";
-            chtDataGraph.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            chtDataGraph.Legends.Add(legend1);
+            chartArea2.Name = "ChartArea1";
+            chtDataGraph.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            chtDataGraph.Legends.Add(legend2);
             chtDataGraph.Location = new Point(170, 46);
             chtDataGraph.Name = "chtDataGraph";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Legend = "Legend1";
-            series1.Name = "user/angle";
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Color = Color.Red;
-            series2.Legend = "Legend1";
-            series2.Name = "user/throttle";
-            chtDataGraph.Series.Add(series1);
-            chtDataGraph.Series.Add(series2);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Legend = "Legend1";
+            series3.Name = "user/angle";
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series4.Color = Color.Red;
+            series4.Legend = "Legend1";
+            series4.Name = "user/throttle";
+            chtDataGraph.Series.Add(series3);
+            chtDataGraph.Series.Add(series4);
             chtDataGraph.Size = new Size(694, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
@@ -592,7 +592,7 @@
         private Button btnSetEndPoint;
         private Button btnSetStartPoint;
         private System.Windows.Forms.DataVisualization.Charting.Chart chtDataGraph;
-        private Button btnBrowserAnalyze;
+        private Button btnHelper;
         private Button btnRefresh;
         private StatusStrip lblStatus;
         private ToolStripStatusLabel toolStripStatusLabel1;

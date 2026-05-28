@@ -28,6 +28,40 @@ namespace Malcha
         private PlaybackController _playbackController;
         private CatalogEditorService _editorService;
         private SelectionManager _selectionManager = new();
+        private bool _timelineRangeDrag;
+
+        private int GetTimelineIndexFromMouse(TrackBar tb, int mouseX)
+        {
+            int trackWidth = Math.Max(1, tb.ClientSize.Width - 8);
+            float ratio = Math.Max(0f, Math.Min(1f, (float)mouseX / trackWidth));
+            int value = (int)Math.Round(ratio * (tb.Maximum - tb.Minimum)) + tb.Minimum;
+            return Math.Max(tb.Minimum, Math.Min(tb.Maximum, value));
+        }
+
+        private void RefreshSelectionUi()
+        {
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            UpdateRangeStatusText();
+        }
+
+        private void UpdateRangeStatusText()
+        {
+            if (!_selectionManager.HasSelection) return;
+            var (s, e) = _selectionManager.GetRange();
+            toolStripStatusLabel1.Text =
+                $"구간 {s}~{e} ({_selectionManager.FrameCount:N0}프레임) · Esc 해제";
+        }
+
+        private void ClearRangeSelection()
+        {
+            if (!_selectionManager.HasSelection) return;
+            _selectionManager.Clear();
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            if (_session.CurrentFrames.Count > 0)
+                toolStripStatusLabel1.Text = $"{_session.CurrentFrames.Count:N0} 프레임";
+        }
 
         private void LstDataList_DrawItem(object sender, DrawItemEventArgs e)
         {
@@ -165,11 +199,11 @@ namespace Malcha
             PushUndoSnapshot();
 
             ProgressDialog progress = null;
-            Enabled = false;
+            SetUiBusy(true);
             try
             {
                 progress = new ProgressDialog("백업 병합");
-                progress.Show(this);
+                progress.ShowFor(this);
                 progress.Refresh();
 
                 List<Frame> backupFrames;
@@ -180,8 +214,9 @@ namespace Malcha
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, $"백업을 읽지 못했습니다.\n{ex.Message}", "복구",
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    CloseProgressDialog(ref progress);
+                    ShowAppMessage($"백업을 읽지 못했습니다.\n{ex.Message}", "복구",
+                        icon: MessageBoxIcon.Error);
                     return;
                 }
 
@@ -209,7 +244,8 @@ namespace Malcha
                 toolStripStatusLabel1.Text =
                     $"복구 병합: {mergeResult.Frames.Count:N0} 프레임 (복원 {mergeResult.Frames.Count - refinedFrames.Count:N0})";
 
-                MessageBox.Show(this,
+                CloseProgressDialog(ref progress);
+                ShowAppMessage(
                     $"병합이 완료되었습니다.\n\n" +
                     $"백업 원본: {backupFrames.Count:N0} 프레임\n" +
                     $"정제 파일: {refinedFrames.Count:N0} 프레임\n" +
@@ -217,24 +253,25 @@ namespace Malcha
                     $"정제본 우선 적용: {mergeResult.RefinedOverrides:N0}\n" +
                     $"정제에만 있던 추가: {mergeResult.FromRefinedOnly:N0}\n\n" +
                     $"저장: {workingPath}",
-                    "복구", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    "복구");
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show(this, "병합이 취소되었습니다.", "복구",
-                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+                CloseProgressDialog(ref progress);
+                ShowAppMessage("병합이 취소되었습니다.", "복구");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Recover merge error: {ex.Message}");
-                MessageBox.Show(this, $"복구 중 오류가 발생했습니다.\n{ex.Message}", "복구",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                CloseProgressDialog(ref progress);
+                ShowAppMessage($"복구 중 오류가 발생했습니다.\n{ex.Message}", "복구",
+                    icon: MessageBoxIcon.Error);
             }
             finally
             {
-                progress?.Close();
-                progress?.Dispose();
-                Enabled = true;
+                CloseProgressDialog(ref progress);
+                SetUiBusy(false);
+                EnsureFormVisible();
             }
         }
 
@@ -281,25 +318,46 @@ namespace Malcha
 
             // list context menu for deletion
             _listContextMenu = new ContextMenuStrip();
-            _listContextMenu.Items.Add("Delete Selected", null, (s, e) => DeleteSelectedListItems());
+            _listContextMenu.Items.Add("선택 항목 삭제", null, (s, e) => DeleteSelectedListItems());
             lstDataList.ContextMenuStrip = _listContextMenu;
             lstDataList.KeyDown += (s, e) => { if (e.KeyCode == Keys.Delete) DeleteSelectedListItems(); };
             // owner-draw to show range highlights
             lstDataList.DrawMode = DrawMode.OwnerDrawFixed;
             lstDataList.DrawItem += LstDataList_DrawItem;
 
-            // TrackBar: Ctrl+클릭=구간 표시, Shift+클릭=구간 해제 (일반 드래그는 기본 동작)
+            // TrackBar: Ctrl+클릭/드래그=시작, Ctrl+Shift+클릭=끝, Shift+클릭=구간 해제
             trbTimeline.MouseDown += TrbTimeline_MouseDown;
+            trbTimeline.MouseMove += TrbTimeline_MouseMove;
+            trbTimeline.MouseUp += TrbTimeline_MouseUp;
+            // list: Ctrl=시작, Ctrl+Shift=끝
+            lstDataList.MouseDown += LstDataList_MouseDown;
             // track context menu for deleting marked range
             _trackContextMenu = new ContextMenuStrip();
-            _trackContextMenu.Items.Add("Delete Marked Range", null, (s, e) =>
+            _trackContextMenu.Items.Add("선택된 구간 삭제", null, async (s, e) =>
             {
                 var r = _selectionManager.GetRange();
-                if (r.s >= 0 && r.e >= 0) DeleteRange(r.s, r.e);
-                else if (r.s >= 0) DeleteRange(r.s, r.s);
+                if (r.s < 0) return;
+                int eidx = r.e >= 0 ? r.e : r.s;
+                if (!ConfirmDelete(r.s, eidx)) return;
+                var savePath = _session.CurrentCatalogPath;
+                int removed = DeleteRange(r.s, eidx, persistAfter: false);
+                if (removed > 0 && !string.IsNullOrEmpty(savePath))
+                    await PersistCatalogAfterEditAsync(removed, savePath);
             });
             trbTimeline.ContextMenuStrip = _trackContextMenu;
             trbTimeline.Paint += TrbTimeline_Paint;
+
+            KeyPreview = true;
+            KeyDown += Form1_KeyDown;
+
+            var rangeTips = new ToolTip { AutoPopDelay = 8000, InitialDelay = 400 };
+            rangeTips.SetToolTip(btnSetStartPoint, "현재 프레임을 구간 시작으로 설정 ([ 키)");
+            rangeTips.SetToolTip(btnSetEndPoint, "현재 프레임을 구간 끝으로 설정 (] 키)");
+            rangeTips.SetToolTip(btnDeleteSelection, "주황색으로 표시된 구간 삭제");
+            rangeTips.SetToolTip(trbTimeline,
+                "Ctrl+드래그: 구간 선택\nCtrl+클릭: 시작점\nCtrl+Shift+클릭: 끝점\nShift+클릭: 구간 해제");
+            rangeTips.SetToolTip(lstDataList, "Ctrl+클릭: 시작 · Ctrl+Shift+클릭: 끝");
+            rangeTips.SetToolTip(btnHelper, "F1 · 사용 안내");
 
             // 이벤트 연결
             btnSelectData.Click += BtnSelectData_Click;
@@ -314,6 +372,7 @@ namespace Malcha
             btnPrevFrame.Click += BtnPrevFrame_Click;
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += TrbTimeline_Scroll;
+            btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
 
             // PictureBox에 별도의 오버레이를 가볍게 그리기 위해 Paint 이벤트 연결
             picVideoScreen.Paint += PicVideoScreen_Paint;
@@ -326,51 +385,142 @@ namespace Malcha
 
         }
 
+        private void Form1_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.F1)
+            {
+                HelpDialog.ShowFor(this);
+                e.Handled = true;
+                return;
+            }
+
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
+
+            if (e.KeyCode == Keys.Space)
+            {
+                BtnPlayPause_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.Left)
+            {
+                BtnPrevFrame_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.Right)
+            {
+                BtnNextFrame_Click(sender, e);
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.Escape)
+            {
+                ClearRangeSelection();
+                e.Handled = true;
+                return;
+            }
+
+            if (e.KeyCode == Keys.OemOpenBrackets)
+            {
+                _selectionManager.SetStart(_session.CurrentIndex);
+                RefreshSelectionUi();
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.OemCloseBrackets)
+            {
+                _selectionManager.SetEnd(_session.CurrentIndex);
+                RefreshSelectionUi();
+                e.Handled = true;
+            }
+        }
+
+        private void LstDataList_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Left) return;
+            bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
+            if (!ctrl) return;
+
+            int idx = lstDataList.IndexFromPoint(e.Location);
+            if (idx < 0) return;
+
+            bool shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
+            if (shift)
+                _selectionManager.SetEnd(idx);
+            else
+                _selectionManager.SetStart(idx);
+
+            RefreshSelectionUi();
+        }
+
         private void TrbTimeline_MouseDown(object sender, MouseEventArgs e)
         {
             if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
+            if (e.Button != MouseButtons.Left) return;
 
             bool ctrl = (ModifierKeys & Keys.Control) == Keys.Control;
             bool shift = (ModifierKeys & Keys.Shift) == Keys.Shift;
-            if (!ctrl && !shift)
+
+            if (shift && !ctrl)
+            {
+                ClearRangeSelection();
                 return;
+            }
+
+            if (!ctrl) return;
 
             var tb = (TrackBar)sender;
-            int trackWidth = Math.Max(1, tb.ClientSize.Width - 8);
-            float ratio = Math.Max(0f, Math.Min(1f, (float)e.X / trackWidth));
-            int value = (int)Math.Round(ratio * (tb.Maximum - tb.Minimum)) + tb.Minimum;
-            value = Math.Max(tb.Minimum, Math.Min(tb.Maximum, value));
+            int value = GetTimelineIndexFromMouse(tb, e.X);
 
-            if (ctrl)
+            if (shift)
             {
-                if (_selectionManager.Start < 0)
-                    _selectionManager.SetStart(value);
-                else
-                    _selectionManager.SetEnd(value);
-            }
-            else if (shift)
-            {
-                _selectionManager.Clear();
+                _selectionManager.SetEnd(value);
+                RefreshSelectionUi();
+                return;
             }
 
-            trbTimeline.Invalidate();
-            lstDataList.Invalidate();
+            _selectionManager.SetStart(value);
+            _timelineRangeDrag = true;
+            tb.Capture = true;
+            RefreshSelectionUi();
+        }
+
+        private void TrbTimeline_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_timelineRangeDrag || e.Button != MouseButtons.Left) return;
+            if ((ModifierKeys & Keys.Control) != Keys.Control) return;
+
+            var tb = (TrackBar)sender;
+            _selectionManager.SetEnd(GetTimelineIndexFromMouse(tb, e.X));
+            RefreshSelectionUi();
+        }
+
+        private void TrbTimeline_MouseUp(object sender, MouseEventArgs e)
+        {
+            if (!_timelineRangeDrag) return;
+
+            _timelineRangeDrag = false;
+            var tb = (TrackBar)sender;
+            tb.Capture = false;
+            _selectionManager.SetEnd(GetTimelineIndexFromMouse(tb, e.X));
+            RefreshSelectionUi();
         }
 
         private void BtnSetStartPoint_Click(object sender, EventArgs e)
         {
             if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
             _selectionManager.SetStart(_session.CurrentIndex);
-            trbTimeline.Invalidate();
-            lstDataList.Invalidate();
+            RefreshSelectionUi();
         }
 
         private void BtnSetEndPoint_Click(object sender, EventArgs e)
         {
             if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0) return;
             _selectionManager.SetEnd(_session.CurrentIndex);
-            trbTimeline.Invalidate();
-            lstDataList.Invalidate();
+            RefreshSelectionUi();
         }
 
         private async void BtnApplyFilter_Click(object sender, EventArgs e)
@@ -408,13 +558,13 @@ namespace Malcha
             try { _playCts?.Cancel(); } catch { }
 
             ProgressDialog progress = null;
-            Enabled = false;
+            SetUiBusy(true);
 
             try
             {
                 var framesCopy = _session.CurrentFrames.ToList();
                 progress = new ProgressDialog("데이터 정제");
-                progress.Show(this);
+                progress.ShowFor(this);
                 progress.Refresh();
 
                 var uiProgress = new Progress<FrameRefinementFilter.ProgressReport>(r =>
@@ -428,15 +578,16 @@ namespace Malcha
                 }
                 catch (OperationCanceledException)
                 {
-                    MessageBox.Show(this, "정제가 취소되었습니다.", "필터 적용",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    CloseProgressDialog(ref progress);
+                    ShowAppMessage("정제가 취소되었습니다.", "필터 적용");
                     return;
                 }
 
                 if (refineResult.Frames.Count == 0)
                 {
-                    MessageBox.Show(this, "정제 후 남은 프레임이 없습니다. 기준을 완화하거나 원본을 복구해 주세요.",
-                        "필터 적용", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    CloseProgressDialog(ref progress);
+                    ShowAppMessage("정제 후 남은 프레임이 없습니다. 기준을 완화하거나 원본을 복구해 주세요.",
+                        "필터 적용", icon: MessageBoxIcon.Warning);
                     return;
                 }
 
@@ -469,29 +620,65 @@ namespace Malcha
                     ? string.Empty
                     : $"\n백업: {backupPath}";
 
-                MessageBox.Show(this,
+                CloseProgressDialog(ref progress);
+                ShowAppMessage(
                     $"정제가 완료되었습니다.\n\n" +
                     $"원본: {refineResult.OriginalCount:N0} 프레임\n" +
                     $"결과: {refineResult.Frames.Count:N0} 프레임\n" +
                     $"제거: {refineResult.RemovedTotal:N0} (중복 {refineResult.RemovedDuplicate:N0}, " +
                     $"스파이크 {refineResult.RemovedSpike:N0}, 범위초과 {refineResult.RemovedOutOfRange:N0})" +
                     backupNote,
-                    "필터 적용",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
+                    "필터 적용");
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Filter apply error: {ex.Message}");
-                MessageBox.Show(this, $"정제 중 오류가 발생했습니다.\n{ex.Message}", "필터 적용",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                CloseProgressDialog(ref progress);
+                ShowAppMessage($"정제 중 오류가 발생했습니다.\n{ex.Message}", "필터 적용",
+                    icon: MessageBoxIcon.Error);
             }
             finally
             {
-                progress?.Close();
-                progress?.Dispose();
-                Enabled = true;
+                CloseProgressDialog(ref progress);
+                SetUiBusy(false);
+                EnsureFormVisible();
             }
+        }
+
+        private void CloseProgressDialog(ref ProgressDialog progress)
+        {
+            if (progress == null) return;
+            try { progress.Close(); } catch { }
+            try { progress.Dispose(); } catch { }
+            progress = null;
+        }
+
+        private void SetUiBusy(bool busy)
+        {
+            UseWaitCursor = busy;
+            btnApplyFilter.Enabled = !busy;
+            btnRecover.Enabled = !busy;
+            btnDeleteSelection.Enabled = !busy;
+            btnSelectData.Enabled = !busy;
+            btnPlayPause.Enabled = !busy;
+            btnRefresh.Enabled = !busy;
+        }
+
+        private void EnsureFormVisible()
+        {
+            if (WindowState == FormWindowState.Minimized)
+                WindowState = FormWindowState.Normal;
+            ShowInTaskbar = true;
+            Activate();
+            BringToFront();
+        }
+
+        private DialogResult ShowAppMessage(string text, string caption,
+            MessageBoxButtons buttons = MessageBoxButtons.OK,
+            MessageBoxIcon icon = MessageBoxIcon.Information)
+        {
+            EnsureFormVisible();
+            return MessageBox.Show(this, text, caption, buttons, icon);
         }
 
         private void PushUndoSnapshot() => _session.PushUndo();
@@ -531,13 +718,26 @@ namespace Malcha
             trbTimeline.Invalidate();
         }
 
-        private void BtnDeleteSelection_Click(object sender, EventArgs e)
+        private async void BtnDeleteSelection_Click(object sender, EventArgs e)
         {
             var r = _selectionManager.GetRange();
-            if (r.s < 0) return;
+            if (r.s < 0)
+            {
+                ShowAppMessage(
+                    "삭제할 구간이 없습니다.\n\n" +
+                    "타임라인에서 Ctrl+드래그하거나 [ ] 키로 구간을 설정해 주세요.",
+                    "선택구간 삭제", icon: MessageBoxIcon.Information);
+                return;
+            }
+
             int s = r.s;
             int eidx = r.e >= 0 ? r.e : r.s;
-            DeleteRange(s, eidx);
+            if (!ConfirmDelete(s, eidx)) return;
+
+            var savePath = _session.CurrentCatalogPath;
+            int removed = DeleteRange(s, eidx, persistAfter: false);
+            if (removed > 0 && !string.IsNullOrEmpty(savePath))
+                await PersistCatalogAfterEditAsync(removed, savePath);
 
             // persist deleted range info to a JSON file in Data folder
             try
@@ -552,26 +752,88 @@ namespace Malcha
             catch { }
         }
 
-        private void DeleteSelectedListItems()
+        private async void DeleteSelectedListItems()
         {
             if (lstDataList.SelectedIndices.Count == 0) return;
 
-            // collect indices to remove (descending order so removal indices remain valid)
             var idxs = lstDataList.SelectedIndices.Cast<int>().OrderByDescending(i => i).ToList();
+            if (!ConfirmDeleteIndices(idxs)) return;
+
+            var savePath = _session.CurrentCatalogPath;
+            int removed = 0;
             foreach (var idx in idxs)
-            {
-                DeleteRange(idx, idx);
-            }
+                removed += DeleteRange(idx, idx, persistAfter: false);
+
+            if (removed > 0 && !string.IsNullOrEmpty(savePath))
+                await PersistCatalogAfterEditAsync(removed, savePath);
         }
 
-        private void DeleteRange(int start, int end)
+        private bool ConfirmDelete(int start, int end)
         {
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0)
+                return false;
+
+            start = Math.Max(0, Math.Min(start, _session.CurrentFrames.Count - 1));
+            end = Math.Max(0, Math.Min(end, _session.CurrentFrames.Count - 1));
+            if (end < start) (start, end) = (end, start);
+
+            int count = end - start + 1;
+            return ConfirmDeleteCore(count, start, end, null);
+        }
+
+        private bool ConfirmDeleteIndices(IReadOnlyList<int> indices)
+        {
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0)
+                return false;
+            if (indices.Count == 0) return false;
+
+            if (indices.Count == 1)
+                return ConfirmDelete(indices[0], indices[0]);
+
+            var sorted = indices.OrderBy(i => i).ToList();
+            int min = sorted[0];
+            int max = sorted[^1];
+            bool isContiguous = sorted.Count == max - min + 1;
+            if (isContiguous)
+                return ConfirmDelete(min, max);
+
+            return ConfirmDeleteCore(sorted.Count, min, max,
+                $"선택한 {sorted.Count:N0}개 프레임 (비연속)");
+        }
+
+        private bool ConfirmDeleteCore(int count, int start, int end, string? headline)
+        {
+            int remaining = Math.Max(0, _session.CurrentFrames.Count - count);
+            var fileName = string.IsNullOrEmpty(_session.CurrentCatalogPath)
+                ? "(열린 파일 없음)"
+                : Path.GetFileName(_session.CurrentCatalogPath);
+
+            string target = headline ?? (count == 1
+                ? $"프레임 #{start}"
+                : $"구간 {start}~{end} ({count:N0}프레임)");
+
+            var message =
+                $"{target}을(를) 삭제합니다.\n\n" +
+                $"파일: {fileName}\n" +
+                $"현재 {_session.CurrentFrames.Count:N0}프레임 → 삭제 후 {remaining:N0}프레임\n\n" +
+                "삭제 후 파일에 저장되며, backups/ 폴더에 백업이 생성됩니다.\n" +
+                "복구 버튼으로 직전 상태를 되돌릴 수 있습니다.";
+
+            return ShowAppMessage(message, "프레임 삭제",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+        }
+
+        /// <returns>삭제된 프레임 수 (실패 시 0)</returns>
+        private int DeleteRange(int start, int end, bool persistAfter = true)
+        {
+            var savePath = _session.CurrentCatalogPath;
             var result = _session.DeleteRange(start, end);
-            if (result == null) return;
+            if (result == null) return 0;
 
             try { _playCts?.Cancel(); } catch { }
 
             _imageController?.DeleteRangeIndices(result.Start, result.Count);
+            _selectionManager.OnFramesRemoved(result.Start, result.Count);
             _catalogManager.PopulateListBoxWithFrames(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
             _chartController.RemoveRange(result.Start, result.Count);
 
@@ -579,6 +841,67 @@ namespace Malcha
                 ClearPlayback();
             else
                 ShowFrame(_session.CurrentIndex);
+
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            if (!_selectionManager.HasSelection && _session.CurrentFrames.Count > 0)
+                toolStripStatusLabel1.Text = $"{_session.CurrentFrames.Count:N0} 프레임";
+
+            EnsureFormVisible();
+
+            if (persistAfter && !string.IsNullOrEmpty(savePath))
+                _ = PersistCatalogAfterEditAsync(result.Count, savePath);
+
+            return result.Count;
+        }
+
+        private async Task PersistCatalogAfterEditAsync(int removedCount, string? catalogPath = null)
+        {
+            catalogPath ??= _session.CurrentCatalogPath;
+            if (string.IsNullOrEmpty(catalogPath))
+            {
+                if (_session.CurrentFrames.Count == 0)
+                    toolStripStatusLabel1.Text = "삭제됨 (저장할 파일 없음)";
+                return;
+            }
+
+            SetUiBusy(true);
+            try
+            {
+                toolStripStatusLabel1.Text = "삭제 내용 저장 중…";
+
+                string backupPath = string.Empty;
+                try { backupPath = CatalogPaths.CreateTimestampedBackup(catalogPath); } catch { }
+
+                var ok = await _editorService.SaveCatalogAsync(catalogPath, _session.CurrentFrames);
+                if (!string.IsNullOrEmpty(_session.CurrentCatalogPath))
+                    UpdateCatalogPathDisplay();
+
+                if (ok)
+                {
+                    toolStripStatusLabel1.Text =
+                        $"삭제 저장: {_session.CurrentFrames.Count:N0} 프레임 ({removedCount:N0}개 제거)";
+                }
+                else
+                {
+                    toolStripStatusLabel1.Text = "저장 실패";
+                    ShowAppMessage(
+                        "삭제는 적용됐지만 카탈로그 파일을 저장하지 못했습니다.\n" +
+                        "새로고침하면 디스크 내용으로 되돌아갈 수 있습니다.",
+                        "저장", icon: MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"PersistCatalogAfterEdit error: {ex.Message}");
+                toolStripStatusLabel1.Text = "저장 실패";
+                ShowAppMessage($"저장 중 오류가 발생했습니다.\n{ex.Message}", "저장",
+                    icon: MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetUiBusy(false);
+            }
         }
 
         private void PicVideoScreen_Paint(object sender, PaintEventArgs e)
@@ -630,29 +953,46 @@ namespace Malcha
             }
         }
 
-        // 새로고침 버튼 클릭: 모든 상태 초기화 (완전 리셋)
-        // 설명: 사용자가 새로고침 버튼을 누르면 현재 재생 중지, 캐시 해제, 목록 및 UI 초기화를 수행합니다.
+        private void StopPlayback()
+        {
+            try { _playCts?.Cancel(); } catch { }
+            _playCts = null;
+            btnPlayPause.Text = "재생 / 정지";
+        }
+
+        private void ResetAllUi()
+        {
+            StopPlayback();
+            _session.Reset();
+            _selectionManager.Clear();
+            ClearImageCache();
+            lstDataList.Items.Clear();
+            _playbackController.ClearDisplay();
+            _chartController.RefreshFromFrames(_session.CurrentFrames);
+            txtFilePath.Text = string.Empty;
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
+            picVideoScreen.Invalidate();
+            toolStripStatusLabel1.Text = "초기화됨";
+        }
+
+        // 새로고침: 열린 카탈로그를 디스크에서 다시 불러옴 (없으면 전체 초기화)
         private async void BtnRefresh_Click(object sender, EventArgs e)
         {
-            // 재생 중이면 중지
-            try
+            StopPlayback();
+
+            var path = _session.CurrentCatalogPath;
+            if (!string.IsNullOrEmpty(path) && File.Exists(path))
             {
-                _playCts?.Cancel();
+                _session.ClearUndo();
+                await LoadAndShowCatalogFileAsync(path);
+                var label = CatalogPaths.GetDisplayLabel(path);
+                toolStripStatusLabel1.Text =
+                    $"{label} {Path.GetFileName(path)} — {_session.CurrentFrames.Count:N0} 프레임 새로고침 완료";
+                return;
             }
-            catch { }
 
-            // 캐시 및 상태 초기화
-            ClearImageCache();
-            _session.Catalogs.Clear();
-            _session.CurrentFrames.Clear();
-            _session.FrameImagePaths.Clear();
-
-            // UI 초기화
-            lstDataList.Items.Clear();
-            ClearPlayback();
-            txtFilePath.Text = string.Empty;
-
-            await Task.CompletedTask;
+            ResetAllUi();
         }
 
         private void UpdateCatalogPathDisplay()
@@ -673,14 +1013,21 @@ namespace Malcha
         private async Task LoadAndShowCatalogFileAsync(string catalogFilePath)
         {
             btnSelectData.Enabled = false;
+            toolStripStatusLabel1.Text = "카탈로그 불러오는 중…";
             try
             {
+                try { _playCts?.Cancel(); } catch { }
+
+                _session.ClearUndo();
                 ClearImageCache();
+                _selectionManager.Clear();
+                _chartController.ResetHighlight();
 
                 var frames = await _catalogManager.LoadCatalogFileAsync(catalogFilePath);
                 if (frames == null || frames.Count == 0)
                 {
                     ClearPlayback();
+                    toolStripStatusLabel1.Text = "카탈로그를 불러오지 못했습니다.";
                     MessageBox.Show(this, "카탈로그가 비어 있거나 읽을 수 없습니다.", "알림",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
@@ -690,15 +1037,28 @@ namespace Malcha
                 _session.Catalogs.Clear();
                 _session.Catalogs[catalogFilePath] = frames;
                 _session.CurrentFrames = frames;
+                _session.FrameImagePaths = _catalogManager.ResolveFrameImagePaths(
+                    _session.CurrentCatalogPath, _session.CurrentFrames);
 
-                _session.FrameImagePaths = _catalogManager.ResolveFrameImagePaths(_session.CurrentCatalogPath, _session.CurrentFrames);
                 _catalogManager.PopulateListBoxWithFrames(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+                RefreshChartFromFrames();
+                UpdateCatalogPathDisplay();
 
-                if (lstDataList.Items.Count > 0)
+                // 리스트 이벤트/동일 인덱스(0)에도 첫 프레임을 반드시 표시
+                _session.CurrentIndex = -1;
+                ShowFrame(0);
+                if (lstDataList.SelectedIndex != 0)
                     lstDataList.SelectedIndex = 0;
-                else
-                    ClearPlayback();
 
+                lstDataList.Invalidate();
+                trbTimeline.Invalidate();
+                picVideoScreen.Invalidate();
+
+                var label = CatalogPaths.GetDisplayLabel(catalogFilePath);
+                toolStripStatusLabel1.Text =
+                    $"{label} {Path.GetFileName(catalogFilePath)} — {frames.Count:N0} 프레임 로드 완료";
+
+                // 첫 화면 표시 후 나머지 프레임 프리로드
                 await _catalogManager.PreloadImagesAsync(_session.FrameImagePaths, _session.CurrentFrames, 5, (path, idx) =>
                 {
                     try
@@ -710,18 +1070,6 @@ namespace Malcha
                     }
                     catch { return null; }
                 }, _imageController.AddToCache);
-
-                RefreshChartFromFrames();
-                UpdateCatalogPathDisplay();
-
-                if (CatalogPaths.IsBackupCatalog(catalogFilePath) || CatalogPaths.IsUnderBackupsFolder(catalogFilePath))
-                {
-                    toolStripStatusLabel1.Text = "백업 카탈로그를 열었습니다. 정제 저장 시 이 파일이 덮어씌워집니다.";
-                }
-                else
-                {
-                    toolStripStatusLabel1.Text = "작업용 카탈로그를 열었습니다.";
-                }
             }
             finally
             {
@@ -809,10 +1157,13 @@ namespace Malcha
             _session.CurrentFrames = new List<Frame>();
             _session.CurrentCatalogPath = string.Empty;
             _session.CurrentIndex = 0;
+            _selectionManager.Clear();
             lstDataList.Items.Clear();
             _playbackController.ClearDisplay();
-            _chartController.ResetHighlight();
+            _chartController.RefreshFromFrames(_session.CurrentFrames);
             ClearImageCache();
+            trbTimeline.Invalidate();
+            lstDataList.Invalidate();
         }
 
         private void btnTrainModel_Click(object sender, EventArgs e)
