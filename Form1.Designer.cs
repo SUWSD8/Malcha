@@ -28,10 +28,10 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             panel1 = new Panel();
             txtFilePath = new TextBox();
             btnSelectData = new Button();
@@ -99,7 +99,6 @@
             panel1.BackColor = Color.FromArgb(33, 28, 29);
             panel1.Controls.Add(txtFilePath);
             panel1.Controls.Add(btnSelectData);
-            panel1.Controls.Add(btnChangeCleanData);
             panel1.Controls.Add(lblTitle);
             panel1.Location = new Point(-3, 1);
             panel1.Name = "panel1";
@@ -109,9 +108,9 @@
             // txtFilePath
             // 
             txtFilePath.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtFilePath.Location = new Point(267, 47);
+            txtFilePath.Location = new Point(142, 47);
             txtFilePath.Name = "txtFilePath";
-            txtFilePath.Size = new Size(471, 23);
+            txtFilePath.Size = new Size(596, 23);
             txtFilePath.TabIndex = 3;
             // 
             // btnSelectData
@@ -121,7 +120,7 @@
             btnSelectData.FlatStyle = FlatStyle.Popup;
             btnSelectData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSelectData.ForeColor = SystemColors.ButtonHighlight;
-            btnSelectData.Location = new Point(140, 46);
+            btnSelectData.Location = new Point(10, 47);
             btnSelectData.Name = "btnSelectData";
             btnSelectData.Size = new Size(121, 23);
             btnSelectData.TabIndex = 2;
@@ -131,13 +130,13 @@
             // btnChangeCleanData
             // 
             btnChangeCleanData.Anchor = AnchorStyles.Left;
-            btnChangeCleanData.BackColor = Color.FromArgb(53, 48, 49);
+            btnChangeCleanData.BackColor = Color.FromArgb(198, 100, 114);
             btnChangeCleanData.FlatStyle = FlatStyle.Popup;
             btnChangeCleanData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnChangeCleanData.ForeColor = SystemColors.ButtonHighlight;
-            btnChangeCleanData.Location = new Point(12, 46);
+            btnChangeCleanData.Location = new Point(647, 50);
             btnChangeCleanData.Name = "btnChangeCleanData";
-            btnChangeCleanData.Size = new Size(121, 23);
+            btnChangeCleanData.Size = new Size(91, 51);
             btnChangeCleanData.TabIndex = 1;
             btnChangeCleanData.Text = "정제 데이터 변경";
             btnChangeCleanData.UseVisualStyleBackColor = false;
@@ -373,6 +372,7 @@
             panel3.BackColor = Color.FromArgb(33, 28, 29);
             panel3.Controls.Add(lbldeletedlist);
             panel3.Controls.Add(lstDeleted);
+            panel3.Controls.Add(btnChangeCleanData);
             panel3.Controls.Add(lblStatus);
             panel3.Controls.Add(btnHelper);
             panel3.Controls.Add(btnRefresh);
@@ -392,7 +392,7 @@
             lbldeletedlist.AutoSize = true;
             lbldeletedlist.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lbldeletedlist.ForeColor = SystemColors.ButtonHighlight;
-            lbldeletedlist.Location = new Point(19, 13);
+            lbldeletedlist.Location = new Point(19, 11);
             lbldeletedlist.Name = "lbldeletedlist";
             lbldeletedlist.Size = new Size(89, 20);
             lbldeletedlist.TabIndex = 14;
@@ -434,7 +434,7 @@
             btnHelper.FlatStyle = FlatStyle.Popup;
             btnHelper.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnHelper.ForeColor = SystemColors.ButtonHighlight;
-            btnHelper.Location = new Point(650, 117);
+            btnHelper.Location = new Point(647, 164);
             btnHelper.Name = "btnHelper";
             btnHelper.Size = new Size(91, 51);
             btnHelper.TabIndex = 11;
@@ -448,7 +448,7 @@
             btnRefresh.FlatStyle = FlatStyle.Popup;
             btnRefresh.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnRefresh.ForeColor = SystemColors.ButtonHighlight;
-            btnRefresh.Location = new Point(650, 60);
+            btnRefresh.Location = new Point(647, 107);
             btnRefresh.Name = "btnRefresh";
             btnRefresh.Size = new Size(91, 51);
             btnRefresh.TabIndex = 10;
@@ -459,23 +459,23 @@
             // 
             chtDataGraph.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chtDataGraph.BackColor = Color.FromArgb(48, 42, 41);
-            chartArea2.Name = "ChartArea1";
-            chtDataGraph.ChartAreas.Add(chartArea2);
-            legend2.Name = "Legend1";
-            chtDataGraph.Legends.Add(legend2);
+            chartArea1.Name = "ChartArea1";
+            chtDataGraph.ChartAreas.Add(chartArea1);
+            legend1.Name = "Legend1";
+            chtDataGraph.Legends.Add(legend1);
             chtDataGraph.Location = new Point(158, 50);
             chtDataGraph.Name = "chtDataGraph";
-            series3.ChartArea = "ChartArea1";
-            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series3.Legend = "Legend1";
-            series3.Name = "user/angle";
-            series4.ChartArea = "ChartArea1";
-            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series4.Color = Color.Red;
-            series4.Legend = "Legend1";
-            series4.Name = "user/throttle";
-            chtDataGraph.Series.Add(series3);
-            chtDataGraph.Series.Add(series4);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Legend = "Legend1";
+            series1.Name = "user/angle";
+            series2.ChartArea = "ChartArea1";
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series2.Color = Color.Red;
+            series2.Legend = "Legend1";
+            series2.Name = "user/throttle";
+            chtDataGraph.Series.Add(series1);
+            chtDataGraph.Series.Add(series2);
             chtDataGraph.Size = new Size(480, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
