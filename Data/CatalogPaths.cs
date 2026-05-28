@@ -4,14 +4,12 @@ using System.Linq;
 
 namespace Malcha.Data
 {
-    /// <summary>
-    /// 작업용 .catalog 와 백업(.catalog.bak, backups 폴더) 경로 구분.
-    /// </summary>
+    // 작업용 .catalog 와 백업(.catalog.bak, backups 폴더) 경로 구분
     internal static class CatalogPaths
     {
         public const string BackupsFolderName = "backups";
 
-        /// <summary>정제·편집 대상 작업용 카탈로그 (manifest·bak 제외).</summary>
+        // 정제·편집 대상 작업용 카탈로그 여부 (manifest·bak 제외)
         public static bool IsWorkingCatalog(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
@@ -21,12 +19,14 @@ namespace Malcha.Data
             return name.EndsWith(".catalog", StringComparison.OrdinalIgnoreCase);
         }
 
+        // .catalog.bak 백업 파일 여부
         public static bool IsBackupCatalog(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
             return Path.GetFileName(path).EndsWith(".catalog.bak", StringComparison.OrdinalIgnoreCase);
         }
 
+        // backups 폴더 하위 경로 여부
         public static bool IsUnderBackupsFolder(string path)
         {
             if (string.IsNullOrWhiteSpace(path)) return false;
@@ -35,7 +35,7 @@ namespace Malcha.Data
                 .Any(p => string.Equals(p, BackupsFolderName, StringComparison.OrdinalIgnoreCase));
         }
 
-        /// <summary>정제 전 스냅샷을 backups/{이름}_{시각}.catalog 에 저장.</summary>
+        // 정제 전 스냅샷을 backups/{이름}_{시각}.catalog 에 저장
         public static string CreateTimestampedBackup(string catalogPath)
         {
             if (string.IsNullOrWhiteSpace(catalogPath) || !File.Exists(catalogPath))
@@ -56,6 +56,7 @@ namespace Malcha.Data
             return backupPath;
         }
 
+        // UI 표시용 [작업]/[백업] 라벨
         public static string GetDisplayLabel(string catalogPath)
         {
             if (string.IsNullOrWhiteSpace(catalogPath)) return string.Empty;
@@ -64,7 +65,7 @@ namespace Malcha.Data
             return "[작업]";
         }
 
-        /// <summary>백업·작업 경로에서 편집 대상 작업용 .catalog 절대 경로를 구합니다.</summary>
+        // 백업·작업 경로에서 편집 대상 작업용 .catalog 절대 경로 반환
         public static string ResolveWorkingCatalogPath(string catalogPath)
         {
             if (string.IsNullOrWhiteSpace(catalogPath))
@@ -93,7 +94,7 @@ namespace Malcha.Data
             return Path.GetFullPath(catalogPath);
         }
 
-        /// <summary>catalog_0_20260525_143052.catalog → catalog_0.catalog</summary>
+        // catalog_0_20260525_143052.catalog → catalog_0.catalog 변환
         private static bool TryGetWorkingNameFromBackupFile(string fileName, out string workingFileName)
         {
             workingFileName = string.Empty;
@@ -120,7 +121,7 @@ namespace Malcha.Data
             return true;
         }
 
-        /// <summary>작업용 카탈로그에 대응하는 가장 최근 백업 파일 경로 (없으면 null).</summary>
+        // 작업용 카탈로그에 대응하는 가장 최근 백업 파일 경로 (없으면 빈 문자열)
         public static string FindLatestBackupPath(string workingCatalogPath)
         {
             if (string.IsNullOrWhiteSpace(workingCatalogPath))
