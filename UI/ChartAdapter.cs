@@ -1,4 +1,6 @@
-﻿using Malcha.Model;
+﻿using Malcha.Controller;
+using Malcha.Model;
+using Malcha.Repository;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -24,9 +26,14 @@ namespace Malcha.UI
             targetChart.Legends.Add(legend);
         }
         // 2. 실제 데이터를 차트에 그리기
-        public static void DrawLossChart(Chart targetChart, TrainedModelInfo modelInfo)
+        public static void DrawLossChart(Chart targetChart, List<TrainedData> history)
         {
-            if (modelInfo == null || modelInfo.History == null || modelInfo.History.Count == 0) return;
+
+            if (history == null || history.Count == 0)
+            {
+                throw new Exception("훈련 기록이 없습니다. 모델 학습이 제대로 이루어졌는지 확인하세요.");
+                return;
+            }
 
             targetChart.Series.Clear();
 
@@ -46,7 +53,7 @@ namespace Malcha.UI
                 MarkerStyle = MarkerStyle.Square
             };
 
-            foreach (var data in modelInfo.History)
+            foreach (var data in history)
             {
                 seriesLoss.Points.AddXY(data.Epoch, data.Loss);
                 seriesValLoss.Points.AddXY(data.Epoch, data.ValLoss);

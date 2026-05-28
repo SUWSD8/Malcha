@@ -19,7 +19,6 @@ namespace Malcha
         public TestForm()
         {
             InitializeComponent();
-            ChartAdapter.InitializeLossChart(chartLoss);
         }
         
 
@@ -30,17 +29,21 @@ namespace Malcha
 
         private async void btnTrain_Click(object sender, EventArgs e)
         {
-            ButtonAdapter.RunModelTraining(btnTrain);
+            ButtonAdapter.RunModelTraining(btnTrain, "mypilot");
         }
 
         private async void btnTest3_Click(object sender, EventArgs e)
         {
-            ButtonAdapter.ParseTrainingHistory(btnTest3);
+            ButtonAdapter.ParseTrainingHistory(btnTest3, "mypilot");
         }
 
         private void btnTest4_Click(object sender, EventArgs e)
         {
-            ChartAdapter.DrawLossChart(chartLoss, DonkeyRepository.Instance.GetAllTrainedModels()[0]);
+            var model = DonkeyRepository.Instance.FindByName("mypilot");
+            var history = model?.History;
+            ChartAdapter.InitializeLossChart(chartLoss);
+            ChartAdapter.DrawLossChart(chartLoss, history);
+            
 
         }
     }

@@ -43,5 +43,28 @@ namespace Malcha.Repository
         {
             _trainedModels.Add(model);
         }
+        public TrainedModelInfo FindByName(string name)
+        {
+            
+            var model = _trainedModels.Find(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (model == null)
+            {
+                return null;
+
+            }
+            return model;
+        }
+
+        public void UpdateModelComment(string modelName, string newComment)
+        {
+            var model = FindByName(modelName);
+            model.Comment = newComment;
+        }
+
+        public void DeleteModel(string modelName)
+        {
+            var model = FindByName(modelName);
+            _trainedModels.Remove(model);
+        } 
     }
 }

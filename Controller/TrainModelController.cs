@@ -3,6 +3,7 @@ using Malcha.Model;
 using Malcha.Repository;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 namespace Malcha.Controller
@@ -40,7 +41,36 @@ namespace Malcha.Controller
         }
         // 차트 데이터 가져오기 메서드
 
+        // comment 변경 메서드
+        public bool UpdateModelComment(string modelName, string newComment)
+        {
+            try
+            {
+                DonkeyRepository.Instance.UpdateModelComment(modelName, newComment);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error updating model comment: {ex.Message}");
+                return false;
+            }
 
+        }
+
+        // 모델 삭제 메서드
+        public bool DeleteModel(string modelName)
+        {
+            try
+            {
+                DonkeyRepository.Instance.DeleteModel(modelName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error deleting model: {ex.Message}");
+                return false;
+            }
+        }
 
     }
 }
