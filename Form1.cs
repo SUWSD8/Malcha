@@ -30,6 +30,7 @@ namespace Malcha
         private SelectionManager _selectionManager = new();
         private bool _timelineRangeDrag;
 
+        public static extern void DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int pvAttribute, int cbAttribute);
         private int GetTimelineIndexFromMouse(TrackBar tb, int mouseX)
         {
             int trackWidth = Math.Max(1, tb.ClientSize.Width - 8);
