@@ -1,50 +1,39 @@
-﻿using Malcha.Controller;
-using Malcha.Data;
-using Malcha.Model;
+﻿using Malcha.Model;
 using Malcha.Repository;
+using Malcha.Service;
 using Malcha.UI;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Text;
-using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
 
 namespace Malcha
 {
     public partial class TestForm : Form
     {
-        public TestForm()
-        {
-            InitializeComponent();
-        }
-        
+        public TestForm() => InitializeComponent();
 
-        private async void btnTest_Click(object sender, EventArgs e)
-        {
+        private void btnTest_Click(object sender, EventArgs e) =>
             ButtonAdapter.RunCatalogAnalysis(btnTest);
-        }
 
         private async void btnTrain_Click(object sender, EventArgs e)
         {
-            ButtonAdapter.RunModelTraining(btnTrain, "mypilot");
+            btnTrain.Enabled = false;
+            try
+            {
+                if (await WslTrainingService.Instance.TrainAsync("data", "mypilot.h5"))
+                    MessageBox.Show("학습 완료");
+            }
+            finally { btnTrain.Enabled = true; }
         }
 
         private async void btnTest3_Click(object sender, EventArgs e)
         {
-            ButtonAdapter.ParseTrainingHistory(btnTest3, "mypilot");
+            var r = await ScoreAnalyzer.Instance.AnalyzeAsync(WslTrainingService.DefaultDatabasePath, "mypilot");
+            if (r != null) MessageBox.Show(ScoreAnalyzer.Instance.BuildSummary(r).ToDisplayMessage());
         }
 
         private void btnTest4_Click(object sender, EventArgs e)
         {
-            var model = DonkeyRepository.Instance.FindByName("mypilot");
-            var history = model?.History;
+            var model = ResultRepository.Instance.FindByName("mypilot");
             ChartAdapter.InitializeLossChart(chartLoss);
-            ChartAdapter.DrawLossChart(chartLoss, history);
-            
-
+            ChartAdapter.DrawLossChart(chartLoss, model?.Epochs ?? new List<TrainingEpoch>());
         }
     }
 }
