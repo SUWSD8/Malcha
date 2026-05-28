@@ -4,8 +4,10 @@ using Malcha.Model;
 
 namespace Malcha
 {
+    // 카탈로그 편집 세션 상태 — 프레임·경로·Undo·삭제 관리
     internal sealed class CatalogSession
     {
+        // Undo 복원용 스냅샷
         internal sealed class UndoSnapshot
         {
             public List<Frame> Frames { get; init; } = new();
@@ -13,6 +15,7 @@ namespace Malcha
             public int CurrentIndex { get; init; }
         }
 
+        // 프레임 범위 삭제 결과
         internal sealed class DeleteRangeResult
         {
             public int Start { get; init; }
@@ -30,6 +33,7 @@ namespace Malcha
 
         public bool HasUndo => _undoStack.Count > 0;
 
+        // 현재 상태를 Undo 스택에 저장
         public void PushUndo()
         {
             _undoStack.Push(new UndoSnapshot
@@ -40,6 +44,7 @@ namespace Malcha
             });
         }
 
+        // Undo 스택에서 스냅샷 꺼내기
         public bool TryPopUndo(out UndoSnapshot snapshot)
         {
             if (_undoStack.Count == 0)
@@ -51,6 +56,7 @@ namespace Malcha
             return true;
         }
 
+        // 스냅샷으로 세션 상태 복원
         public void RestoreUndo(UndoSnapshot snapshot)
         {
             CurrentFrames = snapshot.Frames ?? new List<Frame>();
@@ -58,6 +64,7 @@ namespace Malcha
             CurrentIndex = snapshot.CurrentIndex;
         }
 
+        // start~end 프레임 삭제 (자동 Undo 저장)
         public DeleteRangeResult? DeleteRange(int start, int end)
         {
             if (CurrentFrames == null || CurrentFrames.Count == 0)
@@ -81,8 +88,10 @@ namespace Malcha
             return new DeleteRangeResult { Start = start, Count = count, NewIndex = CurrentIndex };
         }
 
+        // Undo 스택 비우기
         public void ClearUndo() => _undoStack.Clear();
 
+        // 세션 전체 초기화
         public void Reset()
         {
             Catalogs.Clear();
