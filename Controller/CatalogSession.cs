@@ -81,6 +81,8 @@ namespace Malcha
             return new DeleteRangeResult { Start = start, Count = count, NewIndex = CurrentIndex };
         }
 
+        public void ClearUndo() => _undoStack.Clear();
+
         public void Reset()
         {
             Catalogs.Clear();

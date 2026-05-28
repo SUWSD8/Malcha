@@ -137,12 +137,16 @@ namespace Malcha
         public void ClearDisplay()
         {
             _timeline.Enabled = false;
+            _timeline.Minimum = 0;
+            _timeline.Maximum = 0;
+            _timeline.Value = 0;
             _pictureBox.Image?.Dispose();
             _pictureBox.Image = null;
             _angleLabel.Text = string.Empty;
             _throttleLabel.Text = string.Empty;
             _modeLabel.Text = string.Empty;
             _recordCountLabel.Text = "0";
+            _pictureBox.Invalidate();
         }
     }
 }
