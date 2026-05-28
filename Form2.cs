@@ -16,6 +16,13 @@ namespace Malcha
         public Form2()
         {
             InitializeComponent();
+            Form2_Load();
+
+        }
+        private async void Form2_Load()
+        {
+            await ButtonAdapter.ParseTrainingHistory(btnRunTraining, "mypilot");
+            RefreshModelList();
         }
 
         private void btnDataManagement_Click(object sender, EventArgs e)
@@ -25,10 +32,13 @@ namespace Malcha
 
         private void btnUpdateComment_Click(object sender, EventArgs e)
         {
-            bool success = TrainModelController.Instance.UpdateModelComment("mypilot", "New comment for the model.");
+            string name = txtMyPilot.Text;
+            string newComment = txtModelMemo.Text;
+            bool success = TrainModelController.Instance.UpdateModelComment(name, newComment);
             if (success)
             {
                 MessageBox.Show("Model comment updated successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                RefreshModelList();
             }
             else
             {
@@ -37,10 +47,12 @@ namespace Malcha
         }
         private void btnDeleteModel_Click(object sender, EventArgs e)
         {
-            bool success = TrainModelController.Instance.DeleteModel("mypilot");
+            string name = txtMyPilot.Text;
+            bool success = TrainModelController.Instance.DeleteModel(name);
             if (success)
             {
                 MessageBox.Show("Model deleted successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                RefreshModelList();
             }
             else
             {
@@ -55,10 +67,33 @@ namespace Malcha
             chartForm.Show();
         }
 
-        private void btnRunAnalysis_Click(object sender, EventArgs e)
+        private async void btnRunAnalysis_Click(object sender, EventArgs e)
         {
-            ButtonAdapter.RunModelTraining(btnRunTraining);
-            ButtonAdapter.ParseTrainingHistory(btnRunTraining, "mypilot");
+            string name = txtMyPilot.Text;
+            btnRunTraining.Enabled = false;
+            try
+            {
+                await ButtonAdapter.RunModelTraining(btnRunTraining, name);
+
+                await ButtonAdapter.ParseTrainingHistory(btnRunTraining, name);
+
+                RefreshModelList();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                btnRunTraining.Enabled = true;
+            }
+        }
+        private void RefreshModelList()
+        {
+            var models = TrainModelController.Instance.GetAllTrainedModels();
+            dgvPilotList.AutoGenerateColumns = false;
+            dgvPilotList.DataSource = null;
+            dgvPilotList.DataSource = models;
         }
     }
 }

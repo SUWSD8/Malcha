@@ -47,8 +47,11 @@ namespace Malcha.Repository
         {
             
             var model = _trainedModels.Find(m => m.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if(model == null)
-                throw new Exception($"Model with name '{name}' not found.");
+            if (model == null)
+            {
+                return null;
+
+            }
             return model;
         }
 

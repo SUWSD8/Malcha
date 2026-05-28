@@ -29,7 +29,7 @@ namespace Malcha
 
         private async void btnTrain_Click(object sender, EventArgs e)
         {
-            ButtonAdapter.RunModelTraining(btnTrain);
+            ButtonAdapter.RunModelTraining(btnTrain, "mypilot");
         }
 
         private async void btnTest3_Click(object sender, EventArgs e)
