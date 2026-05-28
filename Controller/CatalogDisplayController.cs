@@ -199,7 +199,7 @@ namespace Malcha.Controller
                     {
                         var target = _pictureBox.ClientSize;
                         if (target.Width <= 0) target = new Size(320, 240);
-                        var img = LoadAndCompose(paths[idx], frames[idx], target);
+                        var img = LoadAndCompose(paths[idx], target);
                         if (img != null) AddToCache(idx, img);
                     }
                     catch { }
@@ -208,40 +208,93 @@ namespace Malcha.Controller
             try { await Task.WhenAll(tasks); } catch { }
         }
 
-        // PictureBox Paint 이벤트 — 조향 화살표·쓰로틀 바 오버레이
-        public static void DrawOverlay(Graphics g, Frame frame, Size clientSize)
+        // PictureBox Paint — 조향(주황)·쓰로틀 HUD. modelAngle 은 교차 테스트 예측용(노란 화살표, 추후 연결)
+        public static void DrawOverlay(Graphics g, Frame frame, Size clientSize, double? modelAngle = null)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             int w = clientSize.Width, h = clientSize.Height;
-            int arrowLen = Math.Max(64, Math.Min(w, h) / 3);
-            int arrowWidth = Math.Max(16, arrowLen / 3);
-            int headHeight = Math.Max(16, arrowLen / 3);
+
+            DrawSteeringArrow(g, w, h, frame.Angle, model: false);
+            if (modelAngle.HasValue)
+                DrawSteeringArrow(g, w, h, modelAngle.Value, model: true);
+            DrawThrottleHud(g, w, h, frame.Throttle);
+        }
+
+        // 조향 화살표 — model=false: 기록값(주황·큼), model=true: 모델 예측(노랑·작음)
+        private static void DrawSteeringArrow(Graphics g, int w, int h, double angle, bool model)
+        {
+            const float scale = 0.8f;
+            int baseLen = model
+                ? Math.Max(24, Math.Min(w, h) / 6)
+                : Math.Max(64, Math.Min(w, h) / 3);
+            int arrowLen = Math.Max(model ? 20 : 48, (int)(baseLen * scale));
+
+            int headHeight = model
+                ? Math.Max(5, (int)(arrowLen / 6f))
+                : Math.Max(8, (int)(arrowLen / 5f));
+            float headHalfW = model
+                ? Math.Max(4f, headHeight * 0.55f)
+                : Math.Max(7f, headHeight * 0.65f);
+            float shaftW = model
+                ? Math.Max(2f, arrowLen / 16f)
+                : Math.Max(4f, arrowLen / 11f);
+
             float cx = w / 2f, cy = h - headHeight * 0.15f;
-            float angleDeg = (float)frame.Angle * 45f;
+            float angleDeg = (float)angle * 45f;
+            float shaftTop = -arrowLen + headHeight;
+
+            var color = model
+                ? Color.FromArgb(220, 255, 215, 64)
+                : Color.FromArgb(230, 255, 140, 0);
 
             g.TranslateTransform(cx, cy);
             g.RotateTransform(angleDeg);
-            using (var brush = new SolidBrush(Color.FromArgb(230, 255, 140, 0)))
+            using (var brush = new SolidBrush(color))
+            using (var pen = new Pen(color, shaftW) { StartCap = LineCap.Round, EndCap = LineCap.Flat })
             {
-                g.DrawLine(new Pen(brush), 0f, 0f, 0f, -arrowLen + headHeight);
+                g.DrawLine(pen, 0f, 0f, 0f, shaftTop);
                 g.FillPolygon(brush, new[]
                 {
                     new PointF(0f, -arrowLen),
-                    new PointF(arrowWidth / 2f, -arrowLen + headHeight),
-                    new PointF(-arrowWidth / 2f, -arrowLen + headHeight)
+                    new PointF(headHalfW, shaftTop),
+                    new PointF(-headHalfW, shaftTop)
                 });
             }
             g.ResetTransform();
+        }
 
-            try
+        // 쓰로틀 — 오른쪽 하단 세로 막대 + 바로 왼쪽에 수치
+        private static void DrawThrottleHud(Graphics g, int w, int h, double throttle)
+        {
+            float margin = Math.Max(8f, Math.Min(w, h) / 50f);
+            float barW = Math.Max(8f, w / 80f);
+            float barH = Math.Max(40f, h / 4f);
+            float barX = w - margin - barW;
+            float barY = h - margin - barH;
+            float fillH = barH * ((Math.Clamp((float)throttle, -1f, 1f) + 1f) / 2f);
+
+            using (var bg = new SolidBrush(Color.FromArgb(160, 0, 0, 0)))
+            using (var fill = new SolidBrush(Color.FromArgb(220, 60, 180, 75)))
             {
-                float barW = Math.Max(8, w / 80f), barH = Math.Max(40, h / 4f), margin = 10f;
-                float barX = w - margin - barW, barY = h - margin - barH;
-                float fillH = barH * ((Math.Clamp((float)frame.Throttle, -1f, 1f) + 1f) / 2f);
-                g.FillRectangle(new SolidBrush(Color.FromArgb(160, 0, 0, 0)), barX, barY, barW, barH);
-                g.FillRectangle(new SolidBrush(Color.FromArgb(220, 60, 180, 75)), barX, barY + barH - fillH, barW, fillH);
+                g.FillRectangle(bg, barX, barY, barW, barH);
+                if (fillH > 0.5f)
+                    g.FillRectangle(fill, barX, barY + barH - fillH, barW, fillH);
             }
-            catch { }
+
+            string text = throttle.ToString("+#0.00;-#0.00;0.00");
+            float fontSize = Math.Max(9f, Math.Min(w, h) / 30f);
+            using (var font = new Font("Segoe UI", fontSize, FontStyle.Bold))
+            {
+                var textSize = g.MeasureString(text, font);
+                float textX = barX - textSize.Width - 5f;
+                float textY = barY + barH - textSize.Height;
+
+                // 밝은 배경에서도 읽히도록 짧은 그림자 + 밝은 글자
+                using (var shadow = new SolidBrush(Color.FromArgb(200, 0, 0, 0)))
+                    g.DrawString(text, font, shadow, textX + 1f, textY + 1f);
+                using (var textBrush = new SolidBrush(Color.FromArgb(255, 245, 242, 238)))
+                    g.DrawString(text, font, textBrush, textX, textY);
+            }
         }
 
         // 캐시 또는 디스크에서 프레임 이미지 로드 후 PictureBox에 표시
@@ -255,7 +308,7 @@ namespace Malcha.Controller
                 {
                     var target = _pictureBox.ClientSize;
                     if (target.Width <= 0) target = new Size(320, 240);
-                    img = LoadAndCompose(path, frame, target);
+                    img = LoadAndCompose(path, target);
                     if (img != null) AddToCache(index, img);
                 }
                 var old = _pictureBox.Image;
@@ -279,20 +332,19 @@ namespace Malcha.Controller
                 {
                     var target = _pictureBox.ClientSize;
                     if (target.Width <= 0) target = new Size(320, 240);
-                    var img = LoadAndCompose(path, frames[next], target);
+                    var img = LoadAndCompose(path, target);
                     if (img != null) AddToCache(next, img);
                 }
                 catch { }
             });
         }
 
-        // 파일에서 이미지를 읽어 HUD 합성 후 반환
-        private Image LoadAndCompose(string path, Frame f, Size target)
+        // 파일에서 이미지를 읽어 PictureBox 크기로 스케일 (HUD는 Paint에서 그림)
+        private static Image LoadAndCompose(string path, Size target)
         {
             using var fs = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             using var raw = Image.FromStream(fs);
-            using var scaled = CreateScaledBitmap(raw, target);
-            return ComposeHud(scaled, f, target);
+            return CreateScaledBitmap(raw, target);
         }
 
         // 원본 이미지를 PictureBox 크기에 맞게 스케일
@@ -302,33 +354,6 @@ namespace Malcha.Controller
             using var g = Graphics.FromImage(bmp);
             g.InterpolationMode = InterpolationMode.HighQualityBicubic;
             g.DrawImage(src, new Rectangle(0, 0, bmp.Width, bmp.Height));
-            return bmp;
-        }
-
-        // 스케일된 이미지 위에 조향 화살표 HUD 합성
-        private static Image ComposeHud(Image baseImg, Frame f, Size target)
-        {
-            var bmp = new Bitmap(Math.Max(1, target.Width), Math.Max(1, target.Height));
-            using var g = Graphics.FromImage(bmp);
-            g.Clear(Color.Black);
-            g.DrawImage(baseImg, new Rectangle(0, 0, bmp.Width, bmp.Height));
-            g.SmoothingMode = SmoothingMode.AntiAlias;
-
-            int arrowLen = Math.Max(24, Math.Min(bmp.Width, bmp.Height) / 6);
-            int arrowWidth = Math.Max(8, arrowLen / 4);
-            int headHeight = Math.Max(8, arrowLen / 4);
-            g.TranslateTransform(bmp.Width / 2f, bmp.Height - headHeight * 0.15f);
-            g.RotateTransform((float)f.Angle * 45f);
-            using (var brush = new SolidBrush(Color.FromArgb(220, 255, 215, 64)))
-            using (var pen = new Pen(Color.FromArgb(255, 255, 215, 64), Math.Max(2, arrowWidth / 6)))
-            {
-                g.DrawLine(pen, 0f, 0f, 0f, -arrowLen + headHeight);
-                g.FillPolygon(brush, new PointF[]
-                {
-                    new(0f, -arrowLen), new(arrowWidth / 2f, -arrowLen + headHeight),
-                    new(-arrowWidth / 2f, -arrowLen + headHeight)
-                });
-            }
             return bmp;
         }
 

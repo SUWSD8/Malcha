@@ -124,6 +124,22 @@ namespace Malcha.Service
             }, cancellationToken);
         }
 
+        // 연동된 WSL data(tub) 내용 삭제
+        public Task ClearSyncedDataAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!WslTrainingService.Instance.IsConfigured)
+                    throw new InvalidOperationException("mycar 경로가 설정되지 않았습니다.");
+
+                if (!Directory.Exists(TubUncPath))
+                    return;
+
+                ClearTubContents(TubUncPath);
+            }, cancellationToken);
+        }
+
         // tub 폴더의 이전 catalog·manifest·이미지 제거
         private static void ClearTubContents(string targetDir)
         {

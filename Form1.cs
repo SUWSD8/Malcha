@@ -85,6 +85,7 @@ namespace Malcha
             tips.SetToolTip(btnDeleteSelection, "선택 구간 삭제");
             tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
+            tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnHelper, "F1 도움말");
         }
 
