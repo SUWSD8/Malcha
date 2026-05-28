@@ -28,14 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
-            System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
             panel1 = new Panel();
             txtFilePath = new TextBox();
             btnSelectData = new Button();
-            btnLoadConfig = new Button();
+            btnChangeCleanData = new Button();
             lblTitle = new Label();
             panel2 = new Panel();
             picVideoScreen = new PictureBox();
@@ -66,10 +66,10 @@
             btnSetEndPoint = new Button();
             btnSetStartPoint = new Button();
             panel4 = new Panel();
-            listBox1 = new ListBox();
+            lstLog = new ListBox();
             panel6 = new Panel();
-            button2 = new Button();
-            button1 = new Button();
+            btnCrossTest = new Button();
+            btnViewScore = new Button();
             btnRunTraining = new Button();
             panel1.SuspendLayout();
             panel2.SuspendLayout();
@@ -87,7 +87,7 @@
             panel1.BackColor = Color.FromArgb(33, 28, 29);
             panel1.Controls.Add(txtFilePath);
             panel1.Controls.Add(btnSelectData);
-            panel1.Controls.Add(btnLoadConfig);
+            panel1.Controls.Add(btnChangeCleanData);
             panel1.Controls.Add(lblTitle);
             panel1.Location = new Point(-3, 1);
             panel1.Name = "panel1";
@@ -116,19 +116,19 @@
             btnSelectData.Text = "데이터 선택";
             btnSelectData.UseVisualStyleBackColor = false;
             // 
-            // btnLoadConfig
+            // btnChangeCleanData
             // 
-            btnLoadConfig.Anchor = AnchorStyles.Left;
-            btnLoadConfig.BackColor = Color.FromArgb(53, 48, 49);
-            btnLoadConfig.FlatStyle = FlatStyle.Popup;
-            btnLoadConfig.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnLoadConfig.ForeColor = SystemColors.ButtonHighlight;
-            btnLoadConfig.Location = new Point(12, 46);
-            btnLoadConfig.Name = "btnLoadConfig";
-            btnLoadConfig.Size = new Size(121, 23);
-            btnLoadConfig.TabIndex = 1;
-            btnLoadConfig.Text = "정제 데이터 변경";
-            btnLoadConfig.UseVisualStyleBackColor = false;
+            btnChangeCleanData.Anchor = AnchorStyles.Left;
+            btnChangeCleanData.BackColor = Color.FromArgb(53, 48, 49);
+            btnChangeCleanData.FlatStyle = FlatStyle.Popup;
+            btnChangeCleanData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnChangeCleanData.ForeColor = SystemColors.ButtonHighlight;
+            btnChangeCleanData.Location = new Point(12, 46);
+            btnChangeCleanData.Name = "btnChangeCleanData";
+            btnChangeCleanData.Size = new Size(121, 23);
+            btnChangeCleanData.TabIndex = 1;
+            btnChangeCleanData.Text = "정제 데이터 변경";
+            btnChangeCleanData.UseVisualStyleBackColor = false;
             // 
             // lblTitle
             // 
@@ -423,23 +423,23 @@
             // 
             chtDataGraph.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             chtDataGraph.BackColor = Color.FromArgb(48, 42, 41);
-            chartArea1.Name = "ChartArea1";
-            chtDataGraph.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            chtDataGraph.Legends.Add(legend1);
+            chartArea2.Name = "ChartArea1";
+            chtDataGraph.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            chtDataGraph.Legends.Add(legend2);
             chtDataGraph.Location = new Point(151, 49);
             chtDataGraph.Name = "chtDataGraph";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Legend = "Legend1";
-            series1.Name = "user/angle";
-            series2.ChartArea = "ChartArea1";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Color = Color.Red;
-            series2.Legend = "Legend1";
-            series2.Name = "user/throttle";
-            chtDataGraph.Series.Add(series1);
-            chtDataGraph.Series.Add(series2);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Legend = "Legend1";
+            series3.Name = "user/angle";
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series4.Color = Color.Red;
+            series4.Legend = "Legend1";
+            series4.Name = "user/throttle";
+            chtDataGraph.Series.Add(series3);
+            chtDataGraph.Series.Add(series4);
             chtDataGraph.Size = new Size(487, 178);
             chtDataGraph.TabIndex = 9;
             chtDataGraph.Text = "chart1";
@@ -523,57 +523,57 @@
             panel4.Size = new Size(749, 20);
             panel4.TabIndex = 12;
             // 
-            // listBox1
+            // lstLog
             // 
-            listBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            listBox1.BackColor = Color.FromArgb(48, 42, 41);
-            listBox1.ForeColor = SystemColors.MenuBar;
-            listBox1.FormattingEnabled = true;
-            listBox1.Location = new Point(17, 110);
-            listBox1.Name = "listBox1";
-            listBox1.Size = new Size(195, 724);
-            listBox1.TabIndex = 35;
+            lstLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            lstLog.BackColor = Color.FromArgb(48, 42, 41);
+            lstLog.ForeColor = SystemColors.MenuBar;
+            lstLog.FormattingEnabled = true;
+            lstLog.Location = new Point(17, 110);
+            lstLog.Name = "lstLog";
+            lstLog.Size = new Size(195, 724);
+            lstLog.TabIndex = 35;
             // 
             // panel6
             // 
             panel6.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             panel6.BackColor = Color.FromArgb(33, 28, 29);
-            panel6.Controls.Add(button2);
-            panel6.Controls.Add(button1);
+            panel6.Controls.Add(btnCrossTest);
+            panel6.Controls.Add(btnViewScore);
             panel6.Controls.Add(btnRunTraining);
-            panel6.Controls.Add(listBox1);
+            panel6.Controls.Add(lstLog);
             panel6.Location = new Point(755, 1);
             panel6.Name = "panel6";
             panel6.Size = new Size(232, 854);
             panel6.TabIndex = 0;
             // 
-            // button2
+            // btnCrossTest
             // 
-            button2.Anchor = AnchorStyles.Top;
-            button2.BackColor = Color.FromArgb(106, 123, 221);
-            button2.FlatStyle = FlatStyle.Popup;
-            button2.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button2.ForeColor = SystemColors.ButtonHighlight;
-            button2.Location = new Point(119, 61);
-            button2.Name = "button2";
-            button2.Size = new Size(93, 37);
-            button2.TabIndex = 39;
-            button2.Text = "교차 테스트";
-            button2.UseVisualStyleBackColor = false;
+            btnCrossTest.Anchor = AnchorStyles.Top;
+            btnCrossTest.BackColor = Color.FromArgb(106, 123, 221);
+            btnCrossTest.FlatStyle = FlatStyle.Popup;
+            btnCrossTest.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnCrossTest.ForeColor = SystemColors.ButtonHighlight;
+            btnCrossTest.Location = new Point(119, 61);
+            btnCrossTest.Name = "btnCrossTest";
+            btnCrossTest.Size = new Size(93, 37);
+            btnCrossTest.TabIndex = 39;
+            btnCrossTest.Text = "교차 테스트";
+            btnCrossTest.UseVisualStyleBackColor = false;
             // 
-            // button1
+            // btnViewScore
             // 
-            button1.Anchor = AnchorStyles.Top;
-            button1.BackColor = Color.FromArgb(56, 52, 52);
-            button1.FlatStyle = FlatStyle.Popup;
-            button1.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            button1.ForeColor = SystemColors.ButtonHighlight;
-            button1.Location = new Point(17, 15);
-            button1.Name = "button1";
-            button1.Size = new Size(195, 37);
-            button1.TabIndex = 38;
-            button1.Text = "점수 보기";
-            button1.UseVisualStyleBackColor = false;
+            btnViewScore.Anchor = AnchorStyles.Top;
+            btnViewScore.BackColor = Color.FromArgb(56, 52, 52);
+            btnViewScore.FlatStyle = FlatStyle.Popup;
+            btnViewScore.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnViewScore.ForeColor = SystemColors.ButtonHighlight;
+            btnViewScore.Location = new Point(17, 15);
+            btnViewScore.Name = "btnViewScore";
+            btnViewScore.Size = new Size(195, 37);
+            btnViewScore.TabIndex = 38;
+            btnViewScore.Text = "점수 보기";
+            btnViewScore.UseVisualStyleBackColor = false;
             // 
             // btnRunTraining
             // 
@@ -622,7 +622,7 @@
         private Panel panel1;
         private TextBox txtFilePath;
         private Button btnSelectData;
-        private Button btnLoadConfig;
+        private Button btnChangeCleanData;
         private Label lblTitle;
         private Panel panel2;
         private Button btnPlayPause;
@@ -654,9 +654,9 @@
         private ListBox lstDataList;
         private Panel panel4;
         private Panel panel6;
-        private ListBox listBox1;
-        private Button button2;
-        private Button button1;
+        private ListBox lstLog;
+        private Button btnCrossTest;
+        private Button btnViewScore;
         private Button btnRunTraining;
     }
 }
