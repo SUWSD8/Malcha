@@ -70,6 +70,7 @@
             txtMyPilot = new TextBox();
             btnRunTraining = new Button();
             pnlspace = new Panel();
+            txtMyPilot = new TextBox();
             pnlHeader.SuspendLayout();
             pnlConfiguration.SuspendLayout();
             pnlList.SuspendLayout();
@@ -623,6 +624,19 @@
             pnlspace.Name = "pnlspace";
             pnlspace.Size = new Size(1946, 21);
             pnlspace.TabIndex = 6;
+            // 
+            // txtMyPilot
+            // 
+            txtMyPilot.BackColor = Color.FromArgb(53, 48, 49);
+            txtMyPilot.BorderStyle = BorderStyle.None;
+            txtMyPilot.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            txtMyPilot.ForeColor = Color.White;
+            txtMyPilot.Location = new Point(13, 114);
+            txtMyPilot.Name = "txtMyPilot";
+            txtMyPilot.Size = new Size(474, 20);
+            txtMyPilot.TabIndex = 28;
+            txtMyPilot.Text = "내 파일럿";
+            txtMyPilot.TextAlign = HorizontalAlignment.Center;
             // 
             // Form2
             // 
