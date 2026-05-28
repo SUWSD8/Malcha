@@ -42,7 +42,7 @@ namespace Malcha
             }),
             ("편집", new[]
             {
-                (Array.Empty<string>(), "선택구간 삭제 — 주황색 구간의 프레임을 제거합니다."),
+                (Array.Empty<string>(), "선택구간 삭제 — 주황색 구간 제거 (저장·backups/ 백업 포함)"),
                 (Array.Empty<string>(), "필터 적용 — 중복·스파이크·범위 초과 프레임을 자동 정제합니다."),
                 (Array.Empty<string>(), "복구 — 최신 백업과 정제본을 병합해 빠진 프레임을 되살립니다."),
                 (Array.Empty<string>(), "백업이 없으면 직전 편집 상태(Undo)로 되돌립니다."),
