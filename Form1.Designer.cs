@@ -68,6 +68,7 @@
             panel4 = new Panel();
             lstLog = new ListBox();
             panel6 = new Panel();
+            label1 = new Label();
             txtModelMemo = new TextBox();
             button1 = new Button();
             btnEnableDelete = new Button();
@@ -537,15 +538,16 @@
             lstLog.BackColor = Color.FromArgb(48, 42, 41);
             lstLog.ForeColor = SystemColors.MenuBar;
             lstLog.FormattingEnabled = true;
-            lstLog.Location = new Point(17, 11);
+            lstLog.Location = new Point(17, 37);
             lstLog.Name = "lstLog";
-            lstLog.Size = new Size(195, 334);
+            lstLog.Size = new Size(195, 304);
             lstLog.TabIndex = 35;
             // 
             // panel6
             // 
             panel6.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
             panel6.BackColor = Color.FromArgb(33, 28, 29);
+            panel6.Controls.Add(label1);
             panel6.Controls.Add(txtModelMemo);
             panel6.Controls.Add(button1);
             panel6.Controls.Add(btnEnableDelete);
@@ -558,6 +560,18 @@
             panel6.Name = "panel6";
             panel6.Size = new Size(232, 854);
             panel6.TabIndex = 0;
+            // 
+            // label1
+            // 
+            label1.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            label1.AutoSize = true;
+            label1.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            label1.ForeColor = SystemColors.ButtonHighlight;
+            label1.Location = new Point(17, 10);
+            label1.Name = "label1";
+            label1.Size = new Size(61, 20);
+            label1.TabIndex = 12;
+            label1.Text = "Log list";
             // 
             // txtModelMemo
             // 
@@ -759,5 +773,6 @@
         private Button btnCrossTest;
         private Button btnViewScore;
         private Button btnRunTraining;
+        private Label label1;
     }
 }
