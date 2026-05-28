@@ -17,7 +17,12 @@ namespace Malcha
             btnTrain.Enabled = false;
             try
             {
-                if (await WslTrainingService.Instance.TrainAsync("data", "mypilot.h5"))
+                if (!WslTrainingService.Instance.IsConfigured)
+                {
+                    MessageBox.Show("mycar 경로를 먼저 설정하세요.");
+                    return;
+                }
+                if (await WslTrainingService.Instance.TrainAsync("mypilot.h5"))
                     MessageBox.Show("학습 완료");
             }
             finally { btnTrain.Enabled = true; }
@@ -25,7 +30,8 @@ namespace Malcha
 
         private async void btnTest3_Click(object sender, EventArgs e)
         {
-            var r = await ScoreAnalyzer.Instance.AnalyzeAsync(WslTrainingService.DefaultDatabasePath, "mypilot");
+            if (!WslTrainingService.Instance.IsConfigured) { MessageBox.Show("mycar 경로 미설정"); return; }
+            var r = await ScoreAnalyzer.Instance.AnalyzeAsync(WslTrainingService.Instance.DatabaseUncPath, "mypilot");
             if (r != null) MessageBox.Show(ScoreAnalyzer.Instance.BuildSummary(r).ToDisplayMessage());
         }
 

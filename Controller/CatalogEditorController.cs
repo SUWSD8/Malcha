@@ -14,6 +14,8 @@ namespace Malcha.Controller
         private readonly ICatalogView _view;
         private readonly CatalogSession _session;
         private readonly CatalogService _catalog = CatalogService.Instance;
+        private readonly WslDataSyncService _dataSync = WslDataSyncService.Instance;
+        private readonly WslTrainingService _wslTraining = WslTrainingService.Instance;
         private readonly FrameRangeSelection _selection;
 
         public CatalogEditorController(ICatalogView view, CatalogSession session, FrameRangeSelection selection)
@@ -91,6 +93,63 @@ namespace Malcha.Controller
                 _view.UpdateCatalogPathFromSession();
             }
             finally { _view.SetCatalogBusy(false); }
+        }
+
+        // 정제된 카탈로그·이미지를 WSL data(tub)로 연동
+        public async Task HandleSyncTrainingDataAsync()
+        {
+            if (_session.CurrentFrames.Count == 0)
+            {
+                _view.ShowMessage("연동할 카탈로그를 먼저 열어 주세요.", "정제 데이터 연동", icon: MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                if (!_wslTraining.TryConfigure(() => MycarFolderDialog.Show(_view.Owner, null)))
+                    return;
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage(ex.Message, "mycar 경로", icon: MessageBoxIcon.Error);
+                return;
+            }
+
+            _view.SetCatalogBusy(true);
+            _view.SetStatusText("WSL data 연동 중…");
+            ProgressDialog? progress = null;
+            try
+            {
+                progress = _view.ShowProgress("정제 데이터 연동");
+                var uiProgress = new Progress<(int percent, string message)>(r =>
+                    progress.Report(r.percent, r.message));
+
+                var result = await _dataSync.SyncAsync(
+                    _session.CurrentFrames,
+                    _session.FrameImagePaths,
+                    _session.CurrentCatalogPath,
+                    uiProgress,
+                    progress.Token);
+
+                _view.SetStatusText($"연동 완료 — {result.FrameCount:N0} 프레임, {result.ImageCount:N0} 이미지");
+                _view.ShowMessage(
+                    $"WSL data 연동 완료\n\n프레임: {result.FrameCount:N0}\n이미지: {result.ImageCount:N0}\n경로: {result.TargetPath}",
+                    "정제 데이터 연동");
+            }
+            catch (OperationCanceledException)
+            {
+                _view.ShowMessage("연동이 취소되었습니다.", "정제 데이터 연동");
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage($"연동 오류: {ex.Message}", "정제 데이터 연동", icon: MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _view.CloseProgress(progress);
+                _view.SetCatalogBusy(false);
+                _view.EnsureVisible();
+            }
         }
 
         // FrameRefinementFilter로 현재 프레임 정제 후 저장

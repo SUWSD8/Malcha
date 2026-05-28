@@ -1,0 +1,254 @@
+using Malcha.Model;
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
+
+namespace Malcha.Service
+{
+    // [Service] 정제된 카탈로그·이미지를 WSL mycar/data(tub)로 복사
+    internal class WslDataSyncService
+    {
+        public const string CatalogFileName = "catalog_0.catalog";
+        public const string CatalogManifestFileName = "catalog_0.catalog_manifest";
+        public const string ManifestFileName = "manifest.json";
+
+        private static readonly WslDataSyncService _instance = new();
+        public static WslDataSyncService Instance => _instance;
+        private WslDataSyncService() { }
+
+        // WSL tub 폴더 UNC 경로 (설정된 mycar/data)
+        public string TubUncPath => WslTrainingService.Instance.TubUncPath;
+
+        // train.py --tub data 에 사용할 catalog 존재 여부
+        public bool HasTrainingData()
+        {
+            if (!WslTrainingService.Instance.IsConfigured) return false;
+            var catalogPath = Path.Combine(TubUncPath, CatalogFileName);
+            return File.Exists(catalogPath) && new FileInfo(catalogPath).Length > 0;
+        }
+
+        // 연동된 data 폴더 상태 요약 (로그·확인용)
+        public string DescribeSyncedData()
+        {
+            if (!WslTrainingService.Instance.IsConfigured)
+                return "data: mycar 경로 미설정";
+
+            var catalogPath = Path.Combine(TubUncPath, CatalogFileName);
+            if (!File.Exists(catalogPath))
+                return "data: catalog 없음 → '정제 데이터 연동' 필요";
+
+            int frameCount = File.ReadLines(catalogPath).Count(l => !string.IsNullOrWhiteSpace(l));
+            int imageCount = Directory.Exists(TubUncPath)
+                ? Directory.GetFiles(TubUncPath, "*.*")
+                    .Count(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                             || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
+                             || f.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                : 0;
+
+            return $"data: {frameCount} 프레임, {imageCount} 이미지 ({TubUncPath})";
+        }
+
+        // 현재 세션 프레임·이미지를 WSL data 폴더로 동기화
+        public async Task<SyncResult> SyncAsync(
+            IReadOnlyList<Frame> frames,
+            IReadOnlyList<string> imagePaths,
+            string? sourceCatalogPath,
+            IProgress<(int percent, string message)>? progress = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (frames.Count == 0)
+                throw new InvalidOperationException("연동할 프레임이 없습니다.");
+
+            return await Task.Run(() =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress?.Report((0, "WSL data 폴더 준비 중…"));
+
+                var targetDir = TubUncPath;
+                if (!Directory.Exists(targetDir))
+                    Directory.CreateDirectory(targetDir);
+
+                ClearTubContents(targetDir);
+
+                var exportFrames = new List<Frame>(frames.Count);
+                var lineLengths = new List<int>(frames.Count);
+                var catalogPath = Path.Combine(targetDir, CatalogFileName);
+
+                using (var sw = new StreamWriter(catalogPath, false, new UTF8Encoding(false)))
+                {
+                    for (int i = 0; i < frames.Count; i++)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        var src = frames[i];
+                        string imageName = ResolveImageFileName(src, i, imagePaths);
+                        var export = new Frame
+                        {
+                            Index = i,
+                            SessionId = src.SessionId,
+                            TimestampMs = src.TimestampMs,
+                            ImagePath = imageName,
+                            Angle = src.Angle,
+                            Throttle = src.Throttle,
+                            Mode = src.Mode
+                        };
+                        exportFrames.Add(export);
+
+                        string line = JsonSerializer.Serialize(export);
+                        lineLengths.Add(Encoding.UTF8.GetByteCount(line));
+                        sw.WriteLine(line);
+
+                        if (i % Math.Max(1, frames.Count / 20) == 0)
+                        {
+                            int pct = (int)Math.Round(100.0 * i / frames.Count);
+                            progress?.Report((pct, $"카탈로그 작성… {i + 1}/{frames.Count}"));
+                        }
+                    }
+                }
+
+                progress?.Report((60, "이미지 복사 중…"));
+                int copiedImages = CopyImages(frames, imagePaths, targetDir, exportFrames, cancellationToken);
+
+                progress?.Report((85, "manifest 작성 중…"));
+                WriteCatalogManifest(targetDir, lineLengths);
+                WriteManifestJson(targetDir, sourceCatalogPath, exportFrames);
+
+                progress?.Report((100, "연동 완료"));
+
+                return new SyncResult
+                {
+                    FrameCount = exportFrames.Count,
+                    ImageCount = copiedImages,
+                    TargetPath = targetDir
+                };
+            }, cancellationToken);
+        }
+
+        // tub 폴더의 이전 catalog·manifest·이미지 제거
+        private static void ClearTubContents(string targetDir)
+        {
+            foreach (var pattern in new[] { "*.catalog", "*.catalog_manifest", "manifest.json", "*.jpg", "*.jpeg", "*.png" })
+            {
+                foreach (var file in Directory.GetFiles(targetDir, pattern, SearchOption.TopDirectoryOnly))
+                {
+                    try { File.Delete(file); } catch (Exception ex) { Debug.WriteLine($"삭제 실패 {file}: {ex.Message}"); }
+                }
+            }
+        }
+
+        // 프레임에 대응하는 이미지 파일명 결정
+        private static string ResolveImageFileName(Frame frame, int index, IReadOnlyList<string> imagePaths)
+        {
+            if (index < imagePaths.Count && !string.IsNullOrEmpty(imagePaths[index]))
+                return Path.GetFileName(imagePaths[index]);
+            if (!string.IsNullOrEmpty(frame.ImagePath))
+                return Path.GetFileName(frame.ImagePath);
+            return $"{index}_cam_image_array_.jpg";
+        }
+
+        // 이미지 파일을 tub 폴더로 복사
+        private static int CopyImages(
+            IReadOnlyList<Frame> frames,
+            IReadOnlyList<string> imagePaths,
+            string targetDir,
+            IReadOnlyList<Frame> exportFrames,
+            CancellationToken cancellationToken)
+        {
+            int copied = 0;
+            for (int i = 0; i < frames.Count; i++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                string? srcPath = i < imagePaths.Count ? imagePaths[i] : null;
+                if (string.IsNullOrEmpty(srcPath) || !File.Exists(srcPath))
+                    continue;
+
+                string destName = exportFrames[i].ImagePath;
+                string destPath = Path.Combine(targetDir, destName);
+                if (File.Exists(destPath)) continue;
+
+                try
+                {
+                    File.Copy(srcPath, destPath, overwrite: true);
+                    copied++;
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"이미지 복사 실패 {srcPath}: {ex.Message}");
+                }
+            }
+            return copied;
+        }
+
+        // catalog_0.catalog_manifest 생성
+        private static void WriteCatalogManifest(string targetDir, IReadOnlyList<int> lineLengths)
+        {
+            var manifest = new
+            {
+                created_at = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0,
+                line_lengths = lineLengths,
+                path = CatalogManifestFileName,
+                start_index = 0
+            };
+            File.WriteAllText(
+                Path.Combine(targetDir, CatalogManifestFileName),
+                JsonSerializer.Serialize(manifest),
+                new UTF8Encoding(false));
+        }
+
+        // manifest.json 생성 (원본 tub에 있으면 앞 4줄 유지, 5번째 줄만 갱신)
+        private static void WriteManifestJson(string targetDir, string? sourceCatalogPath, IReadOnlyList<Frame> frames)
+        {
+            var destPath = Path.Combine(targetDir, ManifestFileName);
+            var sourceDir = !string.IsNullOrEmpty(sourceCatalogPath)
+                ? Path.GetDirectoryName(sourceCatalogPath) : null;
+            var sourceManifest = !string.IsNullOrEmpty(sourceDir)
+                ? Path.Combine(sourceDir!, ManifestFileName) : null;
+
+            if (!string.IsNullOrEmpty(sourceManifest) && File.Exists(sourceManifest))
+            {
+                var lines = File.ReadAllLines(sourceManifest);
+                if (lines.Length >= 5)
+                {
+                    lines[4] = JsonSerializer.Serialize(new
+                    {
+                        paths = new[] { CatalogFileName },
+                        current_index = Math.Max(0, frames.Count - 1),
+                        max_len = frames.Count,
+                        deleted_indexes = Array.Empty<int>()
+                    });
+                    File.WriteAllLines(destPath, lines, new UTF8Encoding(false));
+                    return;
+                }
+            }
+
+            var sessionId = frames[0].SessionId ?? "malcha_sync";
+            var defaultLines = new[]
+            {
+                "[\"cam/image_array\", \"user/angle\", \"user/throttle\", \"user/mode\"]",
+                "[\"image_array\", \"float\", \"float\", \"str\"]",
+                "{}",
+                JsonSerializer.Serialize(new
+                {
+                    created_at = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0,
+                    sessions = new { all_full_ids = new[] { sessionId }, last_id = 0, last_full_id = sessionId }
+                }),
+                JsonSerializer.Serialize(new
+                {
+                    paths = new[] { CatalogFileName },
+                    current_index = Math.Max(0, frames.Count - 1),
+                    max_len = frames.Count,
+                    deleted_indexes = Array.Empty<int>()
+                })
+            };
+            File.WriteAllLines(destPath, defaultLines, new UTF8Encoding(false));
+        }
+
+        internal sealed class SyncResult
+        {
+            public int FrameCount { get; init; }
+            public int ImageCount { get; init; }
+            public string TargetPath { get; init; } = string.Empty;
+        }
+    }
+}
