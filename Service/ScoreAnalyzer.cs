@@ -26,12 +26,13 @@ namespace Malcha.Service
             if (result.Epochs.Count == 0)
                 throw new InvalidOperationException("학습 기록(Epoch) 없음");
             var last = result.Epochs[^1];
+            var best = TrainingScore.BestValEpoch(result.Epochs)!;
             return new TrainingSummary
             {
                 ModelName = result.Name,
                 TotalEpochs = result.Epochs.Count,
                 FinalLoss = last.Loss,
-                FinalValLoss = last.ValLoss
+                FinalValLoss = best.ValLoss
             };
         }
     }

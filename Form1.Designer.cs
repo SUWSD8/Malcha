@@ -570,7 +570,7 @@
             lstLog.FormattingEnabled = true;
             lstLog.Location = new Point(17, 37);
             lstLog.Name = "lstLog";
-            lstLog.Size = new Size(195, 304);
+            lstLog.Size = new Size(250, 364);
             lstLog.TabIndex = 35;
             // 
             // panel6
@@ -589,7 +589,7 @@
             panel6.Controls.Add(lstLog);
             panel6.Location = new Point(755, 1);
             panel6.Name = "panel6";
-            panel6.Size = new Size(232, 854);
+            panel6.Size = new Size(298, 1100);
             panel6.TabIndex = 0;
             // 
             // lstViewScore
@@ -598,7 +598,8 @@
             lstViewScore.BackColor = Color.FromArgb(48, 42, 41);
             lstViewScore.ForeColor = SystemColors.MenuBar;
             lstViewScore.FormattingEnabled = true;
-            lstViewScore.Location = new Point(17, 397);
+            lstViewScore.Location = new Point(22, 490);
+            lstViewScore.Margin = new Padding(4);
             lstViewScore.Name = "lstViewScore";
             lstViewScore.Size = new Size(195, 79);
             lstViewScore.TabIndex = 15;
@@ -613,7 +614,7 @@
             lblloglist.Name = "lblloglist";
             lblloglist.Size = new Size(61, 20);
             lblloglist.TabIndex = 12;
-            lblloglist.Text = "Log list";
+            lblloglist.Text = "학습 로그";
             // 
             // txtModelMemo
             // 
@@ -622,7 +623,8 @@
             txtModelMemo.BorderStyle = BorderStyle.FixedSingle;
             txtModelMemo.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             txtModelMemo.ForeColor = SystemColors.MenuBar;
-            txtModelMemo.Location = new Point(17, 763);
+            txtModelMemo.Location = new Point(22, 978);
+            txtModelMemo.Margin = new Padding(4);
             txtModelMemo.Name = "txtModelMemo";
             txtModelMemo.Size = new Size(195, 25);
             txtModelMemo.TabIndex = 49;
@@ -635,7 +637,8 @@
             btnconnet.FlatStyle = FlatStyle.Popup;
             btnconnet.Font = new Font("맑은 고딕", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnconnet.ForeColor = SystemColors.ButtonHighlight;
-            btnconnet.Location = new Point(120, 794);
+            btnconnet.Location = new Point(154, 1020);
+            btnconnet.Margin = new Padding(4);
             btnconnet.Name = "btnconnet";
             btnconnet.Size = new Size(92, 34);
             btnconnet.TabIndex = 48;
@@ -649,7 +652,8 @@
             btnEnableDelete.FlatStyle = FlatStyle.Popup;
             btnEnableDelete.Font = new Font("맑은 고딕", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnEnableDelete.ForeColor = SystemColors.ButtonHighlight;
-            btnEnableDelete.Location = new Point(17, 794);
+            btnEnableDelete.Location = new Point(22, 1020);
+            btnEnableDelete.Margin = new Padding(4);
             btnEnableDelete.Name = "btnEnableDelete";
             btnEnableDelete.Size = new Size(92, 34);
             btnEnableDelete.TabIndex = 47;
@@ -663,7 +667,8 @@
             btnCrossTest.FlatStyle = FlatStyle.Popup;
             btnCrossTest.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnCrossTest.ForeColor = SystemColors.ButtonHighlight;
-            btnCrossTest.Location = new Point(119, 487);
+            btnCrossTest.Location = new Point(153, 610);
+            btnCrossTest.Margin = new Padding(4);
             btnCrossTest.Name = "btnCrossTest";
             btnCrossTest.Size = new Size(93, 37);
             btnCrossTest.TabIndex = 46;
@@ -677,7 +682,8 @@
             btnshutdown.FlatStyle = FlatStyle.Popup;
             btnshutdown.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnshutdown.ForeColor = SystemColors.ButtonHighlight;
-            btnshutdown.Location = new Point(17, 351);
+            btnshutdown.Location = new Point(22, 429);
+            btnshutdown.Margin = new Padding(4);
             btnshutdown.Name = "btnshutdown";
             btnshutdown.Size = new Size(195, 37);
             btnshutdown.TabIndex = 45;
@@ -691,7 +697,8 @@
             btnRunTraining.FlatStyle = FlatStyle.Popup;
             btnRunTraining.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnRunTraining.ForeColor = SystemColors.ButtonHighlight;
-            btnRunTraining.Location = new Point(17, 487);
+            btnRunTraining.Location = new Point(22, 610);
+            btnRunTraining.Margin = new Padding(4);
             btnRunTraining.Name = "btnRunTraining";
             btnRunTraining.Size = new Size(93, 37);
             btnRunTraining.TabIndex = 44;
@@ -706,11 +713,13 @@
             dgvPilotList.BackgroundColor = Color.FromArgb(103, 98, 98);
             dgvPilotList.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvPilotList.Columns.AddRange(new DataGridViewColumn[] { 이름, 시간, 설명 });
-            dgvPilotList.Location = new Point(17, 530);
+            dgvPilotList.Location = new Point(22, 668);
+            dgvPilotList.Margin = new Padding(4);
             dgvPilotList.Name = "dgvPilotList";
             dgvPilotList.RowHeadersVisible = false;
             dgvPilotList.RowHeadersWidth = 82;
-            dgvPilotList.Size = new Size(195, 227);
+            dgvPilotList.ShowCellToolTips = true;
+            dgvPilotList.Size = new Size(251, 303);
             dgvPilotList.TabIndex = 40;
             // 
             // 이름

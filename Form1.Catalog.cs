@@ -27,7 +27,7 @@ namespace Malcha
             UseWaitCursor = busy;
             btnApplyFilter.Enabled = btnRecover.Enabled = btnDeleteSelection.Enabled =
             btnSelectData.Enabled = btnPlayPause.Enabled = btnRefresh.Enabled =
-            btnRunTraining.Enabled = !busy;
+            btnChangeCleanData.Enabled = btnRunTraining.Enabled = !busy;
         }
 
         // 최소화 상태면 창 복원·활성화
