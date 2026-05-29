@@ -14,6 +14,8 @@ namespace Malcha.Controller
         private readonly ICatalogView _view;
         private readonly CatalogSession _session;
         private readonly CatalogService _catalog = CatalogService.Instance;
+        private readonly WslDataSyncService _dataSync = WslDataSyncService.Instance;
+        private readonly WslTrainingService _wslTraining = WslTrainingService.Instance;
         private readonly FrameRangeSelection _selection;
 
         public CatalogEditorController(ICatalogView view, CatalogSession session, FrameRangeSelection selection)
@@ -33,32 +35,144 @@ namespace Malcha.Controller
                 if (!string.IsNullOrEmpty(parent) && Directory.Exists(parent)) initialDir = parent;
             }
 
-            using var dlg = new OpenFileDialog
+            using var dlg = new FolderBrowserDialog
             {
-                Title = "카탈로그 파일 선택",
-                InitialDirectory = initialDir,
-                Filter = "작업용 (*.catalog)|*.catalog|백업 (*.catalog.bak)|*.catalog.bak|모든 파일 (*.*)|*.*"
+                Description = "카탈로그 폴더 선택 (.catalog 또는 .catalog.bak 포함된 폴더)",
+                UseDescriptionForTitle = true,
+                SelectedPath = initialDir
             };
-            if (dlg.ShowDialog(_view.Owner) != DialogResult.OK) return;
-            if (!CatalogPaths.IsWorkingCatalog(dlg.FileName) && !CatalogPaths.IsBackupCatalog(dlg.FileName))
+
+            if (dlg.ShowDialog(_view.Owner) == DialogResult.OK) 
             {
-                _view.ShowMessage("`.catalog` 또는 `.catalog.bak`만 열 수 있습니다.", "데이터 선택", icon: MessageBoxIcon.Warning);
-                return;
+                string selectedFolder = dlg.SelectedPath;
+
+                // 1. 하위 폴더(backups 등) 무시하고 최상단에서만 검색
+                string[] topLevelCatalogs = Directory.GetFiles(selectedFolder, "*.catalog", SearchOption.TopDirectoryOnly);
+
+                // 2. 혹시 같이 있는 이미 병합된 파일(merged)은 제외시킴
+                string[] targetCatalogs = topLevelCatalogs
+                    .Where(f => !Path.GetFileName(f).Contains("merged", StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
+
+
+                if (targetCatalogs.Length == 0)
+                {
+                    _view.ShowMessage("선택한 폴더에 처리할 유효한 원본 카탈로그(.catalog)가 없습니다.\n(백업이나 이미 병합된 파일은 무시됩니다.)",
+                        "데이터 선택", icon: MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // 2단계에서 Service를 통해 파일들을 병합(Merge) 로드할 브릿지 메서드를 호출합니다.
+                // (기존의 await LoadCatalogFileAsync(단일_경로)는 삭제합니다.)
+                await LoadMultipleCatalogsAsync(targetCatalogs, selectedFolder);
             }
-            await LoadCatalogFileAsync(dlg.FileName);
         }
 
-        // 현재 카탈로그 다시 로드 (없으면 UI 전체 초기화)
+        // 새로고침 — WSL data 연동·초기화 / 카탈로그 재로드 / 닫기
         public async Task HandleRefreshAsync()
         {
             _view.RequestStopPlayback();
-            if (!string.IsNullOrEmpty(_session.CurrentCatalogPath) && File.Exists(_session.CurrentCatalogPath))
+
+            bool hasCatalog = !string.IsNullOrEmpty(_session.CurrentCatalogPath) && _session.CurrentFrames.Count > 0;
+            bool wslConfigured = _wslTraining.IsConfigured;
+            var workingPath = hasCatalog
+                ? CatalogPaths.ResolveWorkingCatalogPath(_session.CurrentCatalogPath)
+                : string.Empty;
+
+            if (!hasCatalog && !wslConfigured)
             {
-                _session.ClearUndo();
-                await LoadCatalogFileAsync(_session.CurrentCatalogPath);
+                if (_view.ShowMessage("열린 데이터가 없습니다.\n화면을 초기화할까요?",
+                        "새로고침", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    _view.RequestResetAllUi();
                 return;
             }
-            _view.RequestResetAllUi();
+
+            var choice = RefreshCatalogDialog.Show(_view.Owner, new RefreshCatalogDialog.Info
+            {
+                CatalogSummary = hasCatalog
+                    ? $"화면: {Path.GetFileName(_session.CurrentCatalogPath)}  ·  {_session.CurrentFrames.Count:N0} 프레임"
+                    : "화면: 열린 카탈로그 없음",
+                WslDataSummary = _dataSync.DescribeSyncedData(),
+                HasOpenCatalog = hasCatalog,
+                WslConfigured = wslConfigured
+            });
+            if (choice == null) return;
+
+            switch (choice.Value)
+            {
+                case RefreshChoice.ResyncWsl:
+                    await HandleSyncTrainingDataAsync();
+                    break;
+                case RefreshChoice.ClearWsl:
+                    await ClearWslDataAsync();
+                    break;
+                case RefreshChoice.ReloadDisk:
+                    await ReloadFromDiskAsync(workingPath);
+                    break;
+                case RefreshChoice.CloseAll:
+                    _session.ClearUndo();
+                    _view.RequestResetAllUi();
+                    _view.SetStatusText("데이터가 닫혔습니다");
+                    break;
+            }
+        }
+
+        // WSL mycar/data tub 내용 삭제
+        private async Task ClearWslDataAsync()
+        {
+            try
+            {
+                if (!_wslTraining.TryConfigure(() => MycarFolderDialog.Show(_view.Owner, null)))
+                    return;
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage(ex.Message, "WSL data 초기화", icon: MessageBoxIcon.Error);
+                return;
+            }
+
+            var summary = _dataSync.DescribeSyncedData();
+            if (_view.ShowMessage(
+                    $"WSL mycar/data 의 학습용 파일을 삭제합니다.\n\n{summary}\n\n계속할까요?",
+                    "WSL data 초기화", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
+
+            _view.SetCatalogBusy(true);
+            _view.SetStatusText("WSL data 초기화 중…");
+            try
+            {
+                await _dataSync.ClearSyncedDataAsync();
+                _view.SetStatusText("WSL data 초기화 완료");
+                _view.ShowMessage(
+                    $"WSL data를 비웠습니다.\n\n학습 전 「정제 데이터 연동」 또는\n새로고침 → WSL data 다시 연동을 실행하세요.",
+                    "WSL data 초기화");
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage($"초기화 오류: {ex.Message}", "WSL data 초기화", icon: MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _view.SetCatalogBusy(false);
+                _view.EnsureVisible();
+            }
+        }
+
+        // 디스크의 작업용 .catalog 를 그대로 다시 읽기
+        private async Task ReloadFromDiskAsync(string workingPath)
+        {
+            if (!File.Exists(workingPath))
+            {
+                _view.ShowMessage("카탈로그 파일을 찾을 수 없습니다.", "새로고침", icon: MessageBoxIcon.Warning);
+                return;
+            }
+
+            _session.ClearUndo();
+            await LoadCatalogFileAsync(workingPath);
+            _view.SetStatusText($"다시 읽음 — {_session.CurrentFrames.Count:N0} 프레임");
+            _view.ShowMessage(
+                $"디스크에서 다시 불러왔습니다.\n\n프레임: {_session.CurrentFrames.Count:N0}\n\nWSL data와 다를 수 있습니다. 「새로고침 → WSL data 다시 연동」을 실행하세요.",
+                "새로고침");
         }
 
         // 카탈로그 파일 로드 후 세션·View 갱신
@@ -89,6 +203,108 @@ namespace Malcha.Controller
                 _session.CurrentIndex = -1;
                 await _view.CompleteCatalogLoadAsync();
                 _view.UpdateCatalogPathFromSession();
+            }
+            finally { _view.SetCatalogBusy(false); }
+        }
+
+        // 정제된 카탈로그·이미지를 WSL data(tub)로 연동
+        public async Task HandleSyncTrainingDataAsync()
+        {
+            if (_session.CurrentFrames.Count == 0)
+            {
+                _view.ShowMessage("연동할 카탈로그를 먼저 열어 주세요.", "정제 데이터 연동", icon: MessageBoxIcon.Warning);
+                return;
+            }
+
+            try
+            {
+                if (!_wslTraining.TryConfigure(() => MycarFolderDialog.Show(_view.Owner, null)))
+                    return;
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage(ex.Message, "mycar 경로", icon: MessageBoxIcon.Error);
+                return;
+            }
+
+            _view.SetCatalogBusy(true);
+            _view.SetStatusText("WSL data 연동 중…");
+            ProgressDialog? progress = null;
+            try
+            {
+                progress = _view.ShowProgress("정제 데이터 연동");
+                var uiProgress = new Progress<(int percent, string message)>(r =>
+                    progress.Report(r.percent, r.message));
+
+                var result = await _dataSync.SyncAsync(
+                    _session.CurrentFrames,
+                    _session.FrameImagePaths,
+                    _session.CurrentCatalogPath,
+                    uiProgress,
+                    progress.Token);
+
+                _view.SetStatusText($"연동 완료 — {result.FrameCount:N0} 프레임, {result.ImageCount:N0} 이미지");
+                _view.ShowMessage(
+                    $"WSL data 연동 완료\n\n프레임: {result.FrameCount:N0}\n이미지: {result.ImageCount:N0}\n경로: {result.TargetPath}",
+                    "정제 데이터 연동");
+            }
+            catch (OperationCanceledException)
+            {
+                _view.ShowMessage("연동이 취소되었습니다.", "정제 데이터 연동");
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage($"연동 오류: {ex.Message}", "정제 데이터 연동", icon: MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _view.CloseProgress(progress);
+                _view.SetCatalogBusy(false);
+                _view.EnsureVisible();
+            }
+
+        // 다중 파일 병합 로드 후 세션 및 UI 갱신
+        public async Task LoadMultipleCatalogsAsync(string[] validCatalogFiles, string selectedFolder)
+        {
+            _view.SetCatalogBusy(true);
+            _view.SetStatusText($"카탈로그 {validCatalogFiles.Length}개 병합 렌더링 중...");
+            try
+            {
+                _view.RequestStopPlayback();
+                _session.ClearUndo();
+                _view.RequestClearImageCache();
+                _selection.Clear();
+
+                //  병합 메서드 호출
+                var mergedFrames = await _catalog.LoadAndConcatCatalogsAsync(validCatalogFiles);
+
+                if (mergedFrames == null || mergedFrames.Count == 0)
+                {
+                    _view.RequestClearPlayback();
+                    _view.ShowMessage("선택한 파일들에 유효한 데이터가 없습니다.", "알림");
+                    return;
+                }
+
+                // 🌟 2. Session 업데이트
+                // 가상의 마스터 파일 이름 "merged_final.catalog" 경로를 세션에 물림
+                string virtualMasterPath = Path.Combine(selectedFolder, "merged_final.catalog");
+                _session.CurrentCatalogPath = virtualMasterPath;
+
+                _session.Catalogs.Clear();
+                _session.Catalogs[virtualMasterPath] = mergedFrames;
+                _session.CurrentFrames = mergedFrames;
+
+                // 🌟 3. 이미지 절대 경로 해석 세팅 
+                // -> 첫 번째 파일의 위치(즉, selectedFolder)를 기준 디렉토리로 잡고 이미지를 뒤지게 함
+                _session.FrameImagePaths = _catalog.ResolveFrameImagePaths(virtualMasterPath, mergedFrames);
+
+                _session.CurrentIndex = -1;
+                await _view.CompleteCatalogLoadAsync();
+                _view.UpdateCatalogPathFromSession();
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage($"병합 중 에러가 발생했습니다: {ex.Message}", "에러", icon : MessageBoxIcon.Error);
             }
             finally { _view.SetCatalogBusy(false); }
         }
@@ -187,6 +403,60 @@ namespace Malcha.Controller
             finally { _view.CloseProgress(progress); _view.SetCatalogBusy(false); _view.EnsureVisible(); }
         }
 
+        // 병합 및 정제된 현재 세션을 단일 파일로 디스크에 추출(Dump)합니다.
+        public async Task HandleSaveSessionAsync()
+        {
+            // 1. 메모리에 데이터가 있는지 체크
+            if (_session.CurrentFrames == null || _session.CurrentFrames.Count == 0)
+            {
+                _view.ShowMessage("저장할 프레임 데이터가 없습니다.", "저장");
+                return;
+            }
+
+            // (이때 _session.CurrentCatalogPath 안에는 우리가 2단계에서 세팅한 
+            // "C:\데이터디렉토리\merged_final.catalog" 경로가 들어 있습니다.)
+            string targetSavePath = _session.CurrentCatalogPath;
+
+            _view.SetStatusText("통합 데이터셋 저장 중...");
+            _view.SetCatalogBusy(true);
+
+            try
+            {
+                // 2. 통합될 위치에 이미 같은 이름의 이전 통합본이 있다면, 기존 파일만 가볍게 백업
+                // (10개 원본 카탈로그의 백업을 만드는 게 아닙니다!)
+                if (File.Exists(targetSavePath))
+                {
+                    // 이거 하나면 ' merged_final_2026xxxx.catalog ' 식으로 예쁘게 빠집니다.
+                    CatalogPaths.CreateTimestampedBackup(targetSavePath);
+                }
+
+                // 3. 순수하게 메모리의 프레임을 JSON 덤프로 저장
+                // 원본 조각들은 그대로 보존되며, targetSavePath(merged_final) 하나만 생성됩니다.
+                bool isSuccess = await _catalog.SaveCatalogAsync(targetSavePath, _session.CurrentFrames);
+
+                if (isSuccess)
+                {
+                    _view.ShowMessage($"전체 병합 및 정제 결과가 저장되었습니다.\n\n저장 위치:\n{targetSavePath}",
+                                      "저장 성공", icon : MessageBoxIcon.Information);
+
+                    _session.ClearUndo(); // 저장 직후 실행 취소 스택 비우기
+                }
+                else
+                {
+                    _view.ShowMessage("파일 쓰기에 실패했습니다.", "저장 에러", icon : MessageBoxIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage($"저장 중 오류 발생: {ex.Message}", "저장 에러", icon : MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _view.SetStatusText("대기 중");
+                _view.SetCatalogBusy(false);
+            }
+        }
+
         // Undo 스택에서 이전 상태 복원
         public bool TryRecoverFromUndo()
         {
@@ -211,7 +481,7 @@ namespace Malcha.Controller
             if (!ConfirmDelete(r.s, eidx)) return;
             var savePath = _session.CurrentCatalogPath;
             int removed = DeleteRange(r.s, eidx, false);
-            if (removed > 0 && !string.IsNullOrEmpty(savePath)) await PersistAfterEditAsync(removed, savePath);
+            //if (removed > 0 && !string.IsNullOrEmpty(savePath)) await PersistAfterEditAsync(removed, savePath);
             WriteDeletedAudit(r.s, eidx);
         }
 
@@ -223,7 +493,7 @@ namespace Malcha.Controller
             if (!ConfirmDeleteIndices(idxs)) return;
             var savePath = _session.CurrentCatalogPath;
             int removed = idxs.Sum(idx => DeleteRange(idx, idx, false));
-            if (removed > 0 && !string.IsNullOrEmpty(savePath)) await PersistAfterEditAsync(removed, savePath);
+            //if (removed > 0 && !string.IsNullOrEmpty(savePath)) await PersistAfterEditAsync(removed, savePath);
         }
 
         // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)

@@ -61,6 +61,7 @@ namespace Malcha
             btnRefresh.Click += async (_, _) => await _catalogController!.HandleRefreshAsync();
             btnRecover.Click += async (_, _) => await _catalogController!.HandleRecoverAsync();
             btnApplyFilter.Click += async (_, _) => await _catalogController!.HandleApplyFilterAsync();
+            btnChangeCleanData.Click += async (_, _) => await _catalogController!.HandleSyncTrainingDataAsync();
             btnDeleteSelection.Click += async (_, _) => await _catalogController!.HandleDeleteSelectionAsync();
             btnSetStartPoint.Click += (_, _) => SetRangeStart();
             btnSetEndPoint.Click += (_, _) => SetRangeEnd();
@@ -83,6 +84,8 @@ namespace Malcha
             tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
             tips.SetToolTip(btnDeleteSelection, "선택 구간 삭제");
             tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제");
+            tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
+            tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnHelper, "F1 도움말");
         }
 
@@ -226,6 +229,12 @@ namespace Malcha
             }
             catch (TaskCanceledException) { }
             finally { StopPlayback(); }
+        }
+
+        private async void btnSaveCatalog_Click(object sender, EventArgs e)
+        {
+            // 방금 만든 통합 덤프 저장 메서드 하나만 심플하게 호출하면 끝!
+            await _catalogController.HandleSaveSessionAsync();
         }
     }
 }
