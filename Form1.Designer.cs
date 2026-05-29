@@ -35,8 +35,8 @@
             panel1 = new Panel();
             txtFilePath = new TextBox();
             btnSelectData = new Button();
-            btnChangeCleanData = new Button();
             lblTitle = new Label();
+            btnChangeCleanData = new Button();
             panel2 = new Panel();
             lstDataList = new ListBox();
             picVideoScreen = new PictureBox();
@@ -127,20 +127,6 @@
             btnSelectData.Text = "데이터 선택";
             btnSelectData.UseVisualStyleBackColor = false;
             // 
-            // btnChangeCleanData
-            // 
-            btnChangeCleanData.Anchor = AnchorStyles.Left;
-            btnChangeCleanData.BackColor = Color.FromArgb(198, 100, 114);
-            btnChangeCleanData.FlatStyle = FlatStyle.Popup;
-            btnChangeCleanData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnChangeCleanData.ForeColor = SystemColors.ButtonHighlight;
-            btnChangeCleanData.Location = new Point(647, 50);
-            btnChangeCleanData.Name = "btnChangeCleanData";
-            btnChangeCleanData.Size = new Size(91, 51);
-            btnChangeCleanData.TabIndex = 1;
-            btnChangeCleanData.Text = "정제 데이터 변경";
-            btnChangeCleanData.UseVisualStyleBackColor = false;
-            // 
             // lblTitle
             // 
             lblTitle.AutoSize = true;
@@ -151,6 +137,20 @@
             lblTitle.Size = new Size(138, 32);
             lblTitle.TabIndex = 0;
             lblTitle.Text = "DonkeyCar";
+            // 
+            // btnChangeCleanData
+            // 
+            btnChangeCleanData.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnChangeCleanData.BackColor = Color.FromArgb(198, 100, 114);
+            btnChangeCleanData.FlatStyle = FlatStyle.Popup;
+            btnChangeCleanData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnChangeCleanData.ForeColor = SystemColors.ButtonHighlight;
+            btnChangeCleanData.Location = new Point(647, 50);
+            btnChangeCleanData.Name = "btnChangeCleanData";
+            btnChangeCleanData.Size = new Size(91, 51);
+            btnChangeCleanData.TabIndex = 1;
+            btnChangeCleanData.Text = "정제 데이터 변경";
+            btnChangeCleanData.UseVisualStyleBackColor = false;
             // 
             // panel2
             // 
