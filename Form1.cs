@@ -230,5 +230,11 @@ namespace Malcha
             catch (TaskCanceledException) { }
             finally { StopPlayback(); }
         }
+
+        private async void btnSaveCatalog_Click(object sender, EventArgs e)
+        {
+            // 방금 만든 통합 덤프 저장 메서드 하나만 심플하게 호출하면 끝!
+            await _catalogController.HandleSaveSessionAsync();
+        }
     }
 }

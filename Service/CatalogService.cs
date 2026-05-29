@@ -109,5 +109,36 @@ namespace Malcha.Service
                 ? await LoadCatalogFileAsync(workingPath)
                 : new List<Frame>(memoryFrames);
         }
+        
+
+        // 여러 카탈로그 파일을 로드하여 시간순으로 하나의 프레임 리스트로 이어붙입니다.
+        public async Task<List<Frame>> LoadAndConcatCatalogsAsync(string[] catalogPaths)
+        {
+            var allFrames = new List<Frame>();
+
+            // 1. 모든 경로의 파일을 순회하며 메모리에 올림
+            foreach (var path in catalogPaths)
+            {
+                // DataManager.Instance.LoadCatalogFileAsync 사용
+                var frames = await LoadCatalogFileAsync(path);
+
+                if (frames != null && frames.Count > 0)
+                {
+                    allFrames.AddRange(frames);
+                }
+            }
+
+            // 2. 시간순(TimestampMs)으로 전체 데이터 재정렬
+            // (예: catalog_0과 catalog_1이 순서가 뒤죽박죽으로 들어왔을 수 있으므로 필수)
+            var sortedFrames = allFrames.OrderBy(f => f.TimestampMs).ToList();
+
+            // 3. 인덱스(Index) 재부여 (0번부터 다시 순서대로 덮어씌움)
+            for (int i = 0; i < sortedFrames.Count; i++)
+            {
+                sortedFrames[i].Index = i;
+            }
+
+            return sortedFrames;
+        }
     }
 }
