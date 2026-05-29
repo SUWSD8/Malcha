@@ -13,13 +13,13 @@ namespace Malcha
 {
     public partial class Form2 : Form
     {
-        public Form2()
+        /*public Form2()
         {
             InitializeComponent();
             Form2_Load();
 
         }
-        private async void Form2_Load()
+        /*private async void Form2_Load()
         {
             await ButtonAdapter.ParseTrainingHistory(btnRunTraining, "mypilot");
             RefreshModelList();
@@ -30,7 +30,7 @@ namespace Malcha
             this.Close();
         }
 
-        private void btnUpdateComment_Click(object sender, EventArgs e)
+        /*private void btnUpdateComment_Click(object sender, EventArgs e)
         {
             string name = txtMyPilot.Text;
             string newComment = txtModelMemo.Text;
@@ -69,7 +69,7 @@ namespace Malcha
 
         private async void btnRunAnalysis_Click(object sender, EventArgs e)
         {
-            string name = txtMyPilot.Text;
+            //string name = txtMyPilot.Text;
             btnRunTraining.Enabled = false;
             try
             {
@@ -94,6 +94,6 @@ namespace Malcha
             dgvPilotList.AutoGenerateColumns = false;
             dgvPilotList.DataSource = null;
             dgvPilotList.DataSource = models;
-        }
+        }*/
     }
 }
