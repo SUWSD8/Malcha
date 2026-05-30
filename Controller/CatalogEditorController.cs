@@ -262,7 +262,7 @@ namespace Malcha.Controller
                 _view.SetCatalogBusy(false);
                 _view.EnsureVisible();
             }
-
+        }
         // 다중 파일 병합 로드 후 세션 및 UI 갱신
         public async Task LoadMultipleCatalogsAsync(string[] validCatalogFiles, string selectedFolder)
         {
@@ -348,8 +348,8 @@ namespace Malcha.Controller
 
                 if (!string.IsNullOrEmpty(_session.CurrentCatalogPath) && File.Exists(_session.CurrentCatalogPath))
                 {
-                    try { CatalogPaths.CreateTimestampedBackup(_session.CurrentCatalogPath); } catch { }
-                    await _catalog.SaveCatalogAsync(_session.CurrentCatalogPath, _session.CurrentFrames);
+                    //try { CatalogPaths.CreateTimestampedBackup(_session.CurrentCatalogPath); } catch { }
+                    //await _catalog.SaveCatalogAsync(_session.CurrentCatalogPath, _session.CurrentFrames);
                 }
                 _view.ShowMessage($"정제: {refineResult.OriginalCount:N0} → {refineResult.Frames.Count:N0}", "필터 적용");
             }
@@ -361,32 +361,65 @@ namespace Malcha.Controller
         public async Task HandleRecoverAsync()
         {
             if (string.IsNullOrEmpty(_session.CurrentCatalogPath)) { _view.ShowMessage("카탈로그를 먼저 열어 주세요.", "복구"); return; }
-
             var workingPath = CatalogPaths.ResolveWorkingCatalogPath(_session.CurrentCatalogPath);
-            var backupPath = CatalogPaths.FindLatestBackupPath(workingPath);
-            if (string.IsNullOrEmpty(backupPath) || !File.Exists(backupPath))
+
+            var backupPaths = CatalogPaths.GetAllBackupPaths(workingPath);
+            if (backupPaths.Count == 0) { TryRecoverFromUndo(); return; }
+
+            string selectedBackupPath = null;
+
+            foreach (var path in backupPaths)
             {
-                if (TryRecoverFromUndo()) return;
-                _view.ShowMessage("백업 없음", "복구"); return;
+                var fileInfo = new FileInfo(path);
+                string timeStr = fileInfo.LastWriteTime.ToString("yyyy-MM-dd tt hh:mm:ss");
+
+                // 사용자에게 물어봄 (Yes, No, Cancel 이 있는 버튼)
+                var result = _view.ShowMessage(
+                    $"복구 시점 발견: {timeStr}\n\n이 시점의 데이터 원본과 현재 데이터를 합쳐 복구하시겠습니까?\n\n(아니오를 누르면 더 오래된 과거 시점을 찾습니다)",
+                    "백업 병합 시점 선택",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    selectedBackupPath = path;
+                    break; // 찾았으니 루프 탈출!
+                }
+                else if (result == DialogResult.Cancel)
+                {
+                    return; // 사용자가 취소함 -> 아예 복구 중단
+                }
+                // No 를 누르면 그냥 반복문 계속 (다음 더 오래된 백업을 물어봄)
+            }
+            if (selectedBackupPath == null)
+            {
+                _view.ShowMessage("선택된 백업이 없어 복구를 취소합니다.", "알림");
+                return;
             }
 
             List<Frame> refinedFrames;
             try { refinedFrames = await _catalog.LoadRefinedFramesAsync(_session.CurrentCatalogPath, _session.CurrentFrames); }
             catch (Exception ex) { _view.ShowMessage(ex.Message, "복구", icon: MessageBoxIcon.Error); return; }
 
-            if (_view.ShowMessage($"백업 병합: {Path.GetFileName(backupPath)}\n계속?", "복구",
-                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+           
 
             _session.PushUndo();
             _view.SetCatalogBusy(true);
             ProgressDialog? progress = null;
             try
             {
-                progress = _view.ShowProgress("백업 병합");
-                var (backupFrames, mergeResult) = await _catalog.MergeWithBackupAsync(workingPath, refinedFrames, progress.Token);
-                try { CatalogPaths.CreateTimestampedBackup(workingPath); } catch { }
+                // [새로운 코드: 깨끗하게 과거 시점의 데이터를 그대로 덮어버리는 롤백 로직]
+                progress = _view.ShowProgress("과거 데이터 불러오기");
+
+                // 1. 병합(Merge)하지 마세요! 그냥 선택된 과거 백업 파일을 통째로 읽어옵니다.
+                var previousFrames = await _catalog.LoadCatalogFileAsync(selectedBackupPath);
+
+                
+
+                // 3. 파일의 경로와 현재 프레임을 '선택한 과거 데이터'로 통째로 덮어씌웁니다.
                 _session.CurrentCatalogPath = workingPath;
-                _session.CurrentFrames = mergeResult.Frames;
+                _session.CurrentFrames = previousFrames;
+
                 _session.Catalogs[workingPath] = _session.CurrentFrames;
                 await _catalog.SaveCatalogAsync(workingPath, _session.CurrentFrames);
                 _view.RequestClearImageCache();
@@ -396,7 +429,7 @@ namespace Malcha.Controller
                 _view.RequestRefreshFrameList();
                 if (_session.CurrentFrames.Count > 0)
                     _view.RequestShowFrame(Math.Min(_session.CurrentIndex, _session.CurrentFrames.Count - 1));
-                _view.ShowMessage($"병합: {mergeResult.Frames.Count:N0} 프레임", "복구");
+                _view.ShowMessage($"병합 완료", "복구");
             }
             catch (OperationCanceledException) { _view.ShowMessage("병합 취소", "복구"); }
             catch (Exception ex) { _view.ShowMessage($"복구 오류: {ex.Message}", "복구", icon: MessageBoxIcon.Error); }
