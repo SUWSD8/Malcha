@@ -85,6 +85,7 @@
             lblloglist = new Label();
             btnshutdown = new Button();
             lstLog = new ListBox();
+            btnSaveCatalog = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -540,6 +541,7 @@
             // groupBox1
             // 
             groupBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox1.Controls.Add(btnSaveCatalog);
             groupBox1.Controls.Add(lblTitle);
             groupBox1.Controls.Add(txtFilePath);
             groupBox1.Controls.Add(btnSelectData);
@@ -563,9 +565,9 @@
             // txtFilePath
             // 
             txtFilePath.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtFilePath.Location = new Point(146, 56);
+            txtFilePath.Location = new Point(268, 56);
             txtFilePath.Name = "txtFilePath";
-            txtFilePath.Size = new Size(631, 23);
+            txtFilePath.Size = new Size(509, 23);
             txtFilePath.TabIndex = 9;
             // 
             // btnSelectData
@@ -793,6 +795,21 @@
             lstLog.Size = new Size(382, 304);
             lstLog.TabIndex = 57;
             // 
+            // btnSaveCatalog
+            // 
+            btnSaveCatalog.Anchor = AnchorStyles.Left;
+            btnSaveCatalog.BackColor = Color.FromArgb(53, 48, 49);
+            btnSaveCatalog.FlatStyle = FlatStyle.Popup;
+            btnSaveCatalog.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnSaveCatalog.ForeColor = SystemColors.ButtonHighlight;
+            btnSaveCatalog.Location = new Point(141, 56);
+            btnSaveCatalog.Name = "btnSaveCatalog";
+            btnSaveCatalog.Size = new Size(121, 23);
+            btnSaveCatalog.TabIndex = 10;
+            btnSaveCatalog.Text = "저장";
+            btnSaveCatalog.UseVisualStyleBackColor = false;
+            btnSaveCatalog.Click += btnSaveCatalog_Click;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -882,5 +899,6 @@
         private DataGridViewTextBoxColumn 설명;
         private TableLayoutPanel tableLayoutPanel2;
         private TableLayoutPanel tableLayoutPanel1;
+        private Button btnSaveCatalog;
     }
 }
