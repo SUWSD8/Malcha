@@ -90,11 +90,12 @@ namespace Malcha.Service
 
         // 최신 백업과 정제본을 병합
         public async Task<(List<Frame> BackupFrames, CatalogMerger.MergeResult MergeResult)> MergeWithBackupAsync(
-            string workingPath, IReadOnlyList<Frame> refinedFrames, CancellationToken token = default)
+            string selectedBackupPath, IReadOnlyList<Frame> refinedFrames, CancellationToken token = default)
         {
-            var backupPath = CatalogPaths.FindLatestBackupPath(workingPath)
-                ?? throw new FileNotFoundException("백업 없음", workingPath);
-            var backupFrames = await LoadCatalogFileAsync(backupPath);
+            if (!File.Exists(selectedBackupPath))
+                throw new FileNotFoundException("선택된 백업 파일을 찾을 수 없습니다.", selectedBackupPath);
+
+            var backupFrames = await LoadCatalogFileAsync(selectedBackupPath);
             var mergeResult = await Task.Run(() => CatalogMerger.Merge(backupFrames, refinedFrames), token);
             return (backupFrames, mergeResult);
         }
