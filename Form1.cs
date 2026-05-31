@@ -12,6 +12,7 @@ namespace Malcha
 
         private readonly CatalogSession _session = new();
         private readonly FrameRangeSelection _selection = new();
+        private readonly FrameRangeSelection _deletedSelection = new();
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
 
@@ -27,6 +28,11 @@ namespace Malcha
             InitializeTrainingPanel();
 
             new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi).Attach();
+            new DeletedListSelectionBinder(lstDeleted, _deletedSelection, RefreshDeletedSelectionUi).Attach();
+            new FrameListDragDropBinder(
+                lstDataList, lstDeleted, groupBox2, _selection, _deletedSelection,
+                payload => _catalogController!.HandleDropToDeleted(payload),
+                payload => _catalogController!.HandleDropToActive(payload)).Attach();
             SetupContextMenus();
             SetupEventHandlers();
             SetupToolTips();
@@ -49,9 +55,14 @@ namespace Malcha
             };
 
             var trackMenu = new ContextMenuStrip();
-            trackMenu.Items.Add("선택된 구간 삭제", null, async (_, _) =>
+            trackMenu.Items.Add("선택 구간 삭제 목록으로 이동", null, async (_, _) =>
                 await _catalogController!.HandleDeleteSelectionAsync());
             trbTimeline.ContextMenuStrip = trackMenu;
+
+            var deletedMenu = new ContextMenuStrip();
+            deletedMenu.Items.Add("선택 항목 복구", null, (_, _) =>
+                _catalogController!.RestoreFromDeletedList(_deletedSelection.ToIndexList()));
+            lstDeleted.ContextMenuStrip = deletedMenu;
         }
 
         // 버튼·키·Paint 이벤트 핸들러 연결
@@ -82,8 +93,10 @@ namespace Malcha
             var tips = new ToolTip { AutoPopDelay = 8000, InitialDelay = 400 };
             tips.SetToolTip(btnSetStartPoint, "구간 시작 ([)");
             tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
-            tips.SetToolTip(btnDeleteSelection, "선택 구간 삭제");
-            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제");
+            tips.SetToolTip(btnDeleteSelection, "선택 구간을 삭제 목록으로 이동");
+            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제 · 리스트 드래그: 구간");
+            tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
+            tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnHelper, "F1 도움말");
@@ -99,6 +112,14 @@ namespace Malcha
             toolStripStatusLabel1.Text = $"구간 {s}~{e} ({_selection.FrameCount:N0}) · Esc 해제";
         }
 
+        private void RefreshDeletedSelectionUi()
+        {
+            lstDeleted.Invalidate();
+            if (!_deletedSelection.HasSelection) return;
+            var (s, e) = _deletedSelection.GetRange();
+            toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
+        }
+
         // 단축키 처리 (F1 도움말, [, ], Esc, Ctrl+Z)
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
@@ -110,6 +131,7 @@ namespace Malcha
                 case Keys.OemCloseBrackets: SetRangeEnd(); e.Handled = true; break;
                 case Keys.Escape:
                     if (_selection.HasSelection) { _selection.Clear(); RefreshSelectionUi(); }
+                    else if (_deletedSelection.HasSelection) { _deletedSelection.Clear(); RefreshDeletedSelectionUi(); }
                     e.Handled = true; break;
                 case Keys.Z when e.Control:
                     _catalogController!.TryRecoverFromUndo(); e.Handled = true; break;
@@ -153,8 +175,10 @@ namespace Malcha
             StopPlayback();
             _session.Reset();
             _selection.Clear();
+            _deletedSelection.Clear();
             _display.ClearCache();
             lstDataList.Items.Clear();
+            lstDeleted.Items.Clear();
             _display.ClearDisplay();
             _display.RefreshChart(_session.CurrentFrames);
             txtFilePath.Text = string.Empty;
@@ -167,8 +191,11 @@ namespace Malcha
             _session.CurrentFrames = new();
             _session.CurrentCatalogPath = string.Empty;
             _session.CurrentIndex = 0;
+            _session.ClearDeleted();
             _selection.Clear();
+            _deletedSelection.Clear();
             lstDataList.Items.Clear();
+            lstDeleted.Items.Clear();
             _display.ClearDisplay();
             _display.RefreshChart(_session.CurrentFrames);
             _display.ClearCache();

@@ -70,7 +70,21 @@ namespace Malcha.Service
             for (int i = 0; i < frames.Count; i++)
             {
                 bool hasImg = i < imagePaths.Count && !string.IsNullOrEmpty(imagePaths[i]);
-                listBox.Items.Add(hasImg ? $"frame_{i} (img)" : $"frame_{i} (no image)");
+                listBox.Items.Add(hasImg ? $"#{i} frame_{i} (img)" : $"#{i} frame_{i}");
+            }
+        }
+
+        // 삭제 목록 ListBox 채우기
+        public void PopulateDeletedListBox(ListBox listBox, IReadOnlyList<DeletedFrameEntry> entries)
+        {
+            listBox.Items.Clear();
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var e = entries[i];
+                bool hasImg = !string.IsNullOrEmpty(e.ImagePath);
+                listBox.Items.Add(hasImg
+                    ? $"#{e.OriginalIndex} → del_{i} (img)"
+                    : $"#{e.OriginalIndex} → del_{i}");
             }
         }
 

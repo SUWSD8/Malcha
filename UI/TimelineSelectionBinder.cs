@@ -11,10 +11,17 @@ namespace Malcha.UI
             public bool HasSelection => Start >= 0 || End >= 0;
 
             // 구간 시작점 설정
-            public void SetStart(int idx) { Start = idx; if (End < Start) End = Start; }
+            public void SetStart(int idx) { Start = idx; if (End < 0) End = idx; else if (End < Start) End = Start; }
 
-            // 구간 끝점 설정
-            public void SetEnd(int idx) { End = idx; if (Start < 0) Start = End; if (End < Start) End = Start; }
+            // 구간 끝점 설정 (위·아래 어느 방향이든 허용, GetRange에서 정규화)
+            public void SetEnd(int idx) { End = idx; if (Start < 0) Start = idx; }
+
+            // 드래그 앵커 ↔ 현재 위치로 구간 설정 (양방향)
+            public void SetRange(int anchor, int current)
+            {
+                Start = Math.Min(anchor, current);
+                End = Math.Max(anchor, current);
+            }
 
             // 선택 해제
             public void Clear() { Start = End = -1; }
@@ -28,8 +35,26 @@ namespace Malcha.UI
                 return (s, e);
             }
 
+            // 인덱스가 현재 구간 안에 있는지
+            public bool Contains(int idx)
+            {
+                if (idx < 0) return false;
+                var (s, e) = GetRange();
+                return s >= 0 && idx >= s && idx <= e;
+            }
+
             // 선택된 프레임 수
             public int FrameCount { get { var (s, e) = GetRange(); return s < 0 ? 0 : e - s + 1; } }
+
+            // 구간에 포함된 인덱스 목록
+            public List<int> ToIndexList()
+            {
+                var (s, e) = GetRange();
+                if (s < 0) return new List<int>();
+                var list = new List<int>(e - s + 1);
+                for (int i = s; i <= e; i++) list.Add(i);
+                return list;
+            }
 
             // 프레임 삭제 후 선택 인덱스 보정
             public void OnFramesRemoved(int removedStart, int removedCount)
@@ -47,6 +72,8 @@ namespace Malcha.UI
         private readonly FrameRangeSelection _selection;
         private readonly Action _refreshUi;
         private bool _rangeDrag;
+        private bool _listRangeDrag;
+        private int _listAnchor = -1;
 
         public TimelineSelectionBinder(TrackBar timeline, ListBox list,
             FrameRangeSelection selection, Action refreshUi)
@@ -63,6 +90,8 @@ namespace Malcha.UI
             _list.DrawMode = DrawMode.OwnerDrawFixed;
             _list.DrawItem += OnListDrawItem;
             _list.MouseDown += OnListMouseDown;
+            _list.MouseMove += OnListMouseMove;
+            _list.MouseUp += OnListMouseUp;
             _timeline.MouseDown += OnTimelineMouseDown;
             _timeline.MouseMove += OnTimelineMouseMove;
             _timeline.MouseUp += (_, _) => _rangeDrag = false;
@@ -110,16 +139,62 @@ namespace Malcha.UI
             e.Graphics.FillRectangle(brush, Math.Min(x1, x2), 0, Math.Abs(x2 - x1), tb.ClientSize.Height);
         }
 
-        // Ctrl+클릭으로 리스트 구간 선택
+        // Ctrl+클릭: 구간 끝/시작 · 일반 드래그: 구간 선택
         private void OnListMouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
-            int idx = _list.IndexFromPoint(e.Location);
+            int idx = ListBoxDragSelectHelper.IndexFromPointClamped(_list, e.Location);
             if (idx < 0) return;
+
             var mods = Control.ModifierKeys;
-            if ((mods & Keys.Control) != 0 && (mods & Keys.Shift) != 0) _selection.SetEnd(idx);
-            else if ((mods & Keys.Control) != 0) _selection.SetStart(idx);
-            else return;
+            if ((mods & Keys.Control) != 0)
+            {
+                if ((mods & Keys.Shift) != 0) _selection.SetEnd(idx);
+                else _selection.SetStart(idx);
+                _listRangeDrag = false;
+                _refreshUi();
+                return;
+            }
+
+            // 이미 선택된 구간 위에서 누르면 구간 유지 → 이후 드래그로 이동
+            if (_selection.Contains(idx))
+            {
+                _listRangeDrag = false;
+                return;
+            }
+
+            _listAnchor = idx;
+            _listRangeDrag = true;
+            _selection.SetRange(idx, idx);
+            _list.SelectedIndex = idx;
+            _list.Capture = true;
+            _refreshUi();
+        }
+
+        // 리스트 내 드래그로 구간 끝 갱신
+        private void OnListMouseMove(object? sender, MouseEventArgs e)
+        {
+            if (!_listRangeDrag || e.Button != MouseButtons.Left) return;
+
+            var pt = _list.PointToClient(Cursor.Position);
+            if (!_list.ClientRectangle.Contains(pt)) return;
+
+            int idx = ListBoxDragSelectHelper.IndexFromPointClamped(_list, pt);
+            if (idx < 0) return;
+
+            _selection.SetRange(_listAnchor, idx);
+            _refreshUi();
+        }
+
+        private void OnListMouseUp(object? sender, MouseEventArgs e)
+        {
+            if (!_listRangeDrag) return;
+            _listRangeDrag = false;
+            if (_list.Capture) _list.Capture = false;
+
+            var (s, _) = _selection.GetRange();
+            if (s >= 0 && _list.SelectedIndex != s)
+                _list.SelectedIndex = s;
             _refreshUi();
         }
 

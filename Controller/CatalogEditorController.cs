@@ -184,6 +184,7 @@ namespace Malcha.Controller
             {
                 _view.RequestStopPlayback();
                 _session.ClearUndo();
+                _session.ClearDeleted();
                 _view.RequestClearImageCache();
                 _selection.Clear();
 
@@ -272,6 +273,7 @@ namespace Malcha.Controller
             {
                 _view.RequestStopPlayback();
                 _session.ClearUndo();
+                _session.ClearDeleted();
                 _view.RequestClearImageCache();
                 _selection.Clear();
 
@@ -568,27 +570,85 @@ namespace Malcha.Controller
         public async Task HandleDeleteListItemsAsync(IReadOnlyList<int> indices)
         {
             if (indices.Count == 0) return;
-            var idxs = indices.OrderByDescending(i => i).ToList();
+            var idxs = indices.Distinct().OrderBy(i => i).ToList();
             if (!ConfirmDeleteIndices(idxs)) return;
-            var savePath = _session.CurrentCatalogPath;
-            int removed = idxs.Sum(idx => DeleteRange(idx, idx, false));
+            MoveIndicesToDeleted(idxs, persistAfter: false);
             //if (removed > 0 && !string.IsNullOrEmpty(savePath)) await PersistAfterEditAsync(removed, savePath);
         }
 
-        // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)
-        public int DeleteRange(int start, int end, bool persistAfter = true)
+        // start~end 프레임 범위를 삭제 목록으로 이동
+        public int MoveRangeToDeleted(int start, int end, bool persistAfter = true)
         {
             var savePath = _session.CurrentCatalogPath;
-            var result = _session.DeleteRange(start, end);
+            var result = _session.MoveRangeToDeleted(start, end);
             if (result == null) return 0;
-            _view.RequestStopPlayback();
-            _view.OnFramesRemoved(result.Start, result.Count);
-            _selection.OnFramesRemoved(result.Start, result.Count);
-            _view.RequestRefreshFrameList();
+            AfterFramesMovedToDeleted(result);
             if (persistAfter && !string.IsNullOrEmpty(savePath))
                 _ = PersistAfterEditAsync(result.Count, savePath);
             return result.Count;
         }
+
+        // 여러 인덱스를 삭제 목록으로 이동
+        public int MoveIndicesToDeleted(IReadOnlyList<int> indices, bool persistAfter = true)
+        {
+            var savePath = _session.CurrentCatalogPath;
+            var result = _session.MoveIndicesToDeleted(indices);
+            if (result == null) return 0;
+            AfterFramesMovedToDeleted(result);
+            if (persistAfter && !string.IsNullOrEmpty(savePath))
+                _ = PersistAfterEditAsync(result.Count, savePath);
+            return result.Count;
+        }
+
+        // 삭제 목록 → 프레임 리스트 복구
+        public int RestoreFromDeletedList(IReadOnlyList<int> deletedIndices, bool persistAfter = true)
+        {
+            var savePath = _session.CurrentCatalogPath;
+            int count = _session.RestoreFromDeleted(deletedIndices);
+            if (count == 0) return 0;
+
+            _view.RequestStopPlayback();
+            _view.RequestClearImageCache();
+            _selection.Clear();
+            _view.RequestRefreshFrameList();
+            _view.SetStatusText($"복구 — {count:N0} 프레임 (삭제 목록 {_session.DeletedEntries.Count:N0})");
+
+            if (persistAfter && !string.IsNullOrEmpty(savePath))
+                _ = PersistAfterEditAsync(0, savePath);
+            return count;
+        }
+
+        // 드래그앤드롭 — 삭제 목록으로
+        public int HandleDropToDeleted(FrameDragPayload payload)
+        {
+            if (payload.Source != FrameDragPayload.SourceKind.Active) return 0;
+            if (payload.HasRange)
+                return MoveRangeToDeleted(payload.RangeStart, payload.RangeEnd, persistAfter: false);
+            if (payload.Indices.Count > 0)
+                return MoveIndicesToDeleted(payload.Indices, persistAfter: false);
+            return 0;
+        }
+
+        // 드래그앤드롭 — 프레임 리스트로 복구
+        public int HandleDropToActive(FrameDragPayload payload)
+        {
+            if (payload.Source != FrameDragPayload.SourceKind.Deleted) return 0;
+            if (payload.Indices.Count == 0) return 0;
+            return RestoreFromDeletedList(payload.Indices, persistAfter: false);
+        }
+
+        private void AfterFramesMovedToDeleted(CatalogSession.DeleteRangeResult result)
+        {
+            _view.RequestStopPlayback();
+            _view.OnFramesRemoved(result.Start, result.Count);
+            _selection.OnFramesRemoved(result.Start, result.Count);
+            _view.RequestRefreshFrameList();
+            _view.SetStatusText($"삭제 목록 — {_session.DeletedEntries.Count:N0} (방금 +{result.Count:N0})");
+        }
+
+        // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)
+        public int DeleteRange(int start, int end, bool persistAfter = true) =>
+            MoveRangeToDeleted(start, end, persistAfter);
 
         // 편집 후 백업 생성 및 카탈로그 저장
         public async Task PersistAfterEditAsync(int removedCount, string? catalogPath = null)
@@ -645,7 +705,7 @@ namespace Malcha.Controller
         private bool ConfirmCore(int count, int start, int end, string? headline)
         {
             string target = headline ?? (count == 1 ? $"#{start}" : $"{start}~{end} ({count}개)");
-            return _view.ShowMessage($"{target} 삭제?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
+            return _view.ShowMessage($"{target}을(를) 삭제 목록으로 이동?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
                 "프레임 삭제", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
         }
     }
