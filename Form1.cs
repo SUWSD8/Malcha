@@ -79,6 +79,8 @@ namespace Malcha
             lstDataList.SelectedIndexChanged += (_, _) => OnListSelectionChanged();
             btnNextFrame.Click += (_, _) => StepFrame(1);
             btnPrevFrame.Click += (_, _) => StepFrame(-1);
+            btnFastForward.Click += (_, _) => StepFrame(5);
+            btnRewind.Click += (_, _) => StepFrame(-5);
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += (_, _) => OnTimelineScroll();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
@@ -91,6 +93,10 @@ namespace Malcha
         private void SetupToolTips()
         {
             var tips = new ToolTip { AutoPopDelay = 8000, InitialDelay = 400 };
+            tips.SetToolTip(btnPrevFrame, "이전 프레임 (1)");
+            tips.SetToolTip(btnNextFrame, "다음 프레임 (1)");
+            tips.SetToolTip(btnRewind, "5프레임 뒤로");
+            tips.SetToolTip(btnFastForward, "5프레임 앞으로");
             tips.SetToolTip(btnSetStartPoint, "구간 시작 ([)");
             tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
             tips.SetToolTip(btnDeleteSelection, "선택 구간을 삭제 목록으로 이동");
