@@ -245,8 +245,8 @@ namespace Malcha
             {
                 DialogResult result = MessageBox.Show(
                     "3,000장 등 현재 진척도에서 학습을 임의 중단하고\n지금까지 학습된 AI 모델을 저장할까요?",
-                    "학습 임의 중단 요청",
-                    MessageBoxButtons.YesNo,
+                    "학습 임의 중단 요청", 
+                    MessageBoxButtons.YesNo, 
                     MessageBoxIcon.Question);
 
                 if (result == DialogResult.Yes)
@@ -254,10 +254,10 @@ namespace Malcha
                     try
                     {
                         string flagPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "stop.txt");
-
+                        
                         // 파이썬이 읽을 수 있도록 'stop.txt' 플래그 파일 생성
                         File.WriteAllText(flagPath, "STOP_SIGNAL");
-
+                        
                         if (lstLog != null) lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] 사용자 요청: 파이썬에 학습 중단 신호(stop.txt)를 보냈습니다.");
                         toolStripStatusLabel1.Text = "중단 신호 송신 완료. 파이썬이 모델을 저장한 후 안전하게 종료됩니다.";
                     }
@@ -280,9 +280,9 @@ namespace Malcha
             try
             {
                 if (lstLog != null) lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] AI 학습 프로세스를 시작합니다...");
-
+                
                 // 버튼 텍스트를 '학습 강제 종료'로 변경하여 사용자가 누를 수 있게 유도
-                btnshutdown.Text = "학습 강제 종료";
+                btnshutdown.Text = "학습 강제 종료"; 
 
                 ProcessStartInfo startInfo = new ProcessStartInfo
                 {
@@ -309,7 +309,7 @@ namespace Malcha
                             lstLog.SelectedIndex = lstLog.Items.Count - 1;
                         }));
                 };
-
+                
                 _trainingProcess.ErrorDataReceived += (s, ev) => {
                     if (ev.Data != null && lstLog != null)
                         this.Invoke(new Action(() => {
@@ -323,10 +323,10 @@ namespace Malcha
                     this.Invoke(new Action(() => {
                         if (lstLog != null) lstLog.Items.Add($"[{DateTime.Now:HH:mm:ss}] AI 학습 프로세스가 완전히 종료되었습니다.");
                         toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
-
+                        
                         // 학습이 끝났으므로 버튼 텍스트를 다시 원래대로 복구
-                        btnshutdown.Text = "학습 강제 종료";
-
+                        btnshutdown.Text = "학습 강제 종료"; 
+                        
                         if (_trainingProcess != null) { _trainingProcess.Dispose(); _trainingProcess = null; }
                     }));
                 };
@@ -354,7 +354,7 @@ namespace Malcha
             }
 
             DialogResult result = MessageBox.Show(
-                "3,000장 등 현재 진척도에서 학습을 임의 중단하고\n지금까지 학습된 AI 모델을 저장할까요?",
+                "현재 진척도에서 학습을 임의 중단하고\n지금까지 학습된 AI 모델을 저장할까요?",
                 "학습 임의 중단 요청", 
                 MessageBoxButtons.YesNo, 
                 MessageBoxIcon.Question);
