@@ -15,7 +15,6 @@ namespace Malcha.View
         event EventHandler? RunTrainingRequested;
         event EventHandler? UpdateCommentRequested;
         event EventHandler? DeleteModelRequested;
-        event EventHandler? ShowChartRequested;
         event EventHandler? ModelSelectionChanged;
 
         void SetTrainingButtonEnabled(bool enabled);

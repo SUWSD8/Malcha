@@ -61,6 +61,8 @@
             lblModeValue = new Label();
             lblThrottleValue = new Label();
             lblAngleValue = new Label();
+            lblModelValue = new Label();
+            lblModelAngle = new Label();
             lblModeTitle = new Label();
             lblThrottleTitle = new Label();
             lblAngleTitle = new Label();
@@ -358,6 +360,8 @@
             groupBox2.Controls.Add(lblModeValue);
             groupBox2.Controls.Add(lblThrottleValue);
             groupBox2.Controls.Add(lblAngleValue);
+            groupBox2.Controls.Add(lblModelValue);
+            groupBox2.Controls.Add(lblModelAngle);
             groupBox2.Controls.Add(lblModeTitle);
             groupBox2.Controls.Add(lblThrottleTitle);
             groupBox2.Controls.Add(lblAngleTitle);
@@ -537,6 +541,32 @@
             lblAngleValue.Size = new Size(86, 25);
             lblAngleValue.TabIndex = 39;
             lblAngleValue.Text = "+00.000";
+            // 
+            // lblModelAngle
+            // 
+            lblModelAngle.AutoSize = true;
+            lblModelAngle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            lblModelAngle.ForeColor = Color.FromArgb(255, 215, 64);
+            lblModelAngle.Location = new Point(41, 291);
+            lblModelAngle.Margin = new Padding(4, 0, 4, 0);
+            lblModelAngle.Name = "lblModelAngle";
+            lblModelAngle.Size = new Size(118, 25);
+            lblModelAngle.TabIndex = 64;
+            lblModelAngle.Text = "model/angle";
+            lblModelAngle.Visible = false;
+            // 
+            // lblModelValue
+            // 
+            lblModelValue.AutoSize = true;
+            lblModelValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            lblModelValue.ForeColor = Color.FromArgb(255, 215, 64);
+            lblModelValue.Location = new Point(63, 331);
+            lblModelValue.Margin = new Padding(4, 0, 4, 0);
+            lblModelValue.Name = "lblModelValue";
+            lblModelValue.Size = new Size(86, 25);
+            lblModelValue.TabIndex = 65;
+            lblModelValue.Text = "+00.000";
+            lblModelValue.Visible = false;
             // 
             // lblModeTitle
             // 
@@ -924,6 +954,8 @@
         private Label lblModeValue;
         private Label lblThrottleValue;
         private Label lblAngleValue;
+        private Label lblModelValue;
+        private Label lblModelAngle;
         private Label lblModeTitle;
         private Label lblThrottleTitle;
         private Label lblAngleTitle;

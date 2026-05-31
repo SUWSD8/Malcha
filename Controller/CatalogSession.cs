@@ -31,6 +31,35 @@ namespace Malcha
         public List<DeletedFrameEntry> DeletedEntries { get; } = new();
         public int CurrentIndex { get; set; }
 
+        private readonly List<CrossTestFramePrediction?> _crossTestByFrame = new();
+        public string CrossTestModelName { get; private set; } = string.Empty;
+        public bool HasCrossTest => _crossTestByFrame.Count > 0;
+
+        public CrossTestFramePrediction? GetCrossTest(int frameIndex)
+        {
+            if (frameIndex < 0 || frameIndex >= _crossTestByFrame.Count) return null;
+            return _crossTestByFrame[frameIndex];
+        }
+
+        public void SetCrossTestResults(string modelName, IEnumerable<CrossTestFramePrediction> predictions)
+        {
+            CrossTestModelName = modelName;
+            _crossTestByFrame.Clear();
+            for (int i = 0; i < CurrentFrames.Count; i++)
+                _crossTestByFrame.Add(null);
+            foreach (var p in predictions)
+            {
+                if (p.Index >= 0 && p.Index < _crossTestByFrame.Count)
+                    _crossTestByFrame[p.Index] = p;
+            }
+        }
+
+        public void ClearCrossTest()
+        {
+            CrossTestModelName = string.Empty;
+            _crossTestByFrame.Clear();
+        }
+
         private readonly Stack<UndoSnapshot> _undoStack = new();
 
         public bool HasUndo => _undoStack.Count > 0;
@@ -195,6 +224,7 @@ namespace Malcha
             CurrentCatalogPath = string.Empty;
             FrameImagePaths = new List<string>();
             DeletedEntries.Clear();
+            ClearCrossTest();
             CurrentIndex = 0;
             _undoStack.Clear();
         }

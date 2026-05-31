@@ -185,6 +185,7 @@ namespace Malcha.Controller
                 _view.RequestStopPlayback();
                 _session.ClearUndo();
                 _session.ClearDeleted();
+                _session.ClearCrossTest();
                 _view.RequestClearImageCache();
                 _selection.Clear();
 
@@ -274,6 +275,7 @@ namespace Malcha.Controller
                 _view.RequestStopPlayback();
                 _session.ClearUndo();
                 _session.ClearDeleted();
+                _session.ClearCrossTest();
                 _view.RequestClearImageCache();
                 _selection.Clear();
 

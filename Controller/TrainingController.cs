@@ -54,8 +54,6 @@ namespace Malcha.Controller
 
             _view.DeleteModelRequested += OnDeleteModel;
 
-            _view.ShowChartRequested += (_, _) => new TestForm2().Show();
-
             _view.ModelSelectionChanged += OnModelSelectionChanged;
 
         }

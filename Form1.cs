@@ -1,6 +1,7 @@
 using Malcha.Controller;
 using Malcha.Service;
 using Malcha.UI;
+using Malcha.View;
 using static Malcha.UI.TimelineSelectionBinder;
 
 namespace Malcha
@@ -15,6 +16,7 @@ namespace Malcha
         private readonly FrameRangeSelection _deletedSelection = new();
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
+        private CrossTestController? _crossTestController;
 
         public Form1()
         {
@@ -25,6 +27,7 @@ namespace Malcha
                 lblAngleValue, lblThrottleValue, lblModeValue, lblRecordCount);
 
             InitializeCatalogController();
+            _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
             new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi).Attach();
@@ -39,6 +42,7 @@ namespace Malcha
 
             trbTimeline.Enabled = false;
             picVideoScreen.SizeMode = PictureBoxSizeMode.StretchImage;
+            HideModelLabels();
         }
 
         // 리스트·타임라인 우클릭 메뉴 설정
@@ -84,6 +88,8 @@ namespace Malcha
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += (_, _) => OnTimelineScroll();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
+            btnCrossTest.Click += async (_, _) =>
+                await _crossTestController!.RunAsync((ITrainingView)this, (ICatalogView)this, RefreshFrameOverlay);
             picVideoScreen.Paint += PicVideoScreen_Paint;
             KeyPreview = true;
             KeyDown += Form1_KeyDown;
@@ -105,6 +111,7 @@ namespace Malcha
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
+            tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
         }
 
@@ -164,8 +171,47 @@ namespace Malcha
         private void RefreshChartFromFrames() => _display.RefreshChart(_session.CurrentFrames);
 
         // 지정 인덱스 프레임 표시
-        private void ShowFrame(int index) =>
-            _session.CurrentIndex = _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+        private void ShowFrame(int index)
+        {
+            if (_session.CurrentFrames.Count == 0) return;
+            index = Math.Clamp(index, 0, _session.CurrentFrames.Count - 1);
+            _session.CurrentIndex = index;
+            _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            RefreshModelLabels();
+            picVideoScreen.Invalidate();
+        }
+
+        // 교차 테스트 HUD·모델 라벨 갱신
+        private void RefreshFrameOverlay()
+        {
+            RefreshModelLabels();
+            picVideoScreen.Invalidate();
+        }
+
+        // model/angle 라벨 — 교차 테스트 후에만 표시
+        private void RefreshModelLabels()
+        {
+            bool show = _session.HasCrossTest;
+            lblModelAngle.Visible = show;
+            lblModelValue.Visible = show;
+            if (!show)
+            {
+                lblModelValue.Text = string.Empty;
+                return;
+            }
+
+            var pred = _session.GetCrossTest(_session.CurrentIndex);
+            lblModelValue.Text = pred != null
+                ? pred.Angle.ToString("+#0.000;-#0.000;0.000")
+                : "—";
+        }
+
+        private void HideModelLabels()
+        {
+            lblModelAngle.Visible = false;
+            lblModelValue.Visible = false;
+            lblModelValue.Text = string.Empty;
+        }
 
         // 재생 루프 중지
         private void StopPlayback()
@@ -182,10 +228,13 @@ namespace Malcha
             _session.Reset();
             _selection.Clear();
             _deletedSelection.Clear();
+            _session.ClearCrossTest();
+            HideModelLabels();
             _display.ClearCache();
             lstDataList.Items.Clear();
             lstDeleted.Items.Clear();
             _display.ClearDisplay();
+            HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             txtFilePath.Text = string.Empty;
             toolStripStatusLabel1.Text = "초기화됨";
@@ -198,11 +247,13 @@ namespace Malcha
             _session.CurrentCatalogPath = string.Empty;
             _session.CurrentIndex = 0;
             _session.ClearDeleted();
+            _session.ClearCrossTest();
             _selection.Clear();
             _deletedSelection.Clear();
             lstDataList.Items.Clear();
             lstDeleted.Items.Clear();
             _display.ClearDisplay();
+            HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             _display.ClearCache();
         }
@@ -212,7 +263,12 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             if (_session.CurrentIndex < 0 || _session.CurrentIndex >= _session.CurrentFrames.Count) return;
-            CatalogDisplayController.DrawOverlay(e.Graphics, _session.CurrentFrames[_session.CurrentIndex], picVideoScreen.ClientSize);
+            var pred = _session.GetCrossTest(_session.CurrentIndex);
+            CatalogDisplayController.DrawOverlay(
+                e.Graphics,
+                _session.CurrentFrames[_session.CurrentIndex],
+                picVideoScreen.ClientSize,
+                pred?.Angle);
         }
 
         // 리스트 선택 변경 → 해당 프레임 표시
