@@ -121,17 +121,16 @@ namespace Malcha.Data
             return true;
         }
 
-        // 작업용 카탈로그에 대응하는 가장 최근 백업 파일 경로 (없으면 빈 문자열)
-        public static string FindLatestBackupPath(string workingCatalogPath)
+        // 목록 전체를 최신순으로 가져옵니다.
+        public static List<string> GetAllBackupPaths(string workingCatalogPath)
         {
+            var candidates = new List<string>();
             if (string.IsNullOrWhiteSpace(workingCatalogPath))
-                return string.Empty;
+                return candidates;
 
             workingCatalogPath = ResolveWorkingCatalogPath(workingCatalogPath);
             var dir = Path.GetDirectoryName(workingCatalogPath) ?? Environment.CurrentDirectory;
             var baseName = Path.GetFileNameWithoutExtension(workingCatalogPath);
-
-            var candidates = new List<string>();
 
             var legacyBak = workingCatalogPath + ".bak";
             if (File.Exists(legacyBak))
@@ -140,14 +139,21 @@ namespace Malcha.Data
             var backupDir = Path.Combine(dir, BackupsFolderName);
             if (Directory.Exists(backupDir))
             {
-                candidates.AddRange(
-                    Directory.GetFiles(backupDir, $"{baseName}_*.catalog", SearchOption.TopDirectoryOnly));
+                // 동일한 baseName을 가진 모든 백업 카탈로그 파일을 검색
+                candidates.AddRange(Directory.GetFiles(backupDir, $"{baseName}_*.catalog", SearchOption.TopDirectoryOnly));
             }
 
+            // 파일이 존재하는지 확인하고 최신 수정일순(내림차순)으로 정렬 후 리스트로 반환
             return candidates
                 .Where(File.Exists)
                 .OrderByDescending(p => File.GetLastWriteTimeUtc(p))
-                .FirstOrDefault() ?? string.Empty;
+                .ToList();
+        }
+
+        // 2. 기존 로직(FindLatestBackupPath)은 위의 새 메서드를 재사용하도록 매우 짧게 리팩토링합니다.
+        public static string FindLatestBackupPath(string workingCatalogPath)
+        {
+            return GetAllBackupPaths(workingCatalogPath).FirstOrDefault() ?? string.Empty;
         }
     }
 }
