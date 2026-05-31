@@ -65,6 +65,7 @@
             lblThrottleTitle = new Label();
             lblAngleTitle = new Label();
             groupBox1 = new GroupBox();
+            btnSaveCatalog = new Button();
             lblTitle = new Label();
             txtFilePath = new TextBox();
             btnSelectData = new Button();
@@ -85,7 +86,6 @@
             lblloglist = new Label();
             btnshutdown = new Button();
             lstLog = new ListBox();
-            btnSaveCatalog = new Button();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -551,6 +551,21 @@
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             // 
+            // btnSaveCatalog
+            // 
+            btnSaveCatalog.Anchor = AnchorStyles.Left;
+            btnSaveCatalog.BackColor = Color.FromArgb(53, 48, 49);
+            btnSaveCatalog.FlatStyle = FlatStyle.Popup;
+            btnSaveCatalog.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnSaveCatalog.ForeColor = SystemColors.ButtonHighlight;
+            btnSaveCatalog.Location = new Point(141, 56);
+            btnSaveCatalog.Name = "btnSaveCatalog";
+            btnSaveCatalog.Size = new Size(121, 23);
+            btnSaveCatalog.TabIndex = 10;
+            btnSaveCatalog.Text = "저장";
+            btnSaveCatalog.UseVisualStyleBackColor = false;
+            btnSaveCatalog.Click += btnSaveCatalog_Click;
+            // 
             // lblTitle
             // 
             lblTitle.AutoSize = true;
@@ -783,6 +798,7 @@
             btnshutdown.TabIndex = 58;
             btnshutdown.Text = "학습 강제 종료";
             btnshutdown.UseVisualStyleBackColor = false;
+            btnshutdown.Click += btnshutdown_Click;
             // 
             // lstLog
             // 
@@ -794,21 +810,6 @@
             lstLog.Name = "lstLog";
             lstLog.Size = new Size(382, 304);
             lstLog.TabIndex = 57;
-            // 
-            // btnSaveCatalog
-            // 
-            btnSaveCatalog.Anchor = AnchorStyles.Left;
-            btnSaveCatalog.BackColor = Color.FromArgb(53, 48, 49);
-            btnSaveCatalog.FlatStyle = FlatStyle.Popup;
-            btnSaveCatalog.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
-            btnSaveCatalog.ForeColor = SystemColors.ButtonHighlight;
-            btnSaveCatalog.Location = new Point(141, 56);
-            btnSaveCatalog.Name = "btnSaveCatalog";
-            btnSaveCatalog.Size = new Size(121, 23);
-            btnSaveCatalog.TabIndex = 10;
-            btnSaveCatalog.Text = "저장";
-            btnSaveCatalog.UseVisualStyleBackColor = false;
-            btnSaveCatalog.Click += btnSaveCatalog_Click;
             // 
             // Form1
             // 
