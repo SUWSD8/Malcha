@@ -36,6 +36,7 @@
             groupBox3 = new GroupBox();
             lblStatus = new StatusStrip();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
+            toolStripStatusLabelPlaybackSpeed = new ToolStripStatusLabel();
             lbldeletedlist = new Label();
             lstDeleted = new ListBox();
             btnChangeCleanData = new Button();
@@ -158,7 +159,7 @@
             lblStatus.BackColor = Color.Black;
             lblStatus.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblStatus.ImageScalingSize = new Size(20, 20);
-            lblStatus.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1 });
+            lblStatus.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabelPlaybackSpeed });
             lblStatus.Location = new Point(4, 378);
             lblStatus.Name = "lblStatus";
             lblStatus.Padding = new Padding(1, 0, 18, 0);
@@ -171,7 +172,18 @@
             toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             toolStripStatusLabel1.Size = new Size(240, 20);
+            toolStripStatusLabel1.Spring = true;
             toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
+            // 
+            // toolStripStatusLabelPlaybackSpeed
+            // 
+            toolStripStatusLabelPlaybackSpeed.Alignment = ToolStripItemAlignment.Right;
+            toolStripStatusLabelPlaybackSpeed.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            toolStripStatusLabelPlaybackSpeed.ForeColor = Color.FromArgb(255, 210, 90);
+            toolStripStatusLabelPlaybackSpeed.Name = "toolStripStatusLabelPlaybackSpeed";
+            toolStripStatusLabelPlaybackSpeed.Size = new Size(88, 20);
+            toolStripStatusLabelPlaybackSpeed.Text = "▶ 1x";
+            toolStripStatusLabelPlaybackSpeed.Visible = false;
             // 
             // lbldeletedlist
             // 
@@ -962,6 +974,7 @@
         private GroupBox groupBox3;
         private StatusStrip lblStatus;
         private ToolStripStatusLabel toolStripStatusLabel1;
+        private ToolStripStatusLabel toolStripStatusLabelPlaybackSpeed;
         private Label lbldeletedlist;
         private ListBox lstDeleted;
         private Button btnChangeCleanData;

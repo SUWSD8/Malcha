@@ -61,6 +61,7 @@ namespace Malcha
             lstDataList.Invalidate();
             trbTimeline.Invalidate();
             picVideoScreen.Invalidate();
+            RefreshPlaybackSpeedIndicators();
             await _display.PreloadAsync(_session.FrameImagePaths, _session.CurrentFrames, 5);
         }
 
@@ -118,6 +119,7 @@ namespace Malcha
                 _session.CurrentIndex = Math.Clamp(_session.CurrentIndex, 0, _session.CurrentFrames.Count - 1);
                 lstDataList.SelectedIndex = _session.CurrentIndex;
                 ShowFrame(_session.CurrentIndex);
+                RefreshPlaybackSpeedIndicators();
             }
             else ClearPlayback();
             lstDataList.Invalidate();

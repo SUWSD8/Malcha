@@ -10,6 +10,10 @@ namespace Malcha
     public partial class Form1 : Form
     {
         private CancellationTokenSource? _playCts;
+        private float _playbackSpeed = 1f;
+        private System.Windows.Forms.Timer? _speedFeedbackTimer;
+        private System.Windows.Forms.Timer? _speedOverlayTimer;
+        private Label? _speedFlashOverlay;
 
         private readonly CatalogSession _session = new();
         private readonly FrameRangeSelection _selection = new();
@@ -39,6 +43,7 @@ namespace Malcha
             SetupContextMenus();
             SetupEventHandlers();
             SetupToolTips();
+            SetupPlaybackSpeedUi();
 
             trbTimeline.Enabled = false;
             picVideoScreen.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -113,6 +118,22 @@ namespace Malcha
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
+            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · 배속: 키보드 0~5 또는 NumPad 0~5");
+        }
+
+        private void SetupPlaybackSpeedUi()
+        {
+            _speedFlashOverlay = new Label
+            {
+                AutoSize = true,
+                BackColor = Color.FromArgb(210, 24, 24, 24),
+                ForeColor = Color.FromArgb(255, 210, 90),
+                Font = new Font("맑은 고딕", 32F, FontStyle.Bold),
+                Padding = new Padding(16, 8, 16, 8),
+                Visible = false
+            };
+            picVideoScreen.Controls.Add(_speedFlashOverlay);
+            picVideoScreen.Resize += (_, _) => CenterSpeedFlashOverlay();
         }
 
         // 구간 선택 UI·상태바 갱신
@@ -133,22 +154,152 @@ namespace Malcha
             toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
         }
 
-        // 단축키 처리 (F1 도움말, [, ], Esc, Ctrl+Z)
+        // 단축키 처리 (F1, Space, 0~5 배속, [, ], Esc, Ctrl+Z)
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F1) { HelpDialog.ShowFor(this); e.Handled = true; return; }
+
+            float digitSpeed = PlaybackSettings.SpeedFromDigitKey(e.KeyCode);
+            if (digitSpeed > 0f)
+            {
+                if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
+                    SetPlaybackSpeed(digitSpeed);
+                e.Handled = true;
+                return;
+            }
+
             if (_session.CurrentFrames.Count == 0) return;
             switch (e.KeyCode)
             {
+                case Keys.Space:
+                    BtnPlayPause_Click(null, EventArgs.Empty);
+                    e.Handled = true;
+                    break;
                 case Keys.OemOpenBrackets: SetRangeStart(); e.Handled = true; break;
                 case Keys.OemCloseBrackets: SetRangeEnd(); e.Handled = true; break;
                 case Keys.Escape:
                     if (_selection.HasSelection) { _selection.Clear(); RefreshSelectionUi(); }
                     else if (_deletedSelection.HasSelection) { _deletedSelection.Clear(); RefreshDeletedSelectionUi(); }
+                    else RestoreIdleStatusBar();
                     e.Handled = true; break;
                 case Keys.Z when e.Control:
                     _catalogController!.TryRecoverFromUndo(); e.Handled = true; break;
             }
+        }
+
+        private bool IsTypingInTextField()
+        {
+            Control? c = ActiveControl;
+            if (c is TextBoxBase) return true;
+            if (c is DataGridView dgv && dgv.IsCurrentCellInEditMode) return true;
+            return false;
+        }
+
+        private void SetPlaybackSpeed(float speed)
+        {
+            _playbackSpeed = speed;
+            RefreshPlaybackSpeedIndicators();
+            ShowSpeedChangeFeedback();
+
+            if (_playCts != null)
+                UpdatePlaybackStatusBar();
+        }
+
+        private void RefreshPlaybackSpeedIndicators()
+        {
+            bool show = _session.CurrentFrames.Count > 0;
+            string label = PlaybackSettings.FormatSpeedLabel(_playbackSpeed);
+            string playing = _playCts != null ? "■" : "▶";
+
+            toolStripStatusLabelPlaybackSpeed.Visible = show;
+            toolStripStatusLabelPlaybackSpeed.Text = $"{playing} {label}";
+            UpdatePlayPauseButtonText();
+        }
+
+        private void ShowSpeedChangeFeedback()
+        {
+            string label = PlaybackSettings.FormatSpeedLabel(_playbackSpeed);
+
+            _speedFeedbackTimer ??= new System.Windows.Forms.Timer { Interval = 2500 };
+            _speedFeedbackTimer.Stop();
+            _speedFeedbackTimer.Tick -= OnSpeedFeedbackTimerTick;
+            _speedFeedbackTimer.Tick += OnSpeedFeedbackTimerTick;
+            toolStripStatusLabel1.Text = $"▶ 재생 배속 → {label}";
+            toolStripStatusLabel1.ForeColor = Color.FromArgb(255, 210, 90);
+            _speedFeedbackTimer.Start();
+
+            if (_speedFlashOverlay != null)
+            {
+                _speedFlashOverlay.Text = label;
+                _speedFlashOverlay.Visible = true;
+                CenterSpeedFlashOverlay();
+                _speedFlashOverlay.BringToFront();
+            }
+
+            _speedOverlayTimer ??= new System.Windows.Forms.Timer { Interval = 900 };
+            _speedOverlayTimer.Stop();
+            _speedOverlayTimer.Tick -= OnSpeedOverlayTimerTick;
+            _speedOverlayTimer.Tick += OnSpeedOverlayTimerTick;
+            _speedOverlayTimer.Start();
+        }
+
+        private void CenterSpeedFlashOverlay()
+        {
+            if (_speedFlashOverlay == null) return;
+            _speedFlashOverlay.PerformLayout();
+            _speedFlashOverlay.Location = new Point(
+                Math.Max(0, (picVideoScreen.ClientSize.Width - _speedFlashOverlay.Width) / 2),
+                Math.Max(0, (picVideoScreen.ClientSize.Height - _speedFlashOverlay.Height) / 2));
+        }
+
+        private void OnSpeedOverlayTimerTick(object? sender, EventArgs e)
+        {
+            _speedOverlayTimer?.Stop();
+            if (_speedFlashOverlay != null)
+                _speedFlashOverlay.Visible = false;
+        }
+
+        private void OnSpeedFeedbackTimerTick(object? sender, EventArgs e)
+        {
+            _speedFeedbackTimer?.Stop();
+            toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
+            RestoreIdleStatusBar();
+        }
+
+        private void RestoreIdleStatusBar()
+        {
+            if (_playCts != null) { UpdatePlaybackStatusBar(); return; }
+            if (_deletedSelection.HasSelection) { RefreshDeletedSelectionUi(); return; }
+            if (_selection.HasSelection) { RefreshSelectionUi(); return; }
+            if (_session.CurrentFrames.Count > 0)
+            {
+                int i = Math.Max(0, _session.CurrentIndex) + 1;
+                toolStripStatusLabel1.Text = $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+            }
+        }
+
+        private void UpdatePlayPauseButtonText()
+        {
+            string speed = PlaybackSettings.FormatSpeedLabel(_playbackSpeed);
+            btnPlayPause.Text = _playCts != null
+                ? $"정지 · {speed}"
+                : $"재생 · {speed}";
+        }
+
+        private void UpdatePlaybackStatusBar()
+        {
+            if (_session.CurrentFrames.Count == 0) return;
+            int i = Math.Max(0, _session.CurrentIndex) + 1;
+            toolStripStatusLabel1.Text =
+                $"재생 {PlaybackSettings.FormatSpeedLabel(_playbackSpeed)} · 프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+        }
+
+        private void HidePlaybackSpeedIndicators()
+        {
+            toolStripStatusLabelPlaybackSpeed.Visible = false;
+            if (_speedFlashOverlay != null)
+                _speedFlashOverlay.Visible = false;
+            btnPlayPause.Text = "재생 / 정지";
         }
 
         // 현재 프레임을 구간 시작으로 설정
@@ -179,6 +330,8 @@ namespace Malcha
             _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
             RefreshModelLabels();
             picVideoScreen.Invalidate();
+            if (_playCts == null && _speedFeedbackTimer is not { Enabled: true })
+                RestoreIdleStatusBar();
         }
 
         // 교차 테스트 HUD·모델 라벨 갱신
@@ -218,7 +371,8 @@ namespace Malcha
         {
             try { _playCts?.Cancel(); } catch { }
             _playCts = null;
-            btnPlayPause.Text = "재생 / 정지";
+            RefreshPlaybackSpeedIndicators();
+            RestoreIdleStatusBar();
         }
 
         // 세션·UI 전체 초기화
@@ -238,6 +392,7 @@ namespace Malcha
             _display.RefreshChart(_session.CurrentFrames);
             txtFilePath.Text = string.Empty;
             toolStripStatusLabel1.Text = "초기화됨";
+            HidePlaybackSpeedIndicators();
         }
 
         // 재생 관련 UI만 초기화 (카탈로그 닫힘)
@@ -256,6 +411,7 @@ namespace Malcha
             HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             _display.ClearCache();
+            HidePlaybackSpeedIndicators();
         }
 
         // PictureBox 위 조향·쓰로틀 오버레이 그리기
@@ -295,14 +451,15 @@ namespace Malcha
             lstDataList.SelectedIndex = _session.CurrentIndex;
         }
 
-        // 재생/정지 토글 (100ms 간격 자동 재생)
+        // 재생/정지 토글 (기본 100ms 간격, 0~5 키로 배속 조절)
         private async void BtnPlayPause_Click(object? sender, EventArgs e)
         {
             if (_session.CurrentFrames.Count == 0) return;
             if (_playCts != null) { StopPlayback(); return; }
 
+            _speedFeedbackTimer?.Stop();
             _playCts = new CancellationTokenSource();
-            btnPlayPause.Text = "정지";
+            RefreshPlaybackSpeedIndicators();
             if (_session.CurrentIndex >= _session.CurrentFrames.Count - 1) _session.CurrentIndex = -1;
 
             try
@@ -313,7 +470,8 @@ namespace Malcha
                     if (next >= _session.CurrentFrames.Count) break;
                     ShowFrame(next);
                     lstDataList.SelectedIndex = _session.CurrentIndex;
-                    await Task.Delay(100, _playCts.Token);
+                    UpdatePlaybackStatusBar();
+                    await Task.Delay(PlaybackSettings.DelayMs(_playbackSpeed), _playCts.Token);
                 }
             }
             catch (TaskCanceledException) { }
