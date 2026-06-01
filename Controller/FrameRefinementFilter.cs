@@ -4,29 +4,30 @@ using Malcha.Model;
 
 namespace Malcha
 {
-    /// <summary>
-    /// 카탈로그 프레임 정제: 연속 중복 조향/쓰로틀 제거, 급격한 스파이크(오류·사고) 제거.
-    /// </summary>
+    // 카탈로그 프레임 정제: 연속 중복·스파이크·범위 초과 제거
     internal static class FrameRefinementFilter
     {
+        // 정제 임계값 옵션
         internal sealed class Options
         {
-            /// <summary>이전 프레임과 angle·throttle 차이가 모두 이 값 이하면 중복으로 간주.</summary>
+            // 이전 프레임과 angle·throttle 차이가 모두 이 값 이하면 중복으로 간주
             public double ValueEpsilon { get; set; } = 0.015;
 
-            /// <summary>한 스텝에서의 급격한 변화(스파이크) 임계값.</summary>
+            // 한 스텝에서의 급격한 변화(스파이크) 임계값
             public double SpikeThreshold { get; set; } = 0.4;
 
-            /// <summary>허용 범위를 벗어난 절대값(센서 오류).</summary>
+            // 허용 범위를 벗어난 절대값(센서 오류)
             public double OutOfRangeLimit { get; set; } = 1.25;
         }
 
+        // 정제 진행률 보고
         internal sealed class ProgressReport
         {
             public int Percent { get; init; }
             public string Message { get; init; } = string.Empty;
         }
 
+        // 정제 결과 (제거 통계 포함)
         internal sealed class Result
         {
             public List<Frame> Frames { get; init; } = new List<Frame>();
@@ -37,6 +38,7 @@ namespace Malcha
             public int RemovedTotal => OriginalCount - Frames.Count;
         }
 
+        // 프레임 목록 정제 실행
         internal static Result Refine(
             IReadOnlyList<Frame> frames,
             Options? options = null,
@@ -103,12 +105,14 @@ namespace Malcha
             };
         }
 
+        // 정제 후 프레임 Index 재부여
         private static void ReindexFrames(List<Frame> frames)
         {
             for (int i = 0; i < frames.Count; i++)
                 frames[i].Index = i;
         }
 
+        // angle/throttle 절대값·NaN·Infinity 범위 초과 여부
         private static bool IsOutOfRange(Frame f, double limit)
         {
             return Math.Abs(f.Angle) > limit
@@ -117,15 +121,14 @@ namespace Malcha
                 || double.IsInfinity(f.Angle) || double.IsInfinity(f.Throttle);
         }
 
+        // 두 프레임의 angle·throttle이 epsilon 이내로 유사한지
         private static bool ValuesSimilar(Frame a, Frame b, double epsilon)
         {
             return Math.Abs(a.Angle - b.Angle) <= epsilon
                 && Math.Abs(a.Throttle - b.Throttle) <= epsilon;
         }
 
-        /// <summary>
-        /// 이전·다음 프레임 대비 급격히 튀었다가 되돌아오는 단일 프레임(노이즈/사고 글리치)을 감지합니다.
-        /// </summary>
+        // 이전·다음 프레임 대비 급격히 튀었다가 되돌아오는 단일 프레임(노이즈) 감지
         private static bool IsIsolatedSpike(IReadOnlyList<Frame> frames, int i, double spikeThreshold)
         {
             if (i <= 0 || i >= frames.Count - 1)
@@ -139,6 +142,7 @@ namespace Malcha
                 || IsChannelSpike(prev.Throttle, cur.Throttle, next.Throttle, spikeThreshold);
         }
 
+        // 단일 채널(angle 또는 throttle) 스파이크 판별
         private static bool IsChannelSpike(double prev, double cur, double next, double threshold)
         {
             double stepIn = Math.Abs(cur - prev);
