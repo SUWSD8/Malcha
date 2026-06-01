@@ -1,6 +1,7 @@
 using Malcha.Controller;
 using Malcha.Service;
 using Malcha.UI;
+using Malcha.View;
 using static Malcha.UI.TimelineSelectionBinder;
 
 namespace Malcha
@@ -12,8 +13,10 @@ namespace Malcha
 
         private readonly CatalogSession _session = new();
         private readonly FrameRangeSelection _selection = new();
+        private readonly FrameRangeSelection _deletedSelection = new();
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
+        private CrossTestController? _crossTestController;
 
         public Form1()
         {
@@ -24,15 +27,22 @@ namespace Malcha
                 lblAngleValue, lblThrottleValue, lblModeValue, lblRecordCount);
 
             InitializeCatalogController();
+            _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
             new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi).Attach();
+            new DeletedListSelectionBinder(lstDeleted, _deletedSelection, RefreshDeletedSelectionUi).Attach();
+            new FrameListDragDropBinder(
+                lstDataList, lstDeleted, groupBox2, _selection, _deletedSelection,
+                payload => _catalogController!.HandleDropToDeleted(payload),
+                payload => _catalogController!.HandleDropToActive(payload)).Attach();
             SetupContextMenus();
             SetupEventHandlers();
             SetupToolTips();
 
             trbTimeline.Enabled = false;
             picVideoScreen.SizeMode = PictureBoxSizeMode.StretchImage;
+            HideModelLabels();
         }
 
         // 리스트·타임라인 우클릭 메뉴 설정
@@ -49,9 +59,14 @@ namespace Malcha
             };
 
             var trackMenu = new ContextMenuStrip();
-            trackMenu.Items.Add("선택된 구간 삭제", null, async (_, _) =>
+            trackMenu.Items.Add("선택 구간 삭제 목록으로 이동", null, async (_, _) =>
                 await _catalogController!.HandleDeleteSelectionAsync());
             trbTimeline.ContextMenuStrip = trackMenu;
+
+            var deletedMenu = new ContextMenuStrip();
+            deletedMenu.Items.Add("선택 항목 복구", null, (_, _) =>
+                _catalogController!.RestoreFromDeletedList(_deletedSelection.ToIndexList()));
+            lstDeleted.ContextMenuStrip = deletedMenu;
         }
 
         // 버튼·키·Paint 이벤트 핸들러 연결
@@ -68,9 +83,13 @@ namespace Malcha
             lstDataList.SelectedIndexChanged += (_, _) => OnListSelectionChanged();
             btnNextFrame.Click += (_, _) => StepFrame(1);
             btnPrevFrame.Click += (_, _) => StepFrame(-1);
+            btnFastForward.Click += (_, _) => StepFrame(5);
+            btnRewind.Click += (_, _) => StepFrame(-5);
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += (_, _) => OnTimelineScroll();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
+            btnCrossTest.Click += async (_, _) =>
+                await _crossTestController!.RunAsync((ITrainingView)this, (ICatalogView)this, RefreshFrameOverlay);
             picVideoScreen.Paint += PicVideoScreen_Paint;
             KeyPreview = true;
             KeyDown += Form1_KeyDown;
@@ -80,12 +99,19 @@ namespace Malcha
         private void SetupToolTips()
         {
             var tips = new ToolTip { AutoPopDelay = 8000, InitialDelay = 400 };
+            tips.SetToolTip(btnPrevFrame, "이전 프레임 (1)");
+            tips.SetToolTip(btnNextFrame, "다음 프레임 (1)");
+            tips.SetToolTip(btnRewind, "5프레임 뒤로");
+            tips.SetToolTip(btnFastForward, "5프레임 앞으로");
             tips.SetToolTip(btnSetStartPoint, "구간 시작 ([)");
             tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
-            tips.SetToolTip(btnDeleteSelection, "선택 구간 삭제");
-            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제");
+            tips.SetToolTip(btnDeleteSelection, "선택 구간을 삭제 목록으로 이동");
+            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제 · 리스트 드래그: 구간");
+            tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
+            tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
+            tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
         }
 
@@ -99,6 +125,14 @@ namespace Malcha
             toolStripStatusLabel1.Text = $"구간 {s}~{e} ({_selection.FrameCount:N0}) · Esc 해제";
         }
 
+        private void RefreshDeletedSelectionUi()
+        {
+            lstDeleted.Invalidate();
+            if (!_deletedSelection.HasSelection) return;
+            var (s, e) = _deletedSelection.GetRange();
+            toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
+        }
+
         // 단축키 처리 (F1 도움말, [, ], Esc, Ctrl+Z)
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
@@ -110,6 +144,7 @@ namespace Malcha
                 case Keys.OemCloseBrackets: SetRangeEnd(); e.Handled = true; break;
                 case Keys.Escape:
                     if (_selection.HasSelection) { _selection.Clear(); RefreshSelectionUi(); }
+                    else if (_deletedSelection.HasSelection) { _deletedSelection.Clear(); RefreshDeletedSelectionUi(); }
                     e.Handled = true; break;
                 case Keys.Z when e.Control:
                     _catalogController!.TryRecoverFromUndo(); e.Handled = true; break;
@@ -136,8 +171,47 @@ namespace Malcha
         private void RefreshChartFromFrames() => _display.RefreshChart(_session.CurrentFrames);
 
         // 지정 인덱스 프레임 표시
-        private void ShowFrame(int index) =>
-            _session.CurrentIndex = _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+        private void ShowFrame(int index)
+        {
+            if (_session.CurrentFrames.Count == 0) return;
+            index = Math.Clamp(index, 0, _session.CurrentFrames.Count - 1);
+            _session.CurrentIndex = index;
+            _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            RefreshModelLabels();
+            picVideoScreen.Invalidate();
+        }
+
+        // 교차 테스트 HUD·모델 라벨 갱신
+        private void RefreshFrameOverlay()
+        {
+            RefreshModelLabels();
+            picVideoScreen.Invalidate();
+        }
+
+        // model/angle 라벨 — 교차 테스트 후에만 표시
+        private void RefreshModelLabels()
+        {
+            bool show = _session.HasCrossTest;
+            lblModelAngle.Visible = show;
+            lblModelValue.Visible = show;
+            if (!show)
+            {
+                lblModelValue.Text = string.Empty;
+                return;
+            }
+
+            var pred = _session.GetCrossTest(_session.CurrentIndex);
+            lblModelValue.Text = pred != null
+                ? pred.Angle.ToString("+#0.000;-#0.000;0.000")
+                : "—";
+        }
+
+        private void HideModelLabels()
+        {
+            lblModelAngle.Visible = false;
+            lblModelValue.Visible = false;
+            lblModelValue.Text = string.Empty;
+        }
 
         // 재생 루프 중지
         private void StopPlayback()
@@ -153,9 +227,14 @@ namespace Malcha
             StopPlayback();
             _session.Reset();
             _selection.Clear();
+            _deletedSelection.Clear();
+            _session.ClearCrossTest();
+            HideModelLabels();
             _display.ClearCache();
             lstDataList.Items.Clear();
+            lstDeleted.Items.Clear();
             _display.ClearDisplay();
+            HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             txtFilePath.Text = string.Empty;
             toolStripStatusLabel1.Text = "초기화됨";
@@ -167,9 +246,14 @@ namespace Malcha
             _session.CurrentFrames = new();
             _session.CurrentCatalogPath = string.Empty;
             _session.CurrentIndex = 0;
+            _session.ClearDeleted();
+            _session.ClearCrossTest();
             _selection.Clear();
+            _deletedSelection.Clear();
             lstDataList.Items.Clear();
+            lstDeleted.Items.Clear();
             _display.ClearDisplay();
+            HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             _display.ClearCache();
         }
@@ -179,7 +263,12 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             if (_session.CurrentIndex < 0 || _session.CurrentIndex >= _session.CurrentFrames.Count) return;
-            CatalogDisplayController.DrawOverlay(e.Graphics, _session.CurrentFrames[_session.CurrentIndex], picVideoScreen.ClientSize);
+            var pred = _session.GetCrossTest(_session.CurrentIndex);
+            CatalogDisplayController.DrawOverlay(
+                e.Graphics,
+                _session.CurrentFrames[_session.CurrentIndex],
+                picVideoScreen.ClientSize,
+                pred?.Angle);
         }
 
         // 리스트 선택 변경 → 해당 프레임 표시
@@ -235,6 +324,11 @@ namespace Malcha
         {
             // 방금 만든 통합 덤프 저장 메서드 하나만 심플하게 호출하면 끝!
             await _catalogController.HandleSaveSessionAsync();
+        }
+
+        private void btnUndo_Click(object sender, EventArgs e)
+        {
+            _catalogController!.TryRecoverFromUndo();
         }
     }
 }

@@ -21,7 +21,6 @@ namespace Malcha
             btnRunTraining.Click += (_, _) => RunTrainingRequested?.Invoke(this, EventArgs.Empty);
             btnconnet.Click += (_, _) => UpdateCommentRequested?.Invoke(this, EventArgs.Empty);
             btnEnableDelete.Click += (_, _) => DeleteModelRequested?.Invoke(this, EventArgs.Empty);
-            btnCrossTest.Click += (_, _) => ShowChartRequested?.Invoke(this, EventArgs.Empty);
             dgvPilotList.SelectionChanged += (_, _) => ModelSelectionChanged?.Invoke(this, EventArgs.Empty);
             dgvPilotList.CellToolTipTextNeeded += OnPilotListCellToolTipNeeded;
             Load += (_, _) => ViewLoaded?.Invoke(this, EventArgs.Empty);
@@ -54,7 +53,6 @@ namespace Malcha
         public event EventHandler? RunTrainingRequested;
         public event EventHandler? UpdateCommentRequested;
         public event EventHandler? DeleteModelRequested;
-        public event EventHandler? ShowChartRequested;
         public event EventHandler? ModelSelectionChanged;
 
         void ITrainingView.SetTrainingButtonEnabled(bool enabled) => btnRunTraining.Enabled = enabled;

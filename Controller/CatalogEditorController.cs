@@ -184,6 +184,8 @@ namespace Malcha.Controller
             {
                 _view.RequestStopPlayback();
                 _session.ClearUndo();
+                _session.ClearDeleted();
+                _session.ClearCrossTest();
                 _view.RequestClearImageCache();
                 _selection.Clear();
 
@@ -272,6 +274,8 @@ namespace Malcha.Controller
             {
                 _view.RequestStopPlayback();
                 _session.ClearUndo();
+                _session.ClearDeleted();
+                _session.ClearCrossTest();
                 _view.RequestClearImageCache();
                 _selection.Clear();
 
@@ -357,69 +361,100 @@ namespace Malcha.Controller
             finally { _view.CloseProgress(progress); _view.SetCatalogBusy(false); _view.EnsureVisible(); }
         }
 
-        // 백업 파일과 정제본 병합 후 저장
+        // 백업 시점으로 복구 (복구 전 사용자 확인)
         public async Task HandleRecoverAsync()
         {
-            if (string.IsNullOrEmpty(_session.CurrentCatalogPath)) { _view.ShowMessage("카탈로그를 먼저 열어 주세요.", "복구"); return; }
+            if (string.IsNullOrEmpty(_session.CurrentCatalogPath))
+            {
+                _view.ShowMessage("카탈로그를 먼저 열어 주세요.", "복구");
+                return;
+            }
+
             var workingPath = CatalogPaths.ResolveWorkingCatalogPath(_session.CurrentCatalogPath);
-
             var backupPaths = CatalogPaths.GetAllBackupPaths(workingPath);
-            if (backupPaths.Count == 0) { TryRecoverFromUndo(); return; }
 
-            string selectedBackupPath = null;
+            if (backupPaths.Count == 0)
+            {
+                if (!_session.HasUndo)
+                {
+                    _view.ShowMessage("복구할 백업이 없습니다.\n(backups/ 폴더 또는 Undo 기록 없음)", "복구");
+                    return;
+                }
+
+                if (_view.ShowMessage(
+                        $"백업 파일이 없습니다.\n\n직전 편집 상태(Undo)로 되돌릴까요?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
+                        "복구", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                    return;
+
+                if (TryRecoverFromUndo())
+                    _view.ShowMessage("직전 편집 상태로 복원했습니다.", "복구");
+                else
+                    _view.ShowMessage("Undo 복원에 실패했습니다.", "복구", icon: MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (_view.ShowMessage(
+                    $"현재 {_session.CurrentFrames.Count:N0} 프레임\n\nbackups/ 에 저장된 시점 중 하나를 골라 복구합니다.\n복구 전 현재 작업본은 자동 백업됩니다.\n\n계속할까요?",
+                    "복구", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            string? selectedBackupPath = null;
 
             foreach (var path in backupPaths)
             {
                 var fileInfo = new FileInfo(path);
-                string timeStr = fileInfo.LastWriteTime.ToString("yyyy-MM-dd tt hh:mm:ss");
+                string timeStr = fileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm");
+                string backupName = Path.GetFileName(path);
 
-                // 사용자에게 물어봄 (Yes, No, Cancel 이 있는 버튼)
                 var result = _view.ShowMessage(
-                    $"복구 시점 발견: {timeStr}\n\n이 시점의 데이터 원본과 현재 데이터를 합쳐 복구하시겠습니까?\n\n(아니오를 누르면 더 오래된 과거 시점을 찾습니다)",
-                    "백업 병합 시점 선택",
+                    $"백업: {backupName}\n시간: {timeStr}\n\n이 시점으로 복구할까요?\n(아니오 → 더 오래된 백업 보기 · 취소 → 중단)",
+                    "복구 시점 선택",
                     MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Question);
 
                 if (result == DialogResult.Yes)
                 {
                     selectedBackupPath = path;
-                    break; // 찾았으니 루프 탈출!
+                    break;
                 }
-                else if (result == DialogResult.Cancel)
-                {
-                    return; // 사용자가 취소함 -> 아예 복구 중단
-                }
-                // No 를 누르면 그냥 반복문 계속 (다음 더 오래된 백업을 물어봄)
+                if (result == DialogResult.Cancel)
+                    return;
             }
-            if (selectedBackupPath == null)
+
+            if (string.IsNullOrEmpty(selectedBackupPath))
             {
-                _view.ShowMessage("선택된 백업이 없어 복구를 취소합니다.", "알림");
+                _view.ShowMessage("선택된 백업이 없어 복구를 취소했습니다.", "복구");
                 return;
             }
 
-            List<Frame> refinedFrames;
-            try { refinedFrames = await _catalog.LoadRefinedFramesAsync(_session.CurrentCatalogPath, _session.CurrentFrames); }
-            catch (Exception ex) { _view.ShowMessage(ex.Message, "복구", icon: MessageBoxIcon.Error); return; }
+            List<Frame> backupFrames;
+            try
+            {
+                backupFrames = await _catalog.LoadCatalogFileAsync(selectedBackupPath)
+                    ?? new List<Frame>();
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage(ex.Message, "복구", icon: MessageBoxIcon.Error);
+                return;
+            }
 
-           
+            if (_view.ShowMessage(
+                    $"아래 내용으로 복구합니다.\n\n백업: {Path.GetFileName(selectedBackupPath)}\n백업 프레임: {backupFrames.Count:N0}\n현재 프레임: {_session.CurrentFrames.Count:N0}\n\n현재 작업본은 backups/에 백업된 뒤 교체됩니다.\n복구할까요?",
+                    "복구 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
 
             _session.PushUndo();
             _view.SetCatalogBusy(true);
             ProgressDialog? progress = null;
             try
             {
-                // [새로운 코드: 깨끗하게 과거 시점의 데이터를 그대로 덮어버리는 롤백 로직]
-                progress = _view.ShowProgress("과거 데이터 불러오기");
+                progress = _view.ShowProgress("복구 중");
 
-                // 1. 병합(Merge)하지 마세요! 그냥 선택된 과거 백업 파일을 통째로 읽어옵니다.
-                var previousFrames = await _catalog.LoadCatalogFileAsync(selectedBackupPath);
+                try { CatalogPaths.CreateTimestampedBackup(workingPath); } catch { }
 
-                
-
-                // 3. 파일의 경로와 현재 프레임을 '선택한 과거 데이터'로 통째로 덮어씌웁니다.
                 _session.CurrentCatalogPath = workingPath;
-                _session.CurrentFrames = previousFrames;
-
+                _session.CurrentFrames = backupFrames;
                 _session.Catalogs[workingPath] = _session.CurrentFrames;
                 await _catalog.SaveCatalogAsync(workingPath, _session.CurrentFrames);
                 _view.RequestClearImageCache();
@@ -429,11 +464,26 @@ namespace Malcha.Controller
                 _view.RequestRefreshFrameList();
                 if (_session.CurrentFrames.Count > 0)
                     _view.RequestShowFrame(Math.Min(_session.CurrentIndex, _session.CurrentFrames.Count - 1));
-                _view.ShowMessage($"병합 완료", "복구");
+
+                _view.SetStatusText($"복구 완료 — {_session.CurrentFrames.Count:N0} 프레임");
+                _view.ShowMessage(
+                    $"복구했습니다.\n\n프레임: {_session.CurrentFrames.Count:N0}\n\nWSL data와 다를 수 있습니다. 필요하면 「정제 데이터 연동」을 실행하세요.",
+                    "복구");
             }
-            catch (OperationCanceledException) { _view.ShowMessage("병합 취소", "복구"); }
-            catch (Exception ex) { _view.ShowMessage($"복구 오류: {ex.Message}", "복구", icon: MessageBoxIcon.Error); }
-            finally { _view.CloseProgress(progress); _view.SetCatalogBusy(false); _view.EnsureVisible(); }
+            catch (OperationCanceledException)
+            {
+                _view.ShowMessage("복구가 취소되었습니다.", "복구");
+            }
+            catch (Exception ex)
+            {
+                _view.ShowMessage($"복구 오류: {ex.Message}", "복구", icon: MessageBoxIcon.Error);
+            }
+            finally
+            {
+                _view.CloseProgress(progress);
+                _view.SetCatalogBusy(false);
+                _view.EnsureVisible();
+            }
         }
 
         // 병합 및 정제된 현재 세션을 단일 파일로 디스크에 추출(Dump)합니다.
@@ -522,27 +572,85 @@ namespace Malcha.Controller
         public async Task HandleDeleteListItemsAsync(IReadOnlyList<int> indices)
         {
             if (indices.Count == 0) return;
-            var idxs = indices.OrderByDescending(i => i).ToList();
+            var idxs = indices.Distinct().OrderBy(i => i).ToList();
             if (!ConfirmDeleteIndices(idxs)) return;
-            var savePath = _session.CurrentCatalogPath;
-            int removed = idxs.Sum(idx => DeleteRange(idx, idx, false));
+            MoveIndicesToDeleted(idxs, persistAfter: false);
             //if (removed > 0 && !string.IsNullOrEmpty(savePath)) await PersistAfterEditAsync(removed, savePath);
         }
 
-        // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)
-        public int DeleteRange(int start, int end, bool persistAfter = true)
+        // start~end 프레임 범위를 삭제 목록으로 이동
+        public int MoveRangeToDeleted(int start, int end, bool persistAfter = true)
         {
             var savePath = _session.CurrentCatalogPath;
-            var result = _session.DeleteRange(start, end);
+            var result = _session.MoveRangeToDeleted(start, end);
             if (result == null) return 0;
-            _view.RequestStopPlayback();
-            _view.OnFramesRemoved(result.Start, result.Count);
-            _selection.OnFramesRemoved(result.Start, result.Count);
-            _view.RequestRefreshFrameList();
+            AfterFramesMovedToDeleted(result);
             if (persistAfter && !string.IsNullOrEmpty(savePath))
                 _ = PersistAfterEditAsync(result.Count, savePath);
             return result.Count;
         }
+
+        // 여러 인덱스를 삭제 목록으로 이동
+        public int MoveIndicesToDeleted(IReadOnlyList<int> indices, bool persistAfter = true)
+        {
+            var savePath = _session.CurrentCatalogPath;
+            var result = _session.MoveIndicesToDeleted(indices);
+            if (result == null) return 0;
+            AfterFramesMovedToDeleted(result);
+            if (persistAfter && !string.IsNullOrEmpty(savePath))
+                _ = PersistAfterEditAsync(result.Count, savePath);
+            return result.Count;
+        }
+
+        // 삭제 목록 → 프레임 리스트 복구
+        public int RestoreFromDeletedList(IReadOnlyList<int> deletedIndices, bool persistAfter = true)
+        {
+            var savePath = _session.CurrentCatalogPath;
+            int count = _session.RestoreFromDeleted(deletedIndices);
+            if (count == 0) return 0;
+
+            _view.RequestStopPlayback();
+            _view.RequestClearImageCache();
+            _selection.Clear();
+            _view.RequestRefreshFrameList();
+            _view.SetStatusText($"복구 — {count:N0} 프레임 (삭제 목록 {_session.DeletedEntries.Count:N0})");
+
+            if (persistAfter && !string.IsNullOrEmpty(savePath))
+                _ = PersistAfterEditAsync(0, savePath);
+            return count;
+        }
+
+        // 드래그앤드롭 — 삭제 목록으로
+        public int HandleDropToDeleted(FrameDragPayload payload)
+        {
+            if (payload.Source != FrameDragPayload.SourceKind.Active) return 0;
+            if (payload.HasRange)
+                return MoveRangeToDeleted(payload.RangeStart, payload.RangeEnd, persistAfter: false);
+            if (payload.Indices.Count > 0)
+                return MoveIndicesToDeleted(payload.Indices, persistAfter: false);
+            return 0;
+        }
+
+        // 드래그앤드롭 — 프레임 리스트로 복구
+        public int HandleDropToActive(FrameDragPayload payload)
+        {
+            if (payload.Source != FrameDragPayload.SourceKind.Deleted) return 0;
+            if (payload.Indices.Count == 0) return 0;
+            return RestoreFromDeletedList(payload.Indices, persistAfter: false);
+        }
+
+        private void AfterFramesMovedToDeleted(CatalogSession.DeleteRangeResult result)
+        {
+            _view.RequestStopPlayback();
+            _view.OnFramesRemoved(result.Start, result.Count);
+            _selection.OnFramesRemoved(result.Start, result.Count);
+            _view.RequestRefreshFrameList();
+            _view.SetStatusText($"삭제 목록 — {_session.DeletedEntries.Count:N0} (방금 +{result.Count:N0})");
+        }
+
+        // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)
+        public int DeleteRange(int start, int end, bool persistAfter = true) =>
+            MoveRangeToDeleted(start, end, persistAfter);
 
         // 편집 후 백업 생성 및 카탈로그 저장
         public async Task PersistAfterEditAsync(int removedCount, string? catalogPath = null)
@@ -599,7 +707,7 @@ namespace Malcha.Controller
         private bool ConfirmCore(int count, int start, int end, string? headline)
         {
             string target = headline ?? (count == 1 ? $"#{start}" : $"{start}~{end} ({count}개)");
-            return _view.ShowMessage($"{target} 삭제?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
+            return _view.ShowMessage($"{target}을(를) 삭제 목록으로 이동?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
                 "프레임 삭제", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
         }
     }

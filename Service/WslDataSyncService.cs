@@ -11,6 +11,8 @@ namespace Malcha.Service
         public const string CatalogFileName = "catalog_0.catalog";
         public const string CatalogManifestFileName = "catalog_0.catalog_manifest";
         public const string ManifestFileName = "manifest.json";
+        // DonkeyCar tub — cam/image_array 파일은 data/images/ 아래
+        public const string ImagesSubDir = "images";
 
         private static readonly WslDataSyncService _instance = new();
         public static WslDataSyncService Instance => _instance;
@@ -38,15 +40,21 @@ namespace Malcha.Service
                 return "data: catalog 없음 → '정제 데이터 연동' 필요";
 
             int frameCount = File.ReadLines(catalogPath).Count(l => !string.IsNullOrWhiteSpace(l));
-            int imageCount = Directory.Exists(TubUncPath)
-                ? Directory.GetFiles(TubUncPath, "*.*")
+            var imagesDir = Path.Combine(TubUncPath, ImagesSubDir);
+            int imageCount = CountImagesInDir(imagesDir);
+            if (imageCount == 0)
+                imageCount = CountImagesInDir(TubUncPath); // 구버전(루트) 호환 표시
+
+            return $"data: {frameCount} 프레임, {imageCount} 이미지 ({TubUncPath})";
+        }
+
+        private static int CountImagesInDir(string dir) =>
+            Directory.Exists(dir)
+                ? Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
                     .Count(f => f.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
                              || f.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase)
                              || f.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
                 : 0;
-
-            return $"data: {frameCount} 프레임, {imageCount} 이미지 ({TubUncPath})";
-        }
 
         // 현재 세션 프레임·이미지를 WSL data 폴더로 동기화
         public async Task<SyncResult> SyncAsync(
@@ -150,6 +158,20 @@ namespace Malcha.Service
                     try { File.Delete(file); } catch (Exception ex) { Debug.WriteLine($"삭제 실패 {file}: {ex.Message}"); }
                 }
             }
+
+            var imagesDir = Path.Combine(targetDir, ImagesSubDir);
+            if (Directory.Exists(imagesDir))
+            {
+                try { Directory.Delete(imagesDir, recursive: true); }
+                catch (Exception ex) { Debug.WriteLine($"images 폴더 삭제 실패 {imagesDir}: {ex.Message}"); }
+            }
+        }
+
+        private static string ImagesDirectory(string tubDir)
+        {
+            var dir = Path.Combine(tubDir, ImagesSubDir);
+            Directory.CreateDirectory(dir);
+            return dir;
         }
 
         // 프레임에 대응하는 이미지 파일명 결정
@@ -162,7 +184,7 @@ namespace Malcha.Service
             return $"{index}_cam_image_array_.jpg";
         }
 
-        // 이미지 파일을 tub 폴더로 복사
+        // 이미지 파일을 tub/data/images/ 로 복사 (DonkeyCar train.py 경로 규칙)
         private static int CopyImages(
             IReadOnlyList<Frame> frames,
             IReadOnlyList<string> imagePaths,
@@ -170,6 +192,7 @@ namespace Malcha.Service
             IReadOnlyList<Frame> exportFrames,
             CancellationToken cancellationToken)
         {
+            var imagesDir = ImagesDirectory(targetDir);
             int copied = 0;
             for (int i = 0; i < frames.Count; i++)
             {
@@ -180,7 +203,7 @@ namespace Malcha.Service
                     continue;
 
                 string destName = exportFrames[i].ImagePath;
-                string destPath = Path.Combine(targetDir, destName);
+                string destPath = Path.Combine(imagesDir, destName);
                 if (File.Exists(destPath)) continue;
 
                 try
