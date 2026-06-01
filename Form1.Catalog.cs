@@ -53,6 +53,7 @@ namespace Malcha
         async Task ICatalogView.CompleteCatalogLoadAsync()
         {
             _catalog.PopulateListBox(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+            RefreshDeletedListUi();
             RefreshChartFromFrames();
             UpdateCatalogPathDisplay();
             ShowFrame(0);
@@ -97,10 +98,19 @@ namespace Malcha
             txtFilePath.Text = $"{label} {Path.GetFileName(_session.CurrentCatalogPath)}  ({_session.CurrentFrames.Count:N0} 프레임)  —  {_session.CurrentCatalogPath}";
         }
 
+        // 삭제 목록 ListBox 갱신
+        private void RefreshDeletedListUi()
+        {
+            _deletedSelection.Clear();
+            _catalog.PopulateDeletedListBox(lstDeleted, _session.DeletedEntries);
+            lstDeleted.Invalidate();
+        }
+
         // 프레임 목록·차트·현재 프레임 UI 갱신
         private void RefreshFrameListUi()
         {
             _catalog.PopulateListBox(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+            RefreshDeletedListUi();
             RefreshChartFromFrames();
             UpdateCatalogPathDisplay();
             if (_session.CurrentFrames.Count > 0)
