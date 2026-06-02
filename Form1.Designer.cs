@@ -122,6 +122,7 @@
             // 
             splitContainer1.Dock = DockStyle.Fill;
             splitContainer1.Location = new Point(0, 0);
+            splitContainer1.Margin = new Padding(6, 6, 6, 6);
             splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -133,14 +134,16 @@
             // 
             splitContainer1.Panel2.BackColor = Color.FromArgb(33, 28, 29);
             splitContainer1.Panel2.Controls.Add(splitContainer2);
-            splitContainer1.Size = new Size(1205, 791);
-            splitContainer1.SplitterDistance = 693;
+            splitContainer1.Size = new Size(2410, 1687);
+            splitContainer1.SplitterDistance = 1386;
+            splitContainer1.SplitterWidth = 8;
             splitContainer1.TabIndex = 0;
             // 
             // splitContainer3
             // 
             splitContainer3.Dock = DockStyle.Fill;
             splitContainer3.Location = new Point(0, 0);
+            splitContainer3.Margin = new Padding(6, 6, 6, 6);
             splitContainer3.Name = "splitContainer3";
             splitContainer3.Orientation = Orientation.Horizontal;
             // 
@@ -152,8 +155,9 @@
             // splitContainer3.Panel2
             // 
             splitContainer3.Panel2.Controls.Add(groupBox3);
-            splitContainer3.Size = new Size(693, 791);
-            splitContainer3.SplitterDistance = 477;
+            splitContainer3.Size = new Size(1386, 1687);
+            splitContainer3.SplitterDistance = 1017;
+            splitContainer3.SplitterWidth = 9;
             splitContainer3.TabIndex = 59;
             // 
             // groupBox1
@@ -163,9 +167,11 @@
             groupBox1.Controls.Add(lblTitle);
             groupBox1.Controls.Add(txtFilePath);
             groupBox1.Controls.Add(btnSelectData);
-            groupBox1.Location = new Point(3, 3);
+            groupBox1.Location = new Point(6, 6);
+            groupBox1.Margin = new Padding(6, 6, 6, 6);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(687, 90);
+            groupBox1.Padding = new Padding(6, 6, 6, 6);
+            groupBox1.Size = new Size(1374, 192);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             // 
@@ -176,10 +182,10 @@
             btnSaveCatalog.FlatStyle = FlatStyle.Popup;
             btnSaveCatalog.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSaveCatalog.ForeColor = SystemColors.ButtonHighlight;
-            btnSaveCatalog.Location = new Point(140, 56);
-            btnSaveCatalog.Margin = new Padding(2);
+            btnSaveCatalog.Location = new Point(280, 119);
+            btnSaveCatalog.Margin = new Padding(4, 4, 4, 4);
             btnSaveCatalog.Name = "btnSaveCatalog";
-            btnSaveCatalog.Size = new Size(123, 23);
+            btnSaveCatalog.Size = new Size(246, 49);
             btnSaveCatalog.TabIndex = 10;
             btnSaveCatalog.Text = "저장";
             btnSaveCatalog.UseVisualStyleBackColor = false;
@@ -190,18 +196,20 @@
             lblTitle.AutoSize = true;
             lblTitle.Font = new Font("맑은 고딕", 18F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblTitle.ForeColor = Color.FromArgb(227, 98, 132);
-            lblTitle.Location = new Point(17, 12);
+            lblTitle.Location = new Point(34, 26);
+            lblTitle.Margin = new Padding(6, 0, 6, 0);
             lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(138, 32);
+            lblTitle.Size = new Size(278, 65);
             lblTitle.TabIndex = 7;
             lblTitle.Text = "DonkeyCar";
             // 
             // txtFilePath
             // 
             txtFilePath.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtFilePath.Location = new Point(268, 56);
+            txtFilePath.Location = new Point(536, 119);
+            txtFilePath.Margin = new Padding(6, 6, 6, 6);
             txtFilePath.Name = "txtFilePath";
-            txtFilePath.Size = new Size(406, 23);
+            txtFilePath.Size = new Size(808, 39);
             txtFilePath.TabIndex = 9;
             // 
             // btnSelectData
@@ -211,9 +219,10 @@
             btnSelectData.FlatStyle = FlatStyle.Popup;
             btnSelectData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSelectData.ForeColor = SystemColors.ButtonHighlight;
-            btnSelectData.Location = new Point(14, 56);
+            btnSelectData.Location = new Point(28, 119);
+            btnSelectData.Margin = new Padding(6, 6, 6, 6);
             btnSelectData.Name = "btnSelectData";
-            btnSelectData.Size = new Size(121, 23);
+            btnSelectData.Size = new Size(242, 49);
             btnSelectData.TabIndex = 8;
             btnSelectData.Text = "데이터 선택";
             btnSelectData.UseVisualStyleBackColor = false;
@@ -239,9 +248,11 @@
             groupBox2.Controls.Add(lblModeTitle);
             groupBox2.Controls.Add(lblThrottleTitle);
             groupBox2.Controls.Add(lblAngleTitle);
-            groupBox2.Location = new Point(3, 88);
+            groupBox2.Location = new Point(6, 188);
+            groupBox2.Margin = new Padding(6, 6, 6, 6);
             groupBox2.Name = "groupBox2";
-            groupBox2.Size = new Size(687, 388);
+            groupBox2.Padding = new Padding(6, 6, 6, 6);
+            groupBox2.Size = new Size(1374, 827);
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
             // 
@@ -249,18 +260,20 @@
             // 
             picVideoScreen.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             picVideoScreen.BackColor = Color.Black;
-            picVideoScreen.Location = new Point(136, 21);
+            picVideoScreen.Location = new Point(272, 45);
+            picVideoScreen.Margin = new Padding(6, 6, 6, 6);
             picVideoScreen.Name = "picVideoScreen";
-            picVideoScreen.Size = new Size(379, 302);
+            picVideoScreen.Size = new Size(758, 643);
             picVideoScreen.TabIndex = 44;
             picVideoScreen.TabStop = false;
             // 
             // trbTimeline
             // 
             trbTimeline.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            trbTimeline.Location = new Point(17, 340);
+            trbTimeline.Location = new Point(34, 724);
+            trbTimeline.Margin = new Padding(6, 6, 6, 6);
             trbTimeline.Name = "trbTimeline";
-            trbTimeline.Size = new Size(646, 45);
+            trbTimeline.Size = new Size(1292, 90);
             trbTimeline.TabIndex = 45;
             // 
             // btnPlayPause
@@ -270,9 +283,10 @@
             btnPlayPause.FlatStyle = FlatStyle.Popup;
             btnPlayPause.Font = new Font("맑은 고딕", 12F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnPlayPause.ForeColor = Color.White;
-            btnPlayPause.Location = new Point(522, 298);
+            btnPlayPause.Location = new Point(1044, 635);
+            btnPlayPause.Margin = new Padding(6, 6, 6, 6);
             btnPlayPause.Name = "btnPlayPause";
-            btnPlayPause.Size = new Size(134, 39);
+            btnPlayPause.Size = new Size(268, 83);
             btnPlayPause.TabIndex = 50;
             btnPlayPause.Text = "재생 / 정지";
             btnPlayPause.UseVisualStyleBackColor = false;
@@ -284,9 +298,10 @@
             btnFastForward.FlatStyle = FlatStyle.Popup;
             btnFastForward.Font = new Font("바탕", 14.25F, FontStyle.Bold);
             btnFastForward.ForeColor = Color.White;
-            btnFastForward.Location = new Point(592, 243);
+            btnFastForward.Location = new Point(1184, 517);
+            btnFastForward.Margin = new Padding(6, 6, 6, 6);
             btnFastForward.Name = "btnFastForward";
-            btnFastForward.Size = new Size(64, 50);
+            btnFastForward.Size = new Size(128, 107);
             btnFastForward.TabIndex = 49;
             btnFastForward.Text = ">>";
             btnFastForward.UseVisualStyleBackColor = false;
@@ -298,9 +313,10 @@
             btnRewind.FlatStyle = FlatStyle.Popup;
             btnRewind.Font = new Font("바탕", 14.25F, FontStyle.Bold);
             btnRewind.ForeColor = Color.White;
-            btnRewind.Location = new Point(522, 243);
+            btnRewind.Location = new Point(1044, 517);
+            btnRewind.Margin = new Padding(6, 6, 6, 6);
             btnRewind.Name = "btnRewind";
-            btnRewind.Size = new Size(64, 50);
+            btnRewind.Size = new Size(128, 107);
             btnRewind.TabIndex = 48;
             btnRewind.Text = "<<";
             btnRewind.UseVisualStyleBackColor = false;
@@ -312,9 +328,10 @@
             btnNextFrame.FlatStyle = FlatStyle.Popup;
             btnNextFrame.Font = new Font("바탕", 14.25F, FontStyle.Bold);
             btnNextFrame.ForeColor = Color.White;
-            btnNextFrame.Location = new Point(592, 186);
+            btnNextFrame.Location = new Point(1184, 396);
+            btnNextFrame.Margin = new Padding(6, 6, 6, 6);
             btnNextFrame.Name = "btnNextFrame";
-            btnNextFrame.Size = new Size(64, 50);
+            btnNextFrame.Size = new Size(128, 107);
             btnNextFrame.TabIndex = 47;
             btnNextFrame.Text = ">";
             btnNextFrame.UseVisualStyleBackColor = false;
@@ -326,9 +343,10 @@
             btnPrevFrame.FlatStyle = FlatStyle.Popup;
             btnPrevFrame.Font = new Font("바탕", 14.25F, FontStyle.Bold);
             btnPrevFrame.ForeColor = Color.White;
-            btnPrevFrame.Location = new Point(522, 186);
+            btnPrevFrame.Location = new Point(1044, 396);
+            btnPrevFrame.Margin = new Padding(6, 6, 6, 6);
             btnPrevFrame.Name = "btnPrevFrame";
-            btnPrevFrame.Size = new Size(64, 50);
+            btnPrevFrame.Size = new Size(128, 107);
             btnPrevFrame.TabIndex = 46;
             btnPrevFrame.Text = "<";
             btnPrevFrame.UseVisualStyleBackColor = false;
@@ -339,9 +357,10 @@
             lstDataList.BackColor = Color.FromArgb(48, 42, 41);
             lstDataList.ForeColor = SystemColors.MenuBar;
             lstDataList.FormattingEnabled = true;
-            lstDataList.Location = new Point(522, 76);
+            lstDataList.Location = new Point(1044, 162);
+            lstDataList.Margin = new Padding(6, 6, 6, 6);
             lstDataList.Name = "lstDataList";
-            lstDataList.Size = new Size(134, 94);
+            lstDataList.Size = new Size(264, 164);
             lstDataList.TabIndex = 38;
             // 
             // lblRecordCount
@@ -350,9 +369,10 @@
             lblRecordCount.AutoSize = true;
             lblRecordCount.Font = new Font("맑은 고딕", 18F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblRecordCount.ForeColor = SystemColors.ButtonHighlight;
-            lblRecordCount.Location = new Point(521, 40);
+            lblRecordCount.Location = new Point(1042, 85);
+            lblRecordCount.Margin = new Padding(6, 0, 6, 0);
             lblRecordCount.Name = "lblRecordCount";
-            lblRecordCount.Size = new Size(98, 32);
+            lblRecordCount.Size = new Size(196, 65);
             lblRecordCount.TabIndex = 43;
             lblRecordCount.Text = "000000";
             // 
@@ -362,9 +382,10 @@
             lblRecordTitle.AutoSize = true;
             lblRecordTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblRecordTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblRecordTitle.Location = new Point(521, 21);
+            lblRecordTitle.Location = new Point(1042, 45);
+            lblRecordTitle.Margin = new Padding(6, 0, 6, 0);
             lblRecordTitle.Name = "lblRecordTitle";
-            lblRecordTitle.Size = new Size(58, 20);
+            lblRecordTitle.Size = new Size(119, 41);
             lblRecordTitle.TabIndex = 42;
             lblRecordTitle.Text = "Record";
             // 
@@ -373,9 +394,10 @@
             lblModeValue.AutoSize = true;
             lblModeValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModeValue.ForeColor = SystemColors.ButtonHighlight;
-            lblModeValue.Location = new Point(49, 189);
+            lblModeValue.Location = new Point(98, 403);
+            lblModeValue.Margin = new Padding(6, 0, 6, 0);
             lblModeValue.Name = "lblModeValue";
-            lblModeValue.Size = new Size(39, 20);
+            lblModeValue.Size = new Size(78, 41);
             lblModeValue.TabIndex = 41;
             lblModeValue.Text = "user";
             // 
@@ -384,9 +406,10 @@
             lblThrottleValue.AutoSize = true;
             lblThrottleValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblThrottleValue.ForeColor = SystemColors.ButtonHighlight;
-            lblThrottleValue.Location = new Point(49, 128);
+            lblThrottleValue.Location = new Point(98, 273);
+            lblThrottleValue.Margin = new Padding(6, 0, 6, 0);
             lblThrottleValue.Name = "lblThrottleValue";
-            lblThrottleValue.Size = new Size(69, 20);
+            lblThrottleValue.Size = new Size(133, 41);
             lblThrottleValue.TabIndex = 40;
             lblThrottleValue.Text = "+00.000";
             // 
@@ -395,9 +418,10 @@
             lblAngleValue.AutoSize = true;
             lblAngleValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblAngleValue.ForeColor = SystemColors.ButtonHighlight;
-            lblAngleValue.Location = new Point(49, 68);
+            lblAngleValue.Location = new Point(98, 145);
+            lblAngleValue.Margin = new Padding(6, 0, 6, 0);
             lblAngleValue.Name = "lblAngleValue";
-            lblAngleValue.Size = new Size(69, 20);
+            lblAngleValue.Size = new Size(133, 41);
             lblAngleValue.TabIndex = 39;
             lblAngleValue.Text = "+00.000";
             // 
@@ -406,9 +430,10 @@
             lblModelValue.AutoSize = true;
             lblModelValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModelValue.ForeColor = Color.FromArgb(255, 215, 64);
-            lblModelValue.Location = new Point(49, 248);
+            lblModelValue.Location = new Point(98, 529);
+            lblModelValue.Margin = new Padding(6, 0, 6, 0);
             lblModelValue.Name = "lblModelValue";
-            lblModelValue.Size = new Size(69, 20);
+            lblModelValue.Size = new Size(133, 41);
             lblModelValue.TabIndex = 65;
             lblModelValue.Text = "+00.000";
             lblModelValue.Visible = false;
@@ -418,9 +443,10 @@
             lblModelAngle.AutoSize = true;
             lblModelAngle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModelAngle.ForeColor = Color.FromArgb(255, 215, 64);
-            lblModelAngle.Location = new Point(32, 218);
+            lblModelAngle.Location = new Point(64, 465);
+            lblModelAngle.Margin = new Padding(6, 0, 6, 0);
             lblModelAngle.Name = "lblModelAngle";
-            lblModelAngle.Size = new Size(98, 20);
+            lblModelAngle.Size = new Size(198, 41);
             lblModelAngle.TabIndex = 64;
             lblModelAngle.Text = "model/angle";
             lblModelAngle.Visible = false;
@@ -430,9 +456,10 @@
             lblModeTitle.AutoSize = true;
             lblModeTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModeTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblModeTitle.Location = new Point(32, 159);
+            lblModeTitle.Location = new Point(64, 339);
+            lblModeTitle.Margin = new Padding(6, 0, 6, 0);
             lblModeTitle.Name = "lblModeTitle";
-            lblModeTitle.Size = new Size(86, 20);
+            lblModeTitle.Size = new Size(173, 41);
             lblModeTitle.TabIndex = 37;
             lblModeTitle.Text = "user/mode";
             // 
@@ -441,9 +468,10 @@
             lblThrottleTitle.AutoSize = true;
             lblThrottleTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblThrottleTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblThrottleTitle.Location = new Point(32, 98);
+            lblThrottleTitle.Location = new Point(64, 209);
+            lblThrottleTitle.Margin = new Padding(6, 0, 6, 0);
             lblThrottleTitle.Name = "lblThrottleTitle";
-            lblThrottleTitle.Size = new Size(100, 20);
+            lblThrottleTitle.Size = new Size(200, 41);
             lblThrottleTitle.TabIndex = 36;
             lblThrottleTitle.Text = "user/throttle";
             // 
@@ -452,9 +480,10 @@
             lblAngleTitle.AutoSize = true;
             lblAngleTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblAngleTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblAngleTitle.Location = new Point(32, 38);
+            lblAngleTitle.Location = new Point(64, 81);
+            lblAngleTitle.Margin = new Padding(6, 0, 6, 0);
             lblAngleTitle.Name = "lblAngleTitle";
-            lblAngleTitle.Size = new Size(84, 20);
+            lblAngleTitle.Size = new Size(168, 41);
             lblAngleTitle.TabIndex = 35;
             lblAngleTitle.Text = "user/angle";
             // 
@@ -474,9 +503,11 @@
             groupBox3.Controls.Add(btnSetEndPoint);
             groupBox3.Controls.Add(btnSetStartPoint);
             groupBox3.Controls.Add(chtDataGraph);
-            groupBox3.Location = new Point(0, 4);
+            groupBox3.Location = new Point(0, 9);
+            groupBox3.Margin = new Padding(6, 6, 6, 6);
             groupBox3.Name = "groupBox3";
-            groupBox3.Size = new Size(692, 306);
+            groupBox3.Padding = new Padding(6, 6, 6, 6);
+            groupBox3.Size = new Size(1384, 653);
             groupBox3.TabIndex = 2;
             groupBox3.TabStop = false;
             // 
@@ -487,10 +518,10 @@
             btnUndo.FlatStyle = FlatStyle.Popup;
             btnUndo.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnUndo.ForeColor = SystemColors.ButtonHighlight;
-            btnUndo.Location = new Point(363, 19);
-            btnUndo.Margin = new Padding(2);
+            btnUndo.Location = new Point(726, 41);
+            btnUndo.Margin = new Padding(4, 4, 4, 4);
             btnUndo.Name = "btnUndo";
-            btnUndo.Size = new Size(99, 23);
+            btnUndo.Size = new Size(198, 49);
             btnUndo.TabIndex = 39;
             btnUndo.Text = "되돌리기";
             btnUndo.UseVisualStyleBackColor = false;
@@ -502,9 +533,10 @@
             lblStatus.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblStatus.ImageScalingSize = new Size(20, 20);
             lblStatus.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabelPlaybackSpeed });
-            lblStatus.Location = new Point(3, 281);
+            lblStatus.Location = new Point(6, 605);
             lblStatus.Name = "lblStatus";
-            lblStatus.Size = new Size(686, 22);
+            lblStatus.Padding = new Padding(2, 0, 28, 0);
+            lblStatus.Size = new Size(1372, 42);
             lblStatus.TabIndex = 38;
             lblStatus.Text = "statusStrip1";
             // 
@@ -512,7 +544,7 @@
             // 
             toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
             toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            toolStripStatusLabel1.Size = new Size(671, 17);
+            toolStripStatusLabel1.Size = new Size(1342, 32);
             toolStripStatusLabel1.Spring = true;
             toolStripStatusLabel1.Text = "동키카 준비 완료 (Donkey Ready)";
             // 
@@ -522,7 +554,7 @@
             toolStripStatusLabelPlaybackSpeed.Font = new Font("맑은 고딕", 9F, FontStyle.Bold, GraphicsUnit.Point, 129);
             toolStripStatusLabelPlaybackSpeed.ForeColor = Color.FromArgb(255, 210, 90);
             toolStripStatusLabelPlaybackSpeed.Name = "toolStripStatusLabelPlaybackSpeed";
-            toolStripStatusLabelPlaybackSpeed.Size = new Size(36, 17);
+            toolStripStatusLabelPlaybackSpeed.Size = new Size(73, 32);
             toolStripStatusLabelPlaybackSpeed.Text = "▶ 1x";
             toolStripStatusLabelPlaybackSpeed.Visible = false;
             // 
@@ -531,9 +563,10 @@
             lbldeletedlist.AutoSize = true;
             lbldeletedlist.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lbldeletedlist.ForeColor = SystemColors.ButtonHighlight;
-            lbldeletedlist.Location = new Point(30, 22);
+            lbldeletedlist.Location = new Point(60, 47);
+            lbldeletedlist.Margin = new Padding(6, 0, 6, 0);
             lbldeletedlist.Name = "lbldeletedlist";
-            lbldeletedlist.Size = new Size(74, 20);
+            lbldeletedlist.Size = new Size(149, 41);
             lbldeletedlist.TabIndex = 37;
             lbldeletedlist.Text = "삭제 목록";
             // 
@@ -543,9 +576,10 @@
             lstDeleted.BackColor = Color.FromArgb(48, 42, 41);
             lstDeleted.ForeColor = SystemColors.MenuBar;
             lstDeleted.FormattingEnabled = true;
-            lstDeleted.Location = new Point(25, 55);
+            lstDeleted.Location = new Point(50, 117);
+            lstDeleted.Margin = new Padding(6, 6, 6, 6);
             lstDeleted.Name = "lstDeleted";
-            lstDeleted.Size = new Size(124, 214);
+            lstDeleted.Size = new Size(244, 452);
             lstDeleted.TabIndex = 36;
             // 
             // btnChangeCleanData
@@ -555,9 +589,10 @@
             btnChangeCleanData.FlatStyle = FlatStyle.Popup;
             btnChangeCleanData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnChangeCleanData.ForeColor = SystemColors.ButtonHighlight;
-            btnChangeCleanData.Location = new Point(563, 61);
+            btnChangeCleanData.Location = new Point(1126, 130);
+            btnChangeCleanData.Margin = new Padding(6, 6, 6, 6);
             btnChangeCleanData.Name = "btnChangeCleanData";
-            btnChangeCleanData.Size = new Size(91, 51);
+            btnChangeCleanData.Size = new Size(182, 109);
             btnChangeCleanData.TabIndex = 27;
             btnChangeCleanData.Text = "정제 데이터 변경";
             btnChangeCleanData.UseVisualStyleBackColor = false;
@@ -569,9 +604,10 @@
             btnHelper.FlatStyle = FlatStyle.Popup;
             btnHelper.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnHelper.ForeColor = SystemColors.ButtonHighlight;
-            btnHelper.Location = new Point(563, 175);
+            btnHelper.Location = new Point(1126, 373);
+            btnHelper.Margin = new Padding(6, 6, 6, 6);
             btnHelper.Name = "btnHelper";
-            btnHelper.Size = new Size(91, 51);
+            btnHelper.Size = new Size(182, 109);
             btnHelper.TabIndex = 35;
             btnHelper.Text = " 도움말";
             btnHelper.UseVisualStyleBackColor = false;
@@ -583,9 +619,10 @@
             btnRefresh.FlatStyle = FlatStyle.Popup;
             btnRefresh.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnRefresh.ForeColor = SystemColors.ButtonHighlight;
-            btnRefresh.Location = new Point(563, 118);
+            btnRefresh.Location = new Point(1126, 252);
+            btnRefresh.Margin = new Padding(6, 6, 6, 6);
             btnRefresh.Name = "btnRefresh";
-            btnRefresh.Size = new Size(91, 51);
+            btnRefresh.Size = new Size(182, 109);
             btnRefresh.TabIndex = 34;
             btnRefresh.Text = "새로고침";
             btnRefresh.UseVisualStyleBackColor = false;
@@ -597,10 +634,10 @@
             btnApplyFilter.FlatStyle = FlatStyle.Popup;
             btnApplyFilter.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnApplyFilter.ForeColor = SystemColors.ButtonHighlight;
-            btnApplyFilter.Location = new Point(573, 19);
-            btnApplyFilter.Margin = new Padding(2);
+            btnApplyFilter.Location = new Point(1146, 41);
+            btnApplyFilter.Margin = new Padding(4, 4, 4, 4);
             btnApplyFilter.Name = "btnApplyFilter";
-            btnApplyFilter.Size = new Size(103, 23);
+            btnApplyFilter.Size = new Size(206, 49);
             btnApplyFilter.TabIndex = 32;
             btnApplyFilter.Text = "필터 적용";
             btnApplyFilter.UseVisualStyleBackColor = false;
@@ -612,10 +649,10 @@
             btnRecover.FlatStyle = FlatStyle.Popup;
             btnRecover.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnRecover.ForeColor = SystemColors.ButtonHighlight;
-            btnRecover.Location = new Point(466, 19);
-            btnRecover.Margin = new Padding(2);
+            btnRecover.Location = new Point(932, 41);
+            btnRecover.Margin = new Padding(4, 4, 4, 4);
             btnRecover.Name = "btnRecover";
-            btnRecover.Size = new Size(103, 23);
+            btnRecover.Size = new Size(206, 49);
             btnRecover.TabIndex = 31;
             btnRecover.Text = "복구";
             btnRecover.UseVisualStyleBackColor = false;
@@ -627,10 +664,10 @@
             btnDeleteSelection.FlatStyle = FlatStyle.Popup;
             btnDeleteSelection.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnDeleteSelection.ForeColor = SystemColors.ButtonHighlight;
-            btnDeleteSelection.Location = new Point(256, 19);
-            btnDeleteSelection.Margin = new Padding(2);
+            btnDeleteSelection.Location = new Point(512, 41);
+            btnDeleteSelection.Margin = new Padding(4, 4, 4, 4);
             btnDeleteSelection.Name = "btnDeleteSelection";
-            btnDeleteSelection.Size = new Size(103, 23);
+            btnDeleteSelection.Size = new Size(206, 49);
             btnDeleteSelection.TabIndex = 30;
             btnDeleteSelection.Text = "선택구간 삭제";
             btnDeleteSelection.UseVisualStyleBackColor = false;
@@ -642,10 +679,10 @@
             btnSetEndPoint.FlatStyle = FlatStyle.Popup;
             btnSetEndPoint.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSetEndPoint.ForeColor = SystemColors.ButtonHighlight;
-            btnSetEndPoint.Location = new Point(149, 19);
-            btnSetEndPoint.Margin = new Padding(2);
+            btnSetEndPoint.Location = new Point(298, 41);
+            btnSetEndPoint.Margin = new Padding(4, 4, 4, 4);
             btnSetEndPoint.Name = "btnSetEndPoint";
-            btnSetEndPoint.Size = new Size(103, 23);
+            btnSetEndPoint.Size = new Size(206, 49);
             btnSetEndPoint.TabIndex = 29;
             btnSetEndPoint.Text = "끝점 설정";
             btnSetEndPoint.UseVisualStyleBackColor = false;
@@ -657,10 +694,10 @@
             btnSetStartPoint.FlatStyle = FlatStyle.Popup;
             btnSetStartPoint.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSetStartPoint.ForeColor = SystemColors.ButtonHighlight;
-            btnSetStartPoint.Location = new Point(42, 19);
-            btnSetStartPoint.Margin = new Padding(2);
+            btnSetStartPoint.Location = new Point(84, 41);
+            btnSetStartPoint.Margin = new Padding(4, 4, 4, 4);
             btnSetStartPoint.Name = "btnSetStartPoint";
-            btnSetStartPoint.Size = new Size(103, 23);
+            btnSetStartPoint.Size = new Size(206, 49);
             btnSetStartPoint.TabIndex = 28;
             btnSetStartPoint.Text = "시작점 설정";
             btnSetStartPoint.UseVisualStyleBackColor = false;
@@ -673,7 +710,8 @@
             chtDataGraph.ChartAreas.Add(chartArea1);
             legend1.Name = "Legend1";
             chtDataGraph.Legends.Add(legend1);
-            chtDataGraph.Location = new Point(166, 55);
+            chtDataGraph.Location = new Point(332, 117);
+            chtDataGraph.Margin = new Padding(6, 6, 6, 6);
             chtDataGraph.Name = "chtDataGraph";
             series1.ChartArea = "ChartArea1";
             series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
@@ -686,7 +724,7 @@
             series2.Name = "user/throttle";
             chtDataGraph.Series.Add(series1);
             chtDataGraph.Series.Add(series2);
-            chtDataGraph.Size = new Size(385, 212);
+            chtDataGraph.Size = new Size(770, 452);
             chtDataGraph.TabIndex = 33;
             chtDataGraph.Text = "chart1";
             // 
@@ -694,6 +732,7 @@
             // 
             splitContainer2.Dock = DockStyle.Fill;
             splitContainer2.Location = new Point(0, 0);
+            splitContainer2.Margin = new Padding(6, 6, 6, 6);
             splitContainer2.Name = "splitContainer2";
             splitContainer2.Orientation = Orientation.Horizontal;
             // 
@@ -704,8 +743,9 @@
             // splitContainer2.Panel2
             // 
             splitContainer2.Panel2.Controls.Add(groupBox5);
-            splitContainer2.Size = new Size(508, 791);
-            splitContainer2.SplitterDistance = 259;
+            splitContainer2.Size = new Size(1016, 1687);
+            splitContainer2.SplitterDistance = 552;
+            splitContainer2.SplitterWidth = 9;
             splitContainer2.TabIndex = 69;
             // 
             // groupBox4
@@ -714,9 +754,11 @@
             groupBox4.Controls.Add(lblloglist);
             groupBox4.Controls.Add(btnshutdown);
             groupBox4.Controls.Add(lstLog);
-            groupBox4.Location = new Point(3, 4);
+            groupBox4.Location = new Point(6, 9);
+            groupBox4.Margin = new Padding(6, 6, 6, 6);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(502, 253);
+            groupBox4.Padding = new Padding(6, 6, 6, 6);
+            groupBox4.Size = new Size(1004, 539);
             groupBox4.TabIndex = 0;
             groupBox4.TabStop = false;
             // 
@@ -725,9 +767,10 @@
             lblloglist.AutoSize = true;
             lblloglist.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblloglist.ForeColor = SystemColors.ButtonHighlight;
-            lblloglist.Location = new Point(8, 15);
+            lblloglist.Location = new Point(16, 32);
+            lblloglist.Margin = new Padding(6, 0, 6, 0);
             lblloglist.Name = "lblloglist";
-            lblloglist.Size = new Size(61, 20);
+            lblloglist.Size = new Size(124, 41);
             lblloglist.TabIndex = 56;
             lblloglist.Text = "Log list";
             // 
@@ -738,9 +781,10 @@
             btnshutdown.FlatStyle = FlatStyle.Popup;
             btnshutdown.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnshutdown.ForeColor = SystemColors.ButtonHighlight;
-            btnshutdown.Location = new Point(8, 204);
+            btnshutdown.Location = new Point(16, 434);
+            btnshutdown.Margin = new Padding(6, 6, 6, 6);
             btnshutdown.Name = "btnshutdown";
-            btnshutdown.Size = new Size(485, 37);
+            btnshutdown.Size = new Size(970, 79);
             btnshutdown.TabIndex = 58;
             btnshutdown.Text = "학습 강제 종료";
             btnshutdown.UseVisualStyleBackColor = false;
@@ -751,9 +795,10 @@
             lstLog.BackColor = Color.FromArgb(48, 42, 41);
             lstLog.ForeColor = SystemColors.MenuBar;
             lstLog.FormattingEnabled = true;
-            lstLog.Location = new Point(8, 42);
+            lstLog.Location = new Point(16, 90);
+            lstLog.Margin = new Padding(6, 6, 6, 6);
             lstLog.Name = "lstLog";
-            lstLog.Size = new Size(485, 139);
+            lstLog.Size = new Size(966, 260);
             lstLog.TabIndex = 57;
             // 
             // groupBox5
@@ -765,8 +810,10 @@
             groupBox5.Controls.Add(dgvPilotList);
             groupBox5.Dock = DockStyle.Fill;
             groupBox5.Location = new Point(0, 0);
+            groupBox5.Margin = new Padding(6, 6, 6, 6);
             groupBox5.Name = "groupBox5";
-            groupBox5.Size = new Size(508, 528);
+            groupBox5.Padding = new Padding(6, 6, 6, 6);
+            groupBox5.Size = new Size(1016, 1126);
             groupBox5.TabIndex = 1;
             groupBox5.TabStop = false;
             // 
@@ -778,11 +825,12 @@
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             tableLayoutPanel2.Controls.Add(btnRunTraining, 0, 0);
             tableLayoutPanel2.Controls.Add(btnCrossTest, 1, 0);
-            tableLayoutPanel2.Location = new Point(3, 172);
+            tableLayoutPanel2.Location = new Point(6, 367);
+            tableLayoutPanel2.Margin = new Padding(6, 6, 6, 6);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 1;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            tableLayoutPanel2.Size = new Size(504, 36);
+            tableLayoutPanel2.Size = new Size(1008, 77);
             tableLayoutPanel2.TabIndex = 68;
             // 
             // btnRunTraining
@@ -792,9 +840,10 @@
             btnRunTraining.FlatStyle = FlatStyle.Popup;
             btnRunTraining.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnRunTraining.ForeColor = SystemColors.ButtonHighlight;
-            btnRunTraining.Location = new Point(3, 3);
+            btnRunTraining.Location = new Point(6, 6);
+            btnRunTraining.Margin = new Padding(6, 6, 6, 6);
             btnRunTraining.Name = "btnRunTraining";
-            btnRunTraining.Size = new Size(246, 30);
+            btnRunTraining.Size = new Size(492, 65);
             btnRunTraining.TabIndex = 62;
             btnRunTraining.Text = "학습 시작";
             btnRunTraining.UseVisualStyleBackColor = false;
@@ -806,9 +855,10 @@
             btnCrossTest.FlatStyle = FlatStyle.Popup;
             btnCrossTest.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnCrossTest.ForeColor = SystemColors.ButtonHighlight;
-            btnCrossTest.Location = new Point(255, 3);
+            btnCrossTest.Location = new Point(510, 6);
+            btnCrossTest.Margin = new Padding(6, 6, 6, 6);
             btnCrossTest.Name = "btnCrossTest";
-            btnCrossTest.Size = new Size(246, 30);
+            btnCrossTest.Size = new Size(492, 65);
             btnCrossTest.TabIndex = 63;
             btnCrossTest.Text = "교차 테스트";
             btnCrossTest.UseVisualStyleBackColor = false;
@@ -821,11 +871,12 @@
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             tableLayoutPanel1.Controls.Add(btnEnableDelete, 0, 0);
             tableLayoutPanel1.Controls.Add(btnconnet, 1, 0);
-            tableLayoutPanel1.Location = new Point(3, 483);
+            tableLayoutPanel1.Location = new Point(6, 1030);
+            tableLayoutPanel1.Margin = new Padding(6, 6, 6, 6);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            tableLayoutPanel1.Size = new Size(504, 36);
+            tableLayoutPanel1.Size = new Size(1008, 77);
             tableLayoutPanel1.TabIndex = 67;
             // 
             // btnEnableDelete
@@ -835,9 +886,10 @@
             btnEnableDelete.FlatStyle = FlatStyle.Popup;
             btnEnableDelete.Font = new Font("맑은 고딕", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnEnableDelete.ForeColor = SystemColors.ButtonHighlight;
-            btnEnableDelete.Location = new Point(3, 3);
+            btnEnableDelete.Location = new Point(6, 6);
+            btnEnableDelete.Margin = new Padding(6, 6, 6, 6);
             btnEnableDelete.Name = "btnEnableDelete";
-            btnEnableDelete.Size = new Size(246, 30);
+            btnEnableDelete.Size = new Size(492, 65);
             btnEnableDelete.TabIndex = 64;
             btnEnableDelete.Text = " 모델 삭제 ";
             btnEnableDelete.UseVisualStyleBackColor = false;
@@ -849,9 +901,10 @@
             btnconnet.FlatStyle = FlatStyle.Popup;
             btnconnet.Font = new Font("맑은 고딕", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnconnet.ForeColor = SystemColors.ButtonHighlight;
-            btnconnet.Location = new Point(255, 3);
+            btnconnet.Location = new Point(510, 6);
+            btnconnet.Margin = new Padding(6, 6, 6, 6);
             btnconnet.Name = "btnconnet";
-            btnconnet.Size = new Size(246, 30);
+            btnconnet.Size = new Size(492, 65);
             btnconnet.TabIndex = 65;
             btnconnet.Text = "설명 추가";
             btnconnet.UseVisualStyleBackColor = false;
@@ -862,9 +915,10 @@
             lstViewScore.BackColor = Color.FromArgb(48, 42, 41);
             lstViewScore.ForeColor = SystemColors.MenuBar;
             lstViewScore.FormattingEnabled = true;
-            lstViewScore.Location = new Point(8, 18);
+            lstViewScore.Location = new Point(16, 38);
+            lstViewScore.Margin = new Padding(6, 6, 6, 6);
             lstViewScore.Name = "lstViewScore";
-            lstViewScore.Size = new Size(491, 139);
+            lstViewScore.Size = new Size(978, 292);
             lstViewScore.TabIndex = 60;
             // 
             // txtModelMemo
@@ -874,9 +928,10 @@
             txtModelMemo.BorderStyle = BorderStyle.FixedSingle;
             txtModelMemo.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             txtModelMemo.ForeColor = SystemColors.MenuBar;
-            txtModelMemo.Location = new Point(8, 450);
+            txtModelMemo.Location = new Point(16, 960);
+            txtModelMemo.Margin = new Padding(6, 6, 6, 6);
             txtModelMemo.Name = "txtModelMemo";
-            txtModelMemo.Size = new Size(492, 25);
+            txtModelMemo.Size = new Size(982, 42);
             txtModelMemo.TabIndex = 66;
             txtModelMemo.Text = "메모 / 설명";
             // 
@@ -888,11 +943,12 @@
             dgvPilotList.BackgroundColor = Color.FromArgb(103, 98, 98);
             dgvPilotList.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvPilotList.Columns.AddRange(new DataGridViewColumn[] { 이름, 시간, 설명 });
-            dgvPilotList.Location = new Point(8, 214);
+            dgvPilotList.Location = new Point(16, 457);
+            dgvPilotList.Margin = new Padding(6, 6, 6, 6);
             dgvPilotList.Name = "dgvPilotList";
             dgvPilotList.RowHeadersVisible = false;
             dgvPilotList.RowHeadersWidth = 82;
-            dgvPilotList.Size = new Size(491, 227);
+            dgvPilotList.Size = new Size(982, 484);
             dgvPilotList.TabIndex = 61;
             // 
             // 이름
@@ -921,11 +977,12 @@
             // 
             // Form1
             // 
-            AutoScaleDimensions = new SizeF(96F, 96F);
+            AutoScaleDimensions = new SizeF(192F, 192F);
             AutoScaleMode = AutoScaleMode.Dpi;
             BackColor = SystemColors.ActiveCaptionText;
-            ClientSize = new Size(1205, 791);
+            ClientSize = new Size(2410, 1687);
             Controls.Add(splitContainer1);
+            Margin = new Padding(6, 6, 6, 6);
             Name = "Form1";
             Text = "Malcha v0.2";
             splitContainer1.Panel1.ResumeLayout(false);
