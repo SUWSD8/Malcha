@@ -55,6 +55,14 @@ namespace Malcha
             ("재생 · 탐색", new[]
             {
                 (new[] { "Space" }, "재생 / 일시정지"),
+                (new[] { "0", "NumPad 0" }, "배속 0.5x (슬로우)"),
+                (new[] { "1", "NumPad 1" }, "배속 1x (기본)"),
+                (new[] { "2", "NumPad 2" }, "배속 1.5x"),
+                (new[] { "3", "NumPad 3" }, "배속 2x"),
+                (new[] { "4", "NumPad 4" }, "배속 3x"),
+                (new[] { "5", "NumPad 5" }, "배속 4x"),
+                (Array.Empty<string>(), "키보드 상단 숫자와 NumPad 모두 사용 가능합니다. 재생 중에도 즉시 반영됩니다."),
+                (Array.Empty<string>(), "배속 표시 — 재생 버튼·상태줄 오른쪽·영상 중앙(변경 시)"),
                 (new[] { "←", "→" }, "이전 / 다음 프레임"),
                 (Array.Empty<string>(), "타임라인 — 드래그하여 재생 위치를 이동합니다."),
                 (Array.Empty<string>(), "프레임 목록 — 항목을 클릭하면 해당 프레임으로 이동합니다."),
