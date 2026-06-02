@@ -27,7 +27,7 @@ namespace Malcha
             UseWaitCursor = busy;
             btnApplyFilter.Enabled = btnRecover.Enabled = btnDeleteSelection.Enabled =
             btnSelectData.Enabled = btnPlayPause.Enabled = btnRefresh.Enabled =
-            btnChangeCleanData.Enabled = btnRunTraining.Enabled = !busy;
+            btnChangeCleanData.Enabled = btnRunTraining.Enabled = btnCrossTest.Enabled = !busy;
         }
 
         // 최소화 상태면 창 복원·활성화
@@ -86,8 +86,7 @@ namespace Malcha
         // 진행 대화상자 닫기
         void ICatalogView.CloseProgress(ProgressDialog? dialog)
         {
-            if (dialog == null) return;
-            try { dialog.Close(); dialog.Dispose(); } catch { }
+            dialog?.CloseSafely();
         }
 
         // txtFilePath에 카탈로그 경로·프레임 수 표시

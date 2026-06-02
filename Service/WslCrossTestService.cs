@@ -35,6 +35,28 @@ namespace Malcha.Service
             var workDir = Path.Combine(Path.GetTempPath(), "MalchaCrossTest", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDir);
 
+            try
+            {
+                return await RunBatchCoreAsync(
+                    wsl, modelName, modelFile, frames, modelType, progress, cancellationToken, workDir);
+            }
+            catch (OperationCanceledException)
+            {
+                try { Directory.Delete(workDir, true); } catch { }
+                throw;
+            }
+        }
+
+        private async Task<CrossTestBatchResult> RunBatchCoreAsync(
+            WslTrainingService wsl,
+            string modelName,
+            string modelFile,
+            IReadOnlyList<(int Index, string ImagePath)> frames,
+            string? modelType,
+            IProgress<(int Percent, string Message)>? progress,
+            CancellationToken cancellationToken,
+            string workDir)
+        {
             var manifestPath = Path.Combine(workDir, "manifest.json");
             var outputPath = Path.Combine(workDir, "predictions.json");
 
@@ -64,9 +86,24 @@ namespace Malcha.Service
                 $"python3 -u '{scriptWsl}' --model '{modelRel}' --manifest '{manifestWsl}' --output '{outputWsl}'{typeArg}";
 
             var log = new StringBuilder();
-            bool ok = await Task.Run(
-                () => RunWslProcess(wsl.Distro, bashCmd, log, progress, frames.Count, cancellationToken),
-                cancellationToken);
+            Process? wslProcess = null;
+            bool ok;
+            try
+            {
+                ok = await Task.Run(
+                    () => RunWslProcess(wsl.Distro, bashCmd, log, progress, frames.Count, cancellationToken, out wslProcess),
+                    cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            finally
+            {
+                TerminateWslProcess(wslProcess);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (!File.Exists(outputPath))
             {
@@ -110,9 +147,10 @@ namespace Malcha.Service
             StringBuilder log,
             IProgress<(int Percent, string Message)>? progress,
             int frameCount,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            out Process? process)
         {
-            Process? process = null;
+            process = null;
             try
             {
                 var startInfo = new ProcessStartInfo
@@ -132,13 +170,13 @@ namespace Malcha.Service
 
                 process.OutputDataReceived += (_, e) =>
                 {
-                    if (string.IsNullOrWhiteSpace(e.Data)) return;
+                    if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(e.Data)) return;
                     log.AppendLine(e.Data);
                     progress?.Report((40, e.Data.Length > 60 ? e.Data[..60] + "…" : e.Data));
                 };
                 process.ErrorDataReceived += (_, e) =>
                 {
-                    if (string.IsNullOrWhiteSpace(e.Data)) return;
+                    if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(e.Data)) return;
                     log.AppendLine(e.Data);
                 };
 
@@ -158,9 +196,32 @@ namespace Malcha.Service
             }
             catch (OperationCanceledException)
             {
-                try { process?.Kill(entireProcessTree: true); } catch { }
                 throw;
             }
+        }
+
+        private static void TerminateWslProcess(Process? process)
+        {
+            if (process == null) return;
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch { }
+            try
+            {
+                process.CancelOutputRead();
+                process.CancelErrorRead();
+            }
+            catch { }
+            try
+            {
+                if (!process.HasExited)
+                    process.WaitForExit(5000);
+            }
+            catch { }
+            try { process.Dispose(); } catch { }
         }
 
         private static JsonSerializerOptions JsonOptions() => new() { PropertyNameCaseInsensitive = true };
