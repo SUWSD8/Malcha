@@ -7,6 +7,22 @@ namespace Malcha.UI
     /// </summary>
     internal sealed class SplashForm : Form
     {
+        /// <summary>더블 버퍼 + 불투명 배경 (Transparent 시 PaintBackground 예외 방지).</summary>
+        private sealed class DoubleBufferedPanel : Panel
+        {
+            public DoubleBufferedPanel()
+            {
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+                UpdateStyles();
+            }
+
+            protected override void OnPaintBackground(PaintEventArgs e)
+            {
+                if (ClientRectangle.Width > 0 && ClientRectangle.Height > 0)
+                    e.Graphics.Clear(BackColor);
+            }
+        }
+
         private const int HoldAfterVisibleMs = 2600;
         private const int MaxWaitForMainMs = 8000;
         private const int FadeStepMs = 16;
@@ -132,11 +148,12 @@ namespace Malcha.UI
                 BackColor = Color.FromArgb(42, 36, 38),
                 Height = 8
             };
-            _progressFill = new Panel
+            _progressFill = new DoubleBufferedPanel
             {
                 BackColor = AccentPink,
                 Height = 8
             };
+            _progressFill.Paint += ProgressFill_Paint;
             _progressTrack.Controls.Add(_progressFill);
 
             Controls.Add(_backdrop);
@@ -307,32 +324,33 @@ namespace Malcha.UI
             _lblLoading.Location = new Point(innerCx - _lblLoading.Width / 2, _lblVer.Bottom + 18);
         }
 
+        private void ProgressFill_Paint(object? sender, PaintEventArgs e)
+        {
+            var r = _progressFill.ClientRectangle;
+            if (r.Width < 1 || r.Height < 1) return;
+
+            try
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using var brush = new LinearGradientBrush(r, AccentPink, AccentGold, LinearGradientMode.Horizontal);
+                e.Graphics.FillRectangle(brush, r);
+            }
+            catch (ArgumentException)
+            {
+                // 폼 Opacity 페이드 중 GDI+가 실패할 수 있음 — 단색으로 대체
+                e.Graphics.Clear(AccentPink);
+            }
+        }
+
         private void UpdateProgressBar()
         {
             int w = Math.Max(0, (int)(_progressTrack.ClientSize.Width * _progress));
-            _progressFill.Width = w;
-            if (w <= 0)
-            {
-                _progressFill.BackgroundImage?.Dispose();
-                _progressFill.BackgroundImage = null;
-                _lastProgressW = 0;
-                return;
-            }
-
             if (w == _lastProgressW) return;
             _lastProgressW = w;
-
-            _progressFill.BackgroundImage?.Dispose();
-            var bmp = new Bitmap(w, 8);
-            using (var g = Graphics.FromImage(bmp))
-            using (var brush = new LinearGradientBrush(
-                       new Rectangle(0, 0, w, 8),
-                       AccentPink,
-                       AccentGold,
-                       LinearGradientMode.Horizontal))
-                g.FillRectangle(brush, 0, 0, w, 8);
-            _progressFill.BackgroundImage = bmp;
-            _progressFill.BackColor = Color.Transparent;
+            _progressFill.Visible = w > 0;
+            _progressFill.Width = w;
+            if (w > 0)
+                _progressFill.Invalidate();
         }
 
         public void NotifyMainReady() => _mainReady = true;
@@ -413,7 +431,6 @@ namespace Malcha.UI
         {
             _animTimer.Stop();
             _animTimer.Dispose();
-            _progressFill.BackgroundImage?.Dispose();
             _onClosed?.Invoke();
             base.OnFormClosed(e);
         }
