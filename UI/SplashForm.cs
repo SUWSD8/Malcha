@@ -7,6 +7,22 @@ namespace Malcha.UI
     /// </summary>
     internal sealed class SplashForm : Form
     {
+        /// <summary>더블 버퍼 + 불투명 배경 (Transparent 시 PaintBackground 예외 방지).</summary>
+        private sealed class DoubleBufferedPanel : Panel
+        {
+            public DoubleBufferedPanel()
+            {
+                SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
+                UpdateStyles();
+            }
+
+            protected override void OnPaintBackground(PaintEventArgs e)
+            {
+                if (ClientRectangle.Width > 0 && ClientRectangle.Height > 0)
+                    e.Graphics.Clear(BackColor);
+            }
+        }
+
         private const int HoldAfterVisibleMs = 2600;
         private const int MaxWaitForMainMs = 8000;
         private const int AnimStepMs = 16;
@@ -133,11 +149,12 @@ namespace Malcha.UI
                 BackColor = Color.FromArgb(42, 36, 38),
                 Height = 8
             };
-            _progressFill = new Panel
+            _progressFill = new DoubleBufferedPanel
             {
                 BackColor = AccentPink,
                 Height = 8
             };
+            _progressFill.Paint += ProgressFill_Paint;
             _progressTrack.Controls.Add(_progressFill);
 
             Controls.Add(_backdrop);
@@ -310,7 +327,7 @@ namespace Malcha.UI
             _lblLoading.Location = new Point(innerCx - _lblLoading.Width / 2, _lblVer.Bottom + 18);
         }
 
-        private void UpdateProgressBar()
+        private void ProgressFill_Paint(object? sender, PaintEventArgs e)
         {
             int w = Math.Max(0, (int)(_progressTrack.ClientSize.Width * _progress));
             if (w <= 0)
