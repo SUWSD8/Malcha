@@ -631,7 +631,7 @@ namespace Malcha
                 {
                     MessageBox.Show($"중단 신호 생성 실패: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-            }
+            }//
         }
     }
 }
