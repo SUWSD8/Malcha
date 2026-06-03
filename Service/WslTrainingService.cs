@@ -113,7 +113,9 @@ namespace Malcha.Service
             if (!IsConfigured)
                 throw new InvalidOperationException("mycar 폴더가 설정되지 않았습니다.");
 
-            return await Task.Run(() => RunTrainProcess(tubDirName, modelFileName, output, cancellationToken), cancellationToken);
+            return await Task.Run(
+                () => RunTrainProcess(tubDirName, modelFileName, output, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
         }
 
         // models/{name}.h5 가중치 파일 삭제
@@ -152,13 +154,13 @@ namespace Malcha.Service
 
                 process.OutputDataReceived += (_, e) =>
                 {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                        output?.Report(e.Data);
+                    if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(e.Data)) return;
+                    output?.Report(e.Data);
                 };
                 process.ErrorDataReceived += (_, e) =>
                 {
-                    if (!string.IsNullOrWhiteSpace(e.Data))
-                        output?.Report(e.Data);
+                    if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(e.Data)) return;
+                    output?.Report(e.Data);
                 };
 
                 process.BeginOutputReadLine();
@@ -171,15 +173,43 @@ namespace Malcha.Service
             }
             catch (OperationCanceledException)
             {
-                try { process?.Kill(entireProcessTree: true); } catch { }
                 throw;
             }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 Debug.WriteLine($"WSL 오류: {ex.Message}");
                 output?.Report($"[오류] {ex.Message}");
                 return false;
             }
+            finally
+            {
+                TerminateWslProcess(process);
+            }
+        }
+
+        private static void TerminateWslProcess(Process? process)
+        {
+            if (process == null) return;
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch { }
+            try
+            {
+                process.CancelOutputRead();
+                process.CancelErrorRead();
+            }
+            catch { }
+            try
+            {
+                if (!process.HasExited)
+                    process.WaitForExit(1500);
+            }
+            catch { }
+            try { process.Dispose(); } catch { }
         }
     }
 }
