@@ -12,7 +12,7 @@ namespace Malcha.UI
         private const int FadeStepMs = 16;
         private const double FadeDelta = 0.07;
 
-        private const string AppVersion = "v0.2";
+        private const string AppVersion = "v1.0";
 
         private static readonly Color BgDeep = Color.FromArgb(10, 8, 9);
         private static readonly Color BgMid = Color.FromArgb(28, 22, 24);
