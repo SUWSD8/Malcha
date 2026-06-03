@@ -716,7 +716,7 @@
             groupBox4.Controls.Add(lstLog);
             groupBox4.Location = new Point(3, -2);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(399, 403);
+            groupBox4.Size = new Size(501, 258);
             groupBox4.TabIndex = 0;
             groupBox4.TabStop = false;
             // 
@@ -738,9 +738,9 @@
             btnshutdown.FlatStyle = FlatStyle.Popup;
             btnshutdown.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnshutdown.ForeColor = SystemColors.ButtonHighlight;
-            btnshutdown.Location = new Point(8, 353);
+            btnshutdown.Location = new Point(8, 208);
             btnshutdown.Name = "btnshutdown";
-            btnshutdown.Size = new Size(382, 37);
+            btnshutdown.Size = new Size(484, 37);
             btnshutdown.TabIndex = 58;
             btnshutdown.Text = "학습 강제 종료";
             btnshutdown.UseVisualStyleBackColor = false;
@@ -754,7 +754,7 @@
             lstLog.FormattingEnabled = true;
             lstLog.Location = new Point(8, 42);
             lstLog.Name = "lstLog";
-            lstLog.Size = new Size(382, 304);
+            lstLog.Size = new Size(484, 154);
             lstLog.TabIndex = 57;
             // 
             // groupBox5
