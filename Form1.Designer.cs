@@ -58,27 +58,11 @@
             lblModeTitle = new Label();
             lblThrottleTitle = new Label();
             lblAngleTitle = new Label();
-            groupBox3 = new GroupBox();
-            btnUndo = new Button();
-            lblStatus = new StatusStrip();
-            toolStripStatusLabel1 = new ToolStripStatusLabel();
-            toolStripStatusLabelPlaybackSpeed = new ToolStripStatusLabel();
-            lbldeletedlist = new Label();
-            lstDeleted = new ListBox();
-            btnChangeCleanData = new Button();
-            btnHelper = new Button();
-            btnRefresh = new Button();
-            btnApplyFilter = new Button();
-            btnRecover = new Button();
-            btnDeleteSelection = new Button();
-            btnSetEndPoint = new Button();
-            btnSetStartPoint = new Button();
-            chtDataGraph = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            splitContainer2 = new SplitContainer();
-            groupBox4 = new GroupBox();
-            lblloglist = new Label();
-            btnshutdown = new Button();
-            lstLog = new ListBox();
+            groupBox1 = new GroupBox();
+            btnSaveCatalog = new Button();
+            lblTitle = new Label();
+            txtFilePath = new TextBox();
+            btnSelectData = new Button();
             groupBox5 = new GroupBox();
             tableLayoutPanel2 = new TableLayoutPanel();
             btnRunTraining = new Button();
@@ -92,6 +76,10 @@
             이름 = new DataGridViewTextBoxColumn();
             시간 = new DataGridViewTextBoxColumn();
             설명 = new DataGridViewTextBoxColumn();
+            groupBox4 = new GroupBox();
+            lblloglist = new Label();
+            btnshutdown = new Button();
+            lstLog = new ListBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -708,7 +696,22 @@
             splitContainer2.SplitterDistance = 259;
             splitContainer2.TabIndex = 69;
             // 
-            // groupBox4
+            // btnSaveCatalog
+            // 
+            btnSaveCatalog.Anchor = AnchorStyles.Left;
+            btnSaveCatalog.BackColor = Color.FromArgb(53, 48, 49);
+            btnSaveCatalog.FlatStyle = FlatStyle.Popup;
+            btnSaveCatalog.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnSaveCatalog.ForeColor = SystemColors.ButtonHighlight;
+            btnSaveCatalog.Location = new Point(141, 56);
+            btnSaveCatalog.Name = "btnSaveCatalog";
+            btnSaveCatalog.Size = new Size(121, 23);
+            btnSaveCatalog.TabIndex = 10;
+            btnSaveCatalog.Text = "저장";
+            btnSaveCatalog.UseVisualStyleBackColor = false;
+            btnSaveCatalog.Click += btnSaveCatalog_Click;
+            // 
+            // lblTitle
             // 
             groupBox4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             groupBox4.Controls.Add(lblloglist);
@@ -918,6 +921,55 @@
             설명.MinimumWidth = 10;
             설명.Name = "설명";
             설명.ReadOnly = true;
+            // 
+            // groupBox4
+            // 
+            groupBox4.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox4.Controls.Add(lblloglist);
+            groupBox4.Controls.Add(btnshutdown);
+            groupBox4.Controls.Add(lstLog);
+            groupBox4.Location = new Point(3, -2);
+            groupBox4.Name = "groupBox4";
+            groupBox4.Size = new Size(399, 403);
+            groupBox4.TabIndex = 0;
+            groupBox4.TabStop = false;
+            // 
+            // lblloglist
+            // 
+            lblloglist.AutoSize = true;
+            lblloglist.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            lblloglist.ForeColor = SystemColors.ButtonHighlight;
+            lblloglist.Location = new Point(8, 15);
+            lblloglist.Name = "lblloglist";
+            lblloglist.Size = new Size(61, 20);
+            lblloglist.TabIndex = 56;
+            lblloglist.Text = "Log list";
+            // 
+            // btnshutdown
+            // 
+            btnshutdown.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            btnshutdown.BackColor = Color.FromArgb(214, 71, 129);
+            btnshutdown.FlatStyle = FlatStyle.Popup;
+            btnshutdown.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnshutdown.ForeColor = SystemColors.ButtonHighlight;
+            btnshutdown.Location = new Point(8, 353);
+            btnshutdown.Name = "btnshutdown";
+            btnshutdown.Size = new Size(382, 37);
+            btnshutdown.TabIndex = 58;
+            btnshutdown.Text = "학습 강제 종료";
+            btnshutdown.UseVisualStyleBackColor = false;
+            btnshutdown.Click += btnshutdown_Click;
+            // 
+            // lstLog
+            // 
+            lstLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lstLog.BackColor = Color.FromArgb(48, 42, 41);
+            lstLog.ForeColor = SystemColors.MenuBar;
+            lstLog.FormattingEnabled = true;
+            lstLog.Location = new Point(8, 42);
+            lstLog.Name = "lstLog";
+            lstLog.Size = new Size(382, 304);
+            lstLog.TabIndex = 57;
             // 
             // Form1
             // 
