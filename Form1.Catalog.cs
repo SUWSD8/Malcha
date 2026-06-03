@@ -27,7 +27,7 @@ namespace Malcha
             UseWaitCursor = busy;
             btnApplyFilter.Enabled = btnRecover.Enabled = btnDeleteSelection.Enabled =
             btnSelectData.Enabled = btnPlayPause.Enabled = btnRefresh.Enabled =
-            btnChangeCleanData.Enabled = btnRunTraining.Enabled = !busy;
+            btnChangeCleanData.Enabled = btnRunTraining.Enabled = btnCrossTest.Enabled = !busy;
         }
 
         // 최소화 상태면 창 복원·활성화
@@ -53,6 +53,7 @@ namespace Malcha
         async Task ICatalogView.CompleteCatalogLoadAsync()
         {
             _catalog.PopulateListBox(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+            RefreshDeletedListUi();
             RefreshChartFromFrames();
             UpdateCatalogPathDisplay();
             ShowFrame(0);
@@ -60,6 +61,7 @@ namespace Malcha
             lstDataList.Invalidate();
             trbTimeline.Invalidate();
             picVideoScreen.Invalidate();
+            RefreshPlaybackSpeedIndicators();
             await _display.PreloadAsync(_session.FrameImagePaths, _session.CurrentFrames, 5);
         }
 
@@ -84,8 +86,7 @@ namespace Malcha
         // 진행 대화상자 닫기
         void ICatalogView.CloseProgress(ProgressDialog? dialog)
         {
-            if (dialog == null) return;
-            try { dialog.Close(); dialog.Dispose(); } catch { }
+            dialog?.CloseSafely();
         }
 
         // txtFilePath에 카탈로그 경로·프레임 수 표시
@@ -97,10 +98,19 @@ namespace Malcha
             txtFilePath.Text = $"{label} {Path.GetFileName(_session.CurrentCatalogPath)}  ({_session.CurrentFrames.Count:N0} 프레임)  —  {_session.CurrentCatalogPath}";
         }
 
+        // 삭제 목록 ListBox 갱신
+        private void RefreshDeletedListUi()
+        {
+            _deletedSelection.Clear();
+            _catalog.PopulateDeletedListBox(lstDeleted, _session.DeletedEntries);
+            lstDeleted.Invalidate();
+        }
+
         // 프레임 목록·차트·현재 프레임 UI 갱신
         private void RefreshFrameListUi()
         {
             _catalog.PopulateListBox(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+            RefreshDeletedListUi();
             RefreshChartFromFrames();
             UpdateCatalogPathDisplay();
             if (_session.CurrentFrames.Count > 0)
@@ -108,6 +118,7 @@ namespace Malcha
                 _session.CurrentIndex = Math.Clamp(_session.CurrentIndex, 0, _session.CurrentFrames.Count - 1);
                 lstDataList.SelectedIndex = _session.CurrentIndex;
                 ShowFrame(_session.CurrentIndex);
+                RefreshPlaybackSpeedIndicators();
             }
             else ClearPlayback();
             lstDataList.Invalidate();

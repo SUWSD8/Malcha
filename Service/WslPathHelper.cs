@@ -45,5 +45,18 @@ namespace Malcha.Service
             var relative = linuxPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
             return Path.Combine($@"\\wsl.localhost\{distro}", relative);
         }
+
+        // Windows 절대 경로 → WSL /mnt/... 경로
+        public static string WindowsToWslPath(string windowsPath)
+        {
+            var full = Path.GetFullPath(windowsPath);
+            if (full.Length >= 2 && full[1] == ':')
+            {
+                var drive = char.ToLowerInvariant(full[0]);
+                var rest = full[2..].Replace('\\', '/');
+                return $"/mnt/{drive}{rest}";
+            }
+            return full.Replace('\\', '/');
+        }
     }
 }

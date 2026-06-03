@@ -21,7 +21,7 @@ namespace Malcha
             ("학습 준비 (이 순서대로)", new[]
             {
                 (Array.Empty<string>(), "① 데이터 선택 — 주행 .catalog 파일을 엽니다."),
-                (Array.Empty<string>(), "② (선택) 구간 삭제·수동 편집 — 나쁜 구간을 직접 제거합니다."),
+                (Array.Empty<string>(), "② (선택) 구간 삭제·수동 편집 — 나쁜 구간을 삭제 목록으로 옮기거나 복구합니다."),
                 (Array.Empty<string>(), "③ 필터 적용 — 중복·스파이크·범위 초과 프레임을 자동 정제 (1회면 보통 충분)."),
                 (Array.Empty<string>(), "④ 정제 데이터 연동 — 정제된 카탈로그·이미지를 WSL mycar/data 로 복사합니다. ★학습 전 필수"),
                 (Array.Empty<string>(), "⑤ 학습 시작 — WSL에서 train.py 실행 (처음이면 mycar 폴더 선택)."),
@@ -35,7 +35,7 @@ namespace Malcha
                 (Array.Empty<string>(), "모델 목록 — 이름·시간·설명. 같은 이름이 여러 개면 시간으로 구분."),
                 (Array.Empty<string>(), "학습 시작 — mycar/data 로 학습. 로그에 「data: N 프레임, M 이미지」가 나오면 연동 확인."),
                 (Array.Empty<string>(), "학습 강제 종료 — 진행 중인 WSL 학습 중단."),
-                (Array.Empty<string>(), "교차 테스트 — Loss 그래프 확인."),
+                (Array.Empty<string>(), "교차 테스트 — 선택 모델로 카탈로그 inference, 주황(기록)·노랑(예측) 화살표 비교"),
                 (Array.Empty<string>(), "설명 추가 — 선택한 모델에 메모 저장."),
                 (Array.Empty<string>(), "모델 삭제 — 목록에서 행을 클릭해 선택 후 삭제 (database.json 1건 + .h5)."),
             }),
@@ -55,29 +55,40 @@ namespace Malcha
             ("재생 · 탐색", new[]
             {
                 (new[] { "Space" }, "재생 / 일시정지"),
+                (new[] { "0", "NumPad 0" }, "배속 0.5x (슬로우)"),
+                (new[] { "1", "NumPad 1" }, "배속 1x (기본)"),
+                (new[] { "2", "NumPad 2" }, "배속 1.5x"),
+                (new[] { "3", "NumPad 3" }, "배속 2x"),
+                (new[] { "4", "NumPad 4" }, "배속 3x"),
+                (new[] { "5", "NumPad 5" }, "배속 4x"),
+                (Array.Empty<string>(), "키보드 상단 숫자와 NumPad 모두 사용 가능합니다. 재생 중에도 즉시 반영됩니다."),
+                (Array.Empty<string>(), "배속 표시 — 재생 버튼·상태줄 오른쪽·영상 중앙(변경 시)"),
                 (new[] { "←", "→" }, "이전 / 다음 프레임"),
                 (Array.Empty<string>(), "타임라인 — 드래그하여 재생 위치를 이동합니다."),
                 (Array.Empty<string>(), "프레임 목록 — 항목을 클릭하면 해당 프레임으로 이동합니다."),
             }),
             ("구간 선택", new[]
             {
+                (new[] { "드래그" }, "프레임·삭제 목록 — 위↔아래 어느 방향이든 구간 선택 (주황색)"),
+                (new[] { "드래그" }, "선택된 구간 위에서 다시 끌기 — 프레임↔삭제 목록 이동·복구"),
                 (new[] { "Ctrl", "드래그" }, "타임라인에서 구간을 드래그해 선택"),
                 (new[] { "Ctrl", "클릭" }, "타임라인·목록에서 구간 시작점 설정"),
                 (new[] { "Ctrl", "Shift", "클릭" }, "타임라인·목록에서 구간 끝점 설정"),
                 (new[] { "[" }, "현재 프레임을 구간 시작으로"),
                 (new[] { "]" }, "현재 프레임을 구간 끝으로"),
-                (new[] { "Esc" }, "구간 선택 해제"),
+                (new[] { "Esc" }, "구간 선택 해제 (프레임·삭제 목록)"),
                 (new[] { "Shift", "클릭" }, "타임라인에서 구간 선택 해제"),
-                (Array.Empty<string>(), "선택된 구간은 타임라인·목록에 주황색으로 표시됩니다."),
+                (Array.Empty<string>(), "리스트 안 드래그 = 구간 선택 · 리스트 밖으로 끌기 = 이동/복구"),
             }),
-            ("편집", new[]
+            ("편집 · 삭제 목록", new[]
             {
-                (Array.Empty<string>(), "선택구간 삭제 — 주황색 구간 제거 (저장·backups/ 백업 포함)"),
+                (Array.Empty<string>(), "선택구간 삭제 — 주황색 구간을 삭제 목록으로 이동"),
+                (Array.Empty<string>(), "삭제 목록 — 아래 패널에 임시 보관. 위쪽으로 끌면 선택 항목만 복구"),
                 (Array.Empty<string>(), "필터 적용 — 중복·스파이크·범위 초과 프레임을 자동 정제합니다."),
-                (Array.Empty<string>(), "복구 — 최신 백업과 정제본을 병합해 빠진 프레임을 되살립니다."),
-                (Array.Empty<string>(), "백업이 없으면 직전 편집 상태(Undo)로 되돌립니다."),
-                (new[] { "Delete" }, "목록에서 선택한 항목 삭제"),
-                (Array.Empty<string>(), "타임라인·목록 우클릭 — 선택 구간 또는 항목 삭제"),
+                (Array.Empty<string>(), "복구 — backups/ 백업 또는 Undo(Ctrl+Z)로 되돌립니다."),
+                (new[] { "Delete" }, "목록에서 선택한 항목을 삭제 목록으로 이동"),
+                (new[] { "Ctrl", "Z" }, "직전 편집 Undo (삭제 목록 상태 포함)"),
+                (Array.Empty<string>(), "우클릭 — 선택 구간/항목 삭제·복구"),
             }),
             ("기타", new[]
             {

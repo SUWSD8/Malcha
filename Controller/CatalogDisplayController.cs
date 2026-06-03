@@ -208,7 +208,7 @@ namespace Malcha.Controller
             try { await Task.WhenAll(tasks); } catch { }
         }
 
-        // PictureBox Paint — 조향(주황)·쓰로틀 HUD. modelAngle 은 교차 테스트 예측용(노란 화살표, 추후 연결)
+        // PictureBox Paint — 조향(주황)·쓰로틀 HUD. modelAngle 은 교차 테스트 예측용(노란 화살표)
         public static void DrawOverlay(Graphics g, Frame frame, Size clientSize, double? modelAngle = null)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -223,11 +223,11 @@ namespace Malcha.Controller
         // 조향 화살표 — model=false: 기록값(주황·큼), model=true: 모델 예측(노랑·작음)
         private static void DrawSteeringArrow(Graphics g, int w, int h, double angle, bool model)
         {
-            const float scale = 0.8f;
+            float scale = model ? 0.92f : 0.8f;
             int baseLen = model
-                ? Math.Max(24, Math.Min(w, h) / 6)
+                ? Math.Max(28, Math.Min(w, h) / 5)
                 : Math.Max(64, Math.Min(w, h) / 3);
-            int arrowLen = Math.Max(model ? 20 : 48, (int)(baseLen * scale));
+            int arrowLen = Math.Max(model ? 26 : 48, (int)(baseLen * scale));
 
             int headHeight = model
                 ? Math.Max(5, (int)(arrowLen / 6f))
@@ -247,19 +247,35 @@ namespace Malcha.Controller
                 ? Color.FromArgb(220, 255, 215, 64)
                 : Color.FromArgb(230, 255, 140, 0);
 
+            var head = new[]
+            {
+                new PointF(0f, -arrowLen),
+                new PointF(headHalfW, shaftTop),
+                new PointF(-headHalfW, shaftTop)
+            };
+
             g.TranslateTransform(cx, cy);
             g.RotateTransform(angleDeg);
+
             using (var brush = new SolidBrush(color))
             using (var pen = new Pen(color, shaftW) { StartCap = LineCap.Round, EndCap = LineCap.Flat })
             {
                 g.DrawLine(pen, 0f, 0f, 0f, shaftTop);
-                g.FillPolygon(brush, new[]
-                {
-                    new PointF(0f, -arrowLen),
-                    new PointF(headHalfW, shaftTop),
-                    new PointF(-headHalfW, shaftTop)
-                });
+                g.FillPolygon(brush, head);
             }
+
+            // 아주 얇은 경계선만
+            using (var edge = new Pen(Color.FromArgb(85, 0, 0, 0), 1f)
+            {
+                StartCap = LineCap.Round,
+                EndCap = LineCap.Flat,
+                LineJoin = LineJoin.Round
+            })
+            {
+                g.DrawLine(edge, 0f, 0f, 0f, shaftTop);
+                g.DrawPolygon(edge, head);
+            }
+
             g.ResetTransform();
         }
 

@@ -13,8 +13,10 @@ namespace Malcha
         private Process? _trainingProcess = null;
         private readonly CatalogSession _session = new();
         private readonly FrameRangeSelection _selection = new();
+        private readonly FrameRangeSelection _deletedSelection = new();
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
+        private CrossTestController? _crossTestController;
 
         public Form1()
         {
@@ -25,15 +27,23 @@ namespace Malcha
                 lblAngleValue, lblThrottleValue, lblModeValue, lblRecordCount);
 
             InitializeCatalogController();
+            _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
             new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi).Attach();
+            new DeletedListSelectionBinder(lstDeleted, _deletedSelection, RefreshDeletedSelectionUi).Attach();
+            new FrameListDragDropBinder(
+                lstDataList, lstDeleted, groupBox2, _selection, _deletedSelection,
+                payload => _catalogController!.HandleDropToDeleted(payload),
+                payload => _catalogController!.HandleDropToActive(payload)).Attach();
             SetupContextMenus();
             SetupEventHandlers();
             SetupToolTips();
+            SetupPlaybackSpeedUi();
 
             trbTimeline.Enabled = false;
             picVideoScreen.SizeMode = PictureBoxSizeMode.StretchImage;
+            HideModelLabels();
         }
 
         // 리스트·타임라인 우클릭 메뉴 설정
@@ -50,9 +60,14 @@ namespace Malcha
             };
 
             var trackMenu = new ContextMenuStrip();
-            trackMenu.Items.Add("선택된 구간 삭제", null, async (_, _) =>
+            trackMenu.Items.Add("선택 구간 삭제 목록으로 이동", null, async (_, _) =>
                 await _catalogController!.HandleDeleteSelectionAsync());
             trbTimeline.ContextMenuStrip = trackMenu;
+
+            var deletedMenu = new ContextMenuStrip();
+            deletedMenu.Items.Add("선택 항목 복구", null, (_, _) =>
+                _catalogController!.RestoreFromDeletedList(_deletedSelection.ToIndexList()));
+            lstDeleted.ContextMenuStrip = deletedMenu;
         }
 
         // 버튼·키·Paint 이벤트 핸들러 연결
@@ -69,9 +84,13 @@ namespace Malcha
             lstDataList.SelectedIndexChanged += (_, _) => OnListSelectionChanged();
             btnNextFrame.Click += (_, _) => StepFrame(1);
             btnPrevFrame.Click += (_, _) => StepFrame(-1);
+            btnFastForward.Click += (_, _) => StepFrame(5);
+            btnRewind.Click += (_, _) => StepFrame(-5);
             btnPlayPause.Click += BtnPlayPause_Click;
             trbTimeline.Scroll += (_, _) => OnTimelineScroll();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
+            btnCrossTest.Click += async (_, _) =>
+                await _crossTestController!.RunAsync((ITrainingView)this, (ICatalogView)this, RefreshFrameOverlay);
             picVideoScreen.Paint += PicVideoScreen_Paint;
             KeyPreview = true;
             KeyDown += Form1_KeyDown;
@@ -81,13 +100,36 @@ namespace Malcha
         private void SetupToolTips()
         {
             var tips = new ToolTip { AutoPopDelay = 8000, InitialDelay = 400 };
+            tips.SetToolTip(btnPrevFrame, "이전 프레임 (1)");
+            tips.SetToolTip(btnNextFrame, "다음 프레임 (1)");
+            tips.SetToolTip(btnRewind, "5프레임 뒤로");
+            tips.SetToolTip(btnFastForward, "5프레임 앞으로");
             tips.SetToolTip(btnSetStartPoint, "구간 시작 ([)");
             tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
-            tips.SetToolTip(btnDeleteSelection, "선택 구간 삭제");
-            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제");
+            tips.SetToolTip(btnDeleteSelection, "선택 구간을 삭제 목록으로 이동");
+            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제 · 리스트 드래그: 구간");
+            tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
+            tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
+            tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
+            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · 배속: 키보드 0~5 또는 NumPad 0~5");
+        }
+
+        private void SetupPlaybackSpeedUi()
+        {
+            _speedFlashOverlay = new Label
+            {
+                AutoSize = true,
+                BackColor = Color.FromArgb(210, 24, 24, 24),
+                ForeColor = Color.FromArgb(255, 210, 90),
+                Font = new Font("맑은 고딕", 32F, FontStyle.Bold),
+                Padding = new Padding(16, 8, 16, 8),
+                Visible = false
+            };
+            picVideoScreen.Controls.Add(_speedFlashOverlay);
+            picVideoScreen.Resize += (_, _) => CenterSpeedFlashOverlay();
         }
 
         // 구간 선택 UI·상태바 갱신
@@ -100,21 +142,160 @@ namespace Malcha
             toolStripStatusLabel1.Text = $"구간 {s}~{e} ({_selection.FrameCount:N0}) · Esc 해제";
         }
 
-        // 단축키 처리 (F1 도움말, [, ], Esc, Ctrl+Z)
+        private void RefreshDeletedSelectionUi()
+        {
+            lstDeleted.Invalidate();
+            if (!_deletedSelection.HasSelection) return;
+            var (s, e) = _deletedSelection.GetRange();
+            toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
+        }
+
+        // 단축키 처리 (F1, Space, 0~5 배속, [, ], Esc, Ctrl+Z)
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F1) { HelpDialog.ShowFor(this); e.Handled = true; return; }
+
+            float digitSpeed = PlaybackSettings.SpeedFromDigitKey(e.KeyCode);
+            if (digitSpeed > 0f)
+            {
+                if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
+                    SetPlaybackSpeed(digitSpeed);
+                e.Handled = true;
+                return;
+            }
+
             if (_session.CurrentFrames.Count == 0) return;
             switch (e.KeyCode)
             {
+                case Keys.Space:
+                    BtnPlayPause_Click(null, EventArgs.Empty);
+                    e.Handled = true;
+                    break;
                 case Keys.OemOpenBrackets: SetRangeStart(); e.Handled = true; break;
                 case Keys.OemCloseBrackets: SetRangeEnd(); e.Handled = true; break;
                 case Keys.Escape:
                     if (_selection.HasSelection) { _selection.Clear(); RefreshSelectionUi(); }
+                    else if (_deletedSelection.HasSelection) { _deletedSelection.Clear(); RefreshDeletedSelectionUi(); }
+                    else RestoreIdleStatusBar();
                     e.Handled = true; break;
                 case Keys.Z when e.Control:
                     _catalogController!.TryRecoverFromUndo(); e.Handled = true; break;
             }
+        }
+
+        private bool IsTypingInTextField()
+        {
+            Control? c = ActiveControl;
+            if (c is TextBoxBase) return true;
+            if (c is DataGridView dgv && dgv.IsCurrentCellInEditMode) return true;
+            return false;
+        }
+
+        private void SetPlaybackSpeed(float speed)
+        {
+            _playbackSpeed = speed;
+            RefreshPlaybackSpeedIndicators();
+            ShowSpeedChangeFeedback();
+
+            if (_playCts != null)
+                UpdatePlaybackStatusBar();
+        }
+
+        private void RefreshPlaybackSpeedIndicators()
+        {
+            bool show = _session.CurrentFrames.Count > 0;
+            string label = PlaybackSettings.FormatSpeedLabel(_playbackSpeed);
+            string playing = _playCts != null ? "■" : "▶";
+
+            toolStripStatusLabelPlaybackSpeed.Visible = show;
+            toolStripStatusLabelPlaybackSpeed.Text = $"{playing} {label}";
+            UpdatePlayPauseButtonText();
+        }
+
+        private void ShowSpeedChangeFeedback()
+        {
+            string label = PlaybackSettings.FormatSpeedLabel(_playbackSpeed);
+
+            _speedFeedbackTimer ??= new System.Windows.Forms.Timer { Interval = 2500 };
+            _speedFeedbackTimer.Stop();
+            _speedFeedbackTimer.Tick -= OnSpeedFeedbackTimerTick;
+            _speedFeedbackTimer.Tick += OnSpeedFeedbackTimerTick;
+            toolStripStatusLabel1.Text = $"▶ 재생 배속 → {label}";
+            toolStripStatusLabel1.ForeColor = Color.FromArgb(255, 210, 90);
+            _speedFeedbackTimer.Start();
+
+            if (_speedFlashOverlay != null)
+            {
+                _speedFlashOverlay.Text = label;
+                _speedFlashOverlay.Visible = true;
+                CenterSpeedFlashOverlay();
+                _speedFlashOverlay.BringToFront();
+            }
+
+            _speedOverlayTimer ??= new System.Windows.Forms.Timer { Interval = 900 };
+            _speedOverlayTimer.Stop();
+            _speedOverlayTimer.Tick -= OnSpeedOverlayTimerTick;
+            _speedOverlayTimer.Tick += OnSpeedOverlayTimerTick;
+            _speedOverlayTimer.Start();
+        }
+
+        private void CenterSpeedFlashOverlay()
+        {
+            if (_speedFlashOverlay == null) return;
+            _speedFlashOverlay.PerformLayout();
+            _speedFlashOverlay.Location = new Point(
+                Math.Max(0, (picVideoScreen.ClientSize.Width - _speedFlashOverlay.Width) / 2),
+                Math.Max(0, (picVideoScreen.ClientSize.Height - _speedFlashOverlay.Height) / 2));
+        }
+
+        private void OnSpeedOverlayTimerTick(object? sender, EventArgs e)
+        {
+            _speedOverlayTimer?.Stop();
+            if (_speedFlashOverlay != null)
+                _speedFlashOverlay.Visible = false;
+        }
+
+        private void OnSpeedFeedbackTimerTick(object? sender, EventArgs e)
+        {
+            _speedFeedbackTimer?.Stop();
+            toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
+            RestoreIdleStatusBar();
+        }
+
+        private void RestoreIdleStatusBar()
+        {
+            if (_playCts != null) { UpdatePlaybackStatusBar(); return; }
+            if (_deletedSelection.HasSelection) { RefreshDeletedSelectionUi(); return; }
+            if (_selection.HasSelection) { RefreshSelectionUi(); return; }
+            if (_session.CurrentFrames.Count > 0)
+            {
+                int i = Math.Max(0, _session.CurrentIndex) + 1;
+                toolStripStatusLabel1.Text = $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+            }
+        }
+
+        private void UpdatePlayPauseButtonText()
+        {
+            string speed = PlaybackSettings.FormatSpeedLabel(_playbackSpeed);
+            btnPlayPause.Text = _playCts != null
+                ? $"정지 · {speed}"
+                : $"재생 · {speed}";
+        }
+
+        private void UpdatePlaybackStatusBar()
+        {
+            if (_session.CurrentFrames.Count == 0) return;
+            int i = Math.Max(0, _session.CurrentIndex) + 1;
+            toolStripStatusLabel1.Text =
+                $"재생 {PlaybackSettings.FormatSpeedLabel(_playbackSpeed)} · 프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+        }
+
+        private void HidePlaybackSpeedIndicators()
+        {
+            toolStripStatusLabelPlaybackSpeed.Visible = false;
+            if (_speedFlashOverlay != null)
+                _speedFlashOverlay.Visible = false;
+            btnPlayPause.Text = "재생 / 정지";
         }
 
         // 현재 프레임을 구간 시작으로 설정
@@ -137,15 +318,57 @@ namespace Malcha
         private void RefreshChartFromFrames() => _display.RefreshChart(_session.CurrentFrames);
 
         // 지정 인덱스 프레임 표시
-        private void ShowFrame(int index) =>
-            _session.CurrentIndex = _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+        private void ShowFrame(int index)
+        {
+            if (_session.CurrentFrames.Count == 0) return;
+            index = Math.Clamp(index, 0, _session.CurrentFrames.Count - 1);
+            _session.CurrentIndex = index;
+            _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            RefreshModelLabels();
+            picVideoScreen.Invalidate();
+            if (_playCts == null && _speedFeedbackTimer is not { Enabled: true })
+                RestoreIdleStatusBar();
+        }
+
+        // 교차 테스트 HUD·모델 라벨 갱신
+        private void RefreshFrameOverlay()
+        {
+            RefreshModelLabels();
+            picVideoScreen.Invalidate();
+        }
+
+        // model/angle 라벨 — 교차 테스트 후에만 표시
+        private void RefreshModelLabels()
+        {
+            bool show = _session.HasCrossTest;
+            lblModelAngle.Visible = show;
+            lblModelValue.Visible = show;
+            if (!show)
+            {
+                lblModelValue.Text = string.Empty;
+                return;
+            }
+
+            var pred = _session.GetCrossTest(_session.CurrentIndex);
+            lblModelValue.Text = pred != null
+                ? pred.Angle.ToString("+#0.000;-#0.000;0.000")
+                : "—";
+        }
+
+        private void HideModelLabels()
+        {
+            lblModelAngle.Visible = false;
+            lblModelValue.Visible = false;
+            lblModelValue.Text = string.Empty;
+        }
 
         // 재생 루프 중지
         private void StopPlayback()
         {
             try { _playCts?.Cancel(); } catch { }
             _playCts = null;
-            btnPlayPause.Text = "재생 / 정지";
+            RefreshPlaybackSpeedIndicators();
+            RestoreIdleStatusBar();
         }
 
         // 세션·UI 전체 초기화
@@ -154,12 +377,18 @@ namespace Malcha
             StopPlayback();
             _session.Reset();
             _selection.Clear();
+            _deletedSelection.Clear();
+            _session.ClearCrossTest();
+            HideModelLabels();
             _display.ClearCache();
             lstDataList.Items.Clear();
+            lstDeleted.Items.Clear();
             _display.ClearDisplay();
+            HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             txtFilePath.Text = string.Empty;
             toolStripStatusLabel1.Text = "초기화됨";
+            HidePlaybackSpeedIndicators();
         }
 
         // 재생 관련 UI만 초기화 (카탈로그 닫힘)
@@ -168,11 +397,17 @@ namespace Malcha
             _session.CurrentFrames = new();
             _session.CurrentCatalogPath = string.Empty;
             _session.CurrentIndex = 0;
+            _session.ClearDeleted();
+            _session.ClearCrossTest();
             _selection.Clear();
+            _deletedSelection.Clear();
             lstDataList.Items.Clear();
+            lstDeleted.Items.Clear();
             _display.ClearDisplay();
+            HideModelLabels();
             _display.RefreshChart(_session.CurrentFrames);
             _display.ClearCache();
+            HidePlaybackSpeedIndicators();
         }
 
         // PictureBox 위 조향·쓰로틀 오버레이 그리기
@@ -180,7 +415,12 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             if (_session.CurrentIndex < 0 || _session.CurrentIndex >= _session.CurrentFrames.Count) return;
-            CatalogDisplayController.DrawOverlay(e.Graphics, _session.CurrentFrames[_session.CurrentIndex], picVideoScreen.ClientSize);
+            var pred = _session.GetCrossTest(_session.CurrentIndex);
+            CatalogDisplayController.DrawOverlay(
+                e.Graphics,
+                _session.CurrentFrames[_session.CurrentIndex],
+                picVideoScreen.ClientSize,
+                pred?.Angle);
         }
 
         // 리스트 선택 변경 → 해당 프레임 표시
@@ -207,14 +447,15 @@ namespace Malcha
             lstDataList.SelectedIndex = _session.CurrentIndex;
         }
 
-        // 재생/정지 토글 (100ms 간격 자동 재생)
+        // 재생/정지 토글 (기본 100ms 간격, 0~5 키로 배속 조절)
         private async void BtnPlayPause_Click(object? sender, EventArgs e)
         {
             if (_session.CurrentFrames.Count == 0) return;
             if (_playCts != null) { StopPlayback(); return; }
 
+            _speedFeedbackTimer?.Stop();
             _playCts = new CancellationTokenSource();
-            btnPlayPause.Text = "정지";
+            RefreshPlaybackSpeedIndicators();
             if (_session.CurrentIndex >= _session.CurrentFrames.Count - 1) _session.CurrentIndex = -1;
 
             try
@@ -225,7 +466,8 @@ namespace Malcha
                     if (next >= _session.CurrentFrames.Count) break;
                     ShowFrame(next);
                     lstDataList.SelectedIndex = _session.CurrentIndex;
-                    await Task.Delay(100, _playCts.Token);
+                    UpdatePlaybackStatusBar();
+                    await Task.Delay(PlaybackSettings.DelayMs(_playbackSpeed), _playCts.Token);
                 }
             }
             catch (TaskCanceledException) { }
