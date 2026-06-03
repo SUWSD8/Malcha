@@ -176,10 +176,10 @@
             btnSaveCatalog.FlatStyle = FlatStyle.Popup;
             btnSaveCatalog.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnSaveCatalog.ForeColor = SystemColors.ButtonHighlight;
-            btnSaveCatalog.Location = new Point(140, 56);
+            btnSaveCatalog.Location = new Point(141, 56);
             btnSaveCatalog.Margin = new Padding(2);
             btnSaveCatalog.Name = "btnSaveCatalog";
-            btnSaveCatalog.Size = new Size(123, 23);
+            btnSaveCatalog.Size = new Size(121, 23);
             btnSaveCatalog.TabIndex = 10;
             btnSaveCatalog.Text = "저장";
             btnSaveCatalog.UseVisualStyleBackColor = false;
@@ -532,6 +532,7 @@
             lbldeletedlist.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lbldeletedlist.ForeColor = SystemColors.ButtonHighlight;
             lbldeletedlist.Location = new Point(42, 48);
+            lbldeletedlist.Location = new Point(35, 22);
             lbldeletedlist.Name = "lbldeletedlist";
             lbldeletedlist.Size = new Size(74, 20);
             lbldeletedlist.TabIndex = 37;
@@ -714,9 +715,9 @@
             groupBox4.Controls.Add(lblloglist);
             groupBox4.Controls.Add(btnshutdown);
             groupBox4.Controls.Add(lstLog);
-            groupBox4.Location = new Point(3, 4);
+            groupBox4.Location = new Point(3, -2);
             groupBox4.Name = "groupBox4";
-            groupBox4.Size = new Size(502, 253);
+            groupBox4.Size = new Size(501, 258);
             groupBox4.TabIndex = 0;
             groupBox4.TabStop = false;
             // 
@@ -738,12 +739,13 @@
             btnshutdown.FlatStyle = FlatStyle.Popup;
             btnshutdown.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnshutdown.ForeColor = SystemColors.ButtonHighlight;
-            btnshutdown.Location = new Point(8, 204);
+            btnshutdown.Location = new Point(8, 208);
             btnshutdown.Name = "btnshutdown";
-            btnshutdown.Size = new Size(485, 37);
+            btnshutdown.Size = new Size(484, 37);
             btnshutdown.TabIndex = 58;
             btnshutdown.Text = "학습 강제 종료";
             btnshutdown.UseVisualStyleBackColor = false;
+            btnshutdown.Click += btnshutdown_Click;
             // 
             // lstLog
             // 
@@ -753,7 +755,7 @@
             lstLog.FormattingEnabled = true;
             lstLog.Location = new Point(8, 42);
             lstLog.Name = "lstLog";
-            lstLog.Size = new Size(485, 139);
+            lstLog.Size = new Size(484, 154);
             lstLog.TabIndex = 57;
             // 
             // groupBox5
