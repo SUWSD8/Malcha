@@ -543,9 +543,9 @@
             lstDeleted.BackColor = Color.FromArgb(48, 42, 41);
             lstDeleted.ForeColor = SystemColors.MenuBar;
             lstDeleted.FormattingEnabled = true;
-            lstDeleted.Location = new Point(20, 67);
+            lstDeleted.Location = new Point(20, 52);
             lstDeleted.Name = "lstDeleted";
-            lstDeleted.Size = new Size(125, 154);
+            lstDeleted.Size = new Size(125, 199);
             lstDeleted.TabIndex = 36;
             // 
             // btnChangeCleanData
