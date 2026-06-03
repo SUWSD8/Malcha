@@ -555,7 +555,7 @@
             btnChangeCleanData.FlatStyle = FlatStyle.Popup;
             btnChangeCleanData.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnChangeCleanData.ForeColor = SystemColors.ButtonHighlight;
-            btnChangeCleanData.Location = new Point(562, 61);
+            btnChangeCleanData.Location = new Point(562, 53);
             btnChangeCleanData.Name = "btnChangeCleanData";
             btnChangeCleanData.Size = new Size(91, 51);
             btnChangeCleanData.TabIndex = 27;
@@ -569,9 +569,9 @@
             btnHelper.FlatStyle = FlatStyle.Popup;
             btnHelper.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnHelper.ForeColor = SystemColors.ButtonHighlight;
-            btnHelper.Location = new Point(562, 218);
+            btnHelper.Location = new Point(562, 203);
             btnHelper.Name = "btnHelper";
-            btnHelper.Size = new Size(91, 51);
+            btnHelper.Size = new Size(91, 38);
             btnHelper.TabIndex = 35;
             btnHelper.Text = " 도움말";
             btnHelper.UseVisualStyleBackColor = false;
@@ -583,9 +583,9 @@
             btnRefresh.FlatStyle = FlatStyle.Popup;
             btnRefresh.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnRefresh.ForeColor = SystemColors.ButtonHighlight;
-            btnRefresh.Location = new Point(562, 161);
+            btnRefresh.Location = new Point(562, 157);
             btnRefresh.Name = "btnRefresh";
-            btnRefresh.Size = new Size(91, 51);
+            btnRefresh.Size = new Size(91, 38);
             btnRefresh.TabIndex = 34;
             btnRefresh.Text = "새로고침";
             btnRefresh.UseVisualStyleBackColor = false;
@@ -597,7 +597,7 @@
             btnApplyFilter.FlatStyle = FlatStyle.Popup;
             btnApplyFilter.Font = new Font("맑은 고딕", 9.75F, FontStyle.Bold, GraphicsUnit.Point, 129);
             btnApplyFilter.ForeColor = SystemColors.ButtonHighlight;
-            btnApplyFilter.Location = new Point(562, 117);
+            btnApplyFilter.Location = new Point(562, 111);
             btnApplyFilter.Margin = new Padding(2);
             btnApplyFilter.Name = "btnApplyFilter";
             btnApplyFilter.Size = new Size(91, 39);
