@@ -27,8 +27,8 @@ namespace Malcha.Controller
         private readonly ResultRepository _repo = ResultRepository.Instance;
 
         private readonly TrainingLogParser _logParser = new();
-
-
+        private CancellationTokenSource? _trainCts;
+        private volatile bool _trainingInProgress;
 
         public TrainingController(ITrainingView view)
 
@@ -49,6 +49,7 @@ namespace Malcha.Controller
             };
 
             _view.RunTrainingRequested += OnRunTraining;
+            _view.StopTrainingRequested += OnStopTraining;
 
             _view.UpdateCommentRequested += OnUpdateComment;
 
@@ -86,9 +87,14 @@ namespace Malcha.Controller
 
 
 
-            _view.SetTrainingButtonEnabled(false);
+            _trainCts?.Cancel();
+            _trainCts?.Dispose();
+            _trainCts = new CancellationTokenSource();
+            _trainingInProgress = true;
 
+            _view.SetTrainingButtonEnabled(false);
             _view.SetTrainingButtonText("학습 중...");
+            _view.SetForceStopTrainingEnabled(true);
 
             _view.ClearLog();
 
@@ -105,8 +111,8 @@ namespace Malcha.Controller
 
 
             var logProgress = new Progress<string>(line =>
-
             {
+                if (_trainCts.Token.IsCancellationRequested) return;
 
                 var formatted = _logParser.TryFormat(line);
 
@@ -127,51 +133,58 @@ namespace Malcha.Controller
 
 
             try
-
             {
-
-                if (!await _wsl.TrainAsync($"{name}.h5", logProgress))
-
+                if (!await _wsl.TrainAsync($"{name}.h5", logProgress, _trainCts.Token))
                 {
+                    if (_trainCts.Token.IsCancellationRequested) return;
 
                     _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] 학습 실패");
-
                     _view.ShowError("WSL 학습 실패");
-
                     return;
-
                 }
 
+                if (_trainCts.Token.IsCancellationRequested) return;
+
                 if (_logParser.HadPythonError)
-
                 {
-
                     _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] Python 오류 발생 — data·프레임 수 확인");
-
                     _view.ShowError("학습 중 Python 오류(KeyError 등)가 발생했습니다.\n정제 데이터 연동 후 프레임·이미지 수를 확인하세요.");
-
                     return;
-
                 }
 
                 _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] 학습 완료 — 결과 불러오는 중…");
-
                 await LoadHistoryAsync(name, true, _logParser.CollectedEpochs.ToList());
-
             }
-
-            catch (Exception ex) { _view.ShowError(ex.Message); }
-
-            finally
-
+            catch (OperationCanceledException)
             {
-
-                _view.SetTrainingButtonEnabled(true);
-
-                _view.SetTrainingButtonText("학습 시작");
-
+                _view.ClearLog();
+                _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] 학습이 강제 종료되었습니다.");
             }
+            catch (Exception ex)
+            {
+                if (_trainCts?.Token.IsCancellationRequested == true) return;
+                _view.ShowError(ex.Message);
+            }
+            finally
+            {
+                _trainingInProgress = false;
+                _trainCts?.Dispose();
+                _trainCts = null;
+                ResetTrainingUi();
+            }
+        }
 
+        private void OnStopTraining(object? sender, EventArgs e)
+        {
+            if (!_trainingInProgress || _trainCts == null) return;
+            _trainCts.Cancel();
+        }
+
+        private void ResetTrainingUi()
+        {
+            _view.SetTrainingButtonEnabled(true);
+            _view.SetTrainingButtonText("학습 시작");
+            _view.SetForceStopTrainingEnabled(false);
         }
 
 

@@ -171,11 +171,18 @@ namespace Malcha.Service
             }
             catch (OperationCanceledException)
             {
-                try { process?.Kill(entireProcessTree: true); } catch { }
+                try
+                {
+                    if (process is { HasExited: false })
+                        process.Kill(entireProcessTree: true);
+                    process?.WaitForExit(5000);
+                }
+                catch { }
                 throw;
             }
             catch (Exception ex)
             {
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(cancellationToken);
                 Debug.WriteLine($"WSL 오류: {ex.Message}");
                 output?.Report($"[오류] {ex.Message}");
                 return false;
