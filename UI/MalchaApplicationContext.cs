@@ -1,3 +1,5 @@
+using Malcha;
+
 namespace Malcha.UI
 {
     /// <summary>

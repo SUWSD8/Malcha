@@ -154,7 +154,6 @@ namespace Malcha.UI
                 BackColor = AccentPink,
                 Height = 8
             };
-            _progressFill.Paint += ProgressFill_Paint;
             _progressTrack.Controls.Add(_progressFill);
 
             Controls.Add(_backdrop);
@@ -327,7 +326,7 @@ namespace Malcha.UI
             _lblLoading.Location = new Point(innerCx - _lblLoading.Width / 2, _lblVer.Bottom + 18);
         }
 
-        private void ProgressFill_Paint(object? sender, PaintEventArgs e)
+        private void UpdateProgressBar()
         {
             int w = Math.Max(0, (int)(_progressTrack.ClientSize.Width * _progress));
             if (w <= 0)
