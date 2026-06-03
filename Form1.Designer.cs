@@ -531,7 +531,7 @@
             lbldeletedlist.AutoSize = true;
             lbldeletedlist.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lbldeletedlist.ForeColor = SystemColors.ButtonHighlight;
-            lbldeletedlist.Location = new Point(30, 22);
+            lbldeletedlist.Location = new Point(42, 48);
             lbldeletedlist.Name = "lbldeletedlist";
             lbldeletedlist.Size = new Size(74, 20);
             lbldeletedlist.TabIndex = 37;
@@ -543,9 +543,9 @@
             lstDeleted.BackColor = Color.FromArgb(48, 42, 41);
             lstDeleted.ForeColor = SystemColors.MenuBar;
             lstDeleted.FormattingEnabled = true;
-            lstDeleted.Location = new Point(25, 55);
+            lstDeleted.Location = new Point(20, 67);
             lstDeleted.Name = "lstDeleted";
-            lstDeleted.Size = new Size(124, 214);
+            lstDeleted.Size = new Size(125, 199);
             lstDeleted.TabIndex = 36;
             // 
             // btnChangeCleanData
@@ -559,7 +559,7 @@
             btnChangeCleanData.Name = "btnChangeCleanData";
             btnChangeCleanData.Size = new Size(91, 51);
             btnChangeCleanData.TabIndex = 27;
-            btnChangeCleanData.Text = "정제 데이터 변경";
+            btnChangeCleanData.Text = "정제 데이터 연동";
             btnChangeCleanData.UseVisualStyleBackColor = false;
             // 
             // btnHelper
@@ -927,7 +927,7 @@
             ClientSize = new Size(1205, 791);
             Controls.Add(splitContainer1);
             Name = "Form1";
-            Text = "Malcha v0.2";
+            Text = "Malcha v1.0";
             splitContainer1.Panel1.ResumeLayout(false);
             splitContainer1.Panel2.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
