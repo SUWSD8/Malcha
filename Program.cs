@@ -1,18 +1,16 @@
+using Malcha.UI;
+
 namespace Malcha
 {
     internal static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
-            // To customize application configuration such as set high DPI settings or default font,
-            // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
-            Application.Run(new TestForm());
+
+            var splash = new SplashForm();
+            Application.Run(new MalchaApplicationContext(splash));
         }
     }
-}//커밋용
+}

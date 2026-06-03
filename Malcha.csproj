@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -10,6 +10,10 @@
 
   <ItemGroup>
     <PackageReference Include="WinForms.DataVisualization" Version="1.10.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Scripts\cross_test.py" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +29,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="img\" />
   </ItemGroup>
 
 </Project>

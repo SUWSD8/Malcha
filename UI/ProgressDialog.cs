@@ -10,8 +10,10 @@ namespace Malcha
         private readonly Label _statusLabel;
         private readonly Button _cancelButton;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private volatile bool _closed;
 
         public CancellationToken Token => _cts.Token;
+        public bool IsClosed => _closed;
 
         public ProgressDialog(string title = "데이터 정제")
         {
@@ -77,17 +79,41 @@ namespace Malcha
 
         public void Report(int percent, string message)
         {
+            if (_closed || IsDisposed) return;
+
             void Apply()
             {
+                if (_closed || IsDisposed) return;
                 _progressBar.Value = Math.Clamp(percent, 0, 100);
                 if (!string.IsNullOrEmpty(message))
                     _statusLabel.Text = message;
             }
 
             if (InvokeRequired)
-                BeginInvoke(Apply);
+            {
+                try
+                {
+                    if (_closed || IsDisposed || !IsHandleCreated) return;
+                    BeginInvoke(Apply);
+                }
+                catch (ObjectDisposedException) { }
+                catch (InvalidOperationException) { }
+            }
             else
                 Apply();
+        }
+
+        public void CloseSafely()
+        {
+            _closed = true;
+            if (IsDisposed) return;
+            try
+            {
+                if (IsHandleCreated)
+                    Close();
+            }
+            catch (ObjectDisposedException) { }
+            try { Dispose(); } catch (ObjectDisposedException) { }
         }
 
         protected override void OnFormClosing(FormClosingEventArgs e)
