@@ -1,6 +1,7 @@
 using Malcha.Controller;
 using Malcha.Service;
 using Malcha.UI;
+using Malcha.View;
 using System.Diagnostics;
 using static Malcha.UI.TimelineSelectionBinder;
 
@@ -17,6 +18,11 @@ namespace Malcha
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
         private CrossTestController? _crossTestController;
+
+        private float _playbackSpeed = 1.0f;
+        private Label? _speedFlashOverlay;
+        private System.Windows.Forms.Timer? _speedFeedbackTimer;
+        private System.Windows.Forms.Timer? _speedOverlayTimer;
 
         public Form1()
         {
@@ -474,9 +480,17 @@ namespace Malcha
             finally { StopPlayback(); }
         }
 
-        private async void btnSaveCatalog_Click(object sender, EventArgs e)
+        private void btnUndo_Click(object? sender, EventArgs e)
         {
-            // 방금 만든 통합 덤프 저장 메서드 하나만 심플하게 호출하면 끝!
+            if (_catalogController == null) return;
+            if (_catalogController.TryRecoverFromUndo()) return;
+            MessageBox.Show(this, "되돌릴 이전 상태가 없습니다.", "되돌리기",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private async void btnSaveCatalog_Click(object? sender, EventArgs e)
+        {
+            if (_catalogController == null) return;
             await _catalogController.HandleSaveSessionAsync();
         }
 
