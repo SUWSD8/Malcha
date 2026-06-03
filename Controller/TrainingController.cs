@@ -177,6 +177,8 @@ namespace Malcha.Controller
         private void OnStopTraining(object? sender, EventArgs e)
         {
             if (!_trainingInProgress || _trainCts == null) return;
+            _view.SetForceStopTrainingEnabled(false);
+            _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] 학습 종료 요청 중… (WSL 프로세스 중단)");
             _trainCts.Cancel();
         }
 

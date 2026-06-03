@@ -66,7 +66,8 @@ namespace Malcha.Service
                 modelType = modelType ?? string.Empty,
                 frames = frames.Select(f => new { index = f.Index, image = f.ImagePath }).ToArray()
             };
-            await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest), cancellationToken);
+            await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest), cancellationToken)
+                .ConfigureAwait(false);
 
             var scriptPath = ResolveScriptPath();
             if (!File.Exists(scriptPath))
@@ -86,22 +87,20 @@ namespace Malcha.Service
                 $"python3 -u '{scriptWsl}' --model '{modelRel}' --manifest '{manifestWsl}' --output '{outputWsl}'{typeArg}";
 
             var log = new StringBuilder();
-            Process? wslProcess = null;
-            bool ok;
-            try
-            {
-                ok = await Task.Run(
-                    () => RunWslProcess(wsl.Distro, bashCmd, log, progress, frames.Count, cancellationToken, out wslProcess),
-                    cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            finally
-            {
-                TerminateWslProcess(wslProcess);
-            }
+            bool ok = await Task.Run(
+                () =>
+                {
+                    Process? wslProcess = null;
+                    try
+                    {
+                        return RunWslProcess(wsl.Distro, bashCmd, log, progress, frames.Count, cancellationToken, out wslProcess);
+                    }
+                    finally
+                    {
+                        TerminateWslProcess(wslProcess);
+                    }
+                },
+                cancellationToken).ConfigureAwait(false);
 
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -113,7 +112,7 @@ namespace Malcha.Service
             }
 
             progress?.Report((95, "결과 읽는 중…"));
-            var json = await File.ReadAllTextAsync(outputPath, cancellationToken);
+            var json = await File.ReadAllTextAsync(outputPath, cancellationToken).ConfigureAwait(false);
             var parsed = JsonSerializer.Deserialize<CrossTestJsonRoot>(json, JsonOptions())
                 ?? throw new InvalidOperationException("예측 JSON 파싱 실패");
 
@@ -218,7 +217,7 @@ namespace Malcha.Service
             try
             {
                 if (!process.HasExited)
-                    process.WaitForExit(5000);
+                    process.WaitForExit(1500);
             }
             catch { }
             try { process.Dispose(); } catch { }

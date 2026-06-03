@@ -3,14 +3,15 @@ using System.Drawing.Drawing2D;
 namespace Malcha.UI
 {
     /// <summary>
-    /// 시작 인트로. 페이드 중에는 GDI+ DrawString이 불안정할 수 있어 텍스트는 Label만 사용합니다.
+    /// 시작 인트로. Form.Opacity 페이드는 사용하되 자식 컨트롤은 모두 불투명 배경만 사용합니다.
     /// </summary>
     internal sealed class SplashForm : Form
     {
         private const int HoldAfterVisibleMs = 2600;
         private const int MaxWaitForMainMs = 8000;
-        private const int FadeStepMs = 16;
-        private const double FadeDelta = 0.07;
+        private const int AnimStepMs = 16;
+        private const double FadeInStep = 0.11;
+        private const double FadeOutStep = 0.09;
 
         private const string AppVersion = "v1.0";
 
@@ -44,7 +45,6 @@ namespace Malcha.UI
         private int _loadingDots;
         private float _phase;
         private float _progress;
-        private int _lastProgressW = -1;
         private Action? _onClosed;
 
         public SplashForm()
@@ -57,6 +57,7 @@ namespace Malcha.UI
             BackColor = BgDeep;
             ForeColor = TextMuted;
             DoubleBuffered = true;
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint, true);
             Opacity = 0;
 
             _backdrop = new Panel
@@ -164,7 +165,7 @@ namespace Malcha.UI
                 c.Click += (_, _) => TryClose(force: true);
             _backdrop.Click += (_, _) => TryClose(force: true);
 
-            _animTimer = new System.Windows.Forms.Timer { Interval = FadeStepMs };
+            _animTimer = new System.Windows.Forms.Timer { Interval = AnimStepMs };
             _animTimer.Tick += OnAnimTick;
             Shown += (_, _) =>
             {
@@ -173,6 +174,9 @@ namespace Malcha.UI
                 _animTimer.Start();
             };
         }
+
+        /// <summary>페이드 아웃 시작 직후 — 메인 창을 스플래시 뒤에 먼저 표시합니다.</summary>
+        public event Action? TransitionStarting;
 
         private void Backdrop_Paint(object? sender, PaintEventArgs e)
         {
@@ -284,7 +288,6 @@ namespace Malcha.UI
         {
             int cx = ClientSize.Width / 2;
             const int bottomMargin = 28;
-            const int gap = 10;
 
             int trackW = (int)(ClientSize.Width * 0.62);
             _progressTrack.Size = new Size(trackW, 8);
@@ -310,29 +313,15 @@ namespace Malcha.UI
         private void UpdateProgressBar()
         {
             int w = Math.Max(0, (int)(_progressTrack.ClientSize.Width * _progress));
-            _progressFill.Width = w;
             if (w <= 0)
             {
-                _progressFill.BackgroundImage?.Dispose();
-                _progressFill.BackgroundImage = null;
-                _lastProgressW = 0;
+                _progressFill.Width = 0;
+                _progressFill.BackColor = AccentPink;
                 return;
             }
 
-            if (w == _lastProgressW) return;
-            _lastProgressW = w;
-
-            _progressFill.BackgroundImage?.Dispose();
-            var bmp = new Bitmap(w, 8);
-            using (var g = Graphics.FromImage(bmp))
-            using (var brush = new LinearGradientBrush(
-                       new Rectangle(0, 0, w, 8),
-                       AccentPink,
-                       AccentGold,
-                       LinearGradientMode.Horizontal))
-                g.FillRectangle(brush, 0, 0, w, 8);
-            _progressFill.BackgroundImage = bmp;
-            _progressFill.BackColor = Color.Transparent;
+            _progressFill.BackColor = AccentPink;
+            _progressFill.Width = w;
         }
 
         public void NotifyMainReady() => _mainReady = true;
@@ -341,6 +330,29 @@ namespace Malcha.UI
 
         private void OnAnimTick(object? sender, EventArgs e)
         {
+            if (_fadeIn)
+            {
+                Opacity = Math.Min(1, Opacity + FadeInStep);
+                if (Opacity >= 1)
+                {
+                    _fadeIn = false;
+                    _fullyVisibleAt ??= DateTime.UtcNow;
+                }
+                return;
+            }
+
+            if (_fadeOut)
+            {
+                Opacity = Math.Max(0, Opacity - FadeOutStep);
+                if (Opacity <= 0.01)
+                {
+                    Opacity = 0;
+                    _animTimer.Stop();
+                    Close();
+                }
+                return;
+            }
+
             _phase += 0.11f;
             _backdrop.Invalidate();
 
@@ -350,51 +362,25 @@ namespace Malcha.UI
             if (_mainReady && _progress > 0.98f) _progress = 1f;
             UpdateProgressBar();
 
-            if (!_fadeIn && !_fadeOut)
+            _loadingDots = (_loadingDots + 1) % 12;
+            if (_loadingDots % 3 == 0)
             {
-                _loadingDots = (_loadingDots + 1) % 12;
-                if (_loadingDots % 3 == 0)
-                {
-                    string dots = new string('.', (_loadingDots / 3) % 4);
-                    _lblLoading.Text = "동키카를 깨우는 중" + dots;
-                    int innerCx = _card.Width / 2;
-                    _lblLoading.Left = innerCx - _lblLoading.Width / 2;
-                }
-
-                int hintAlpha = 90 + (int)(40 * (0.5 + 0.5 * Math.Sin(_phase * 2f)));
-                _lblHint.ForeColor = Color.FromArgb(hintAlpha, 200, 190, 188);
+                string dots = new string('.', (_loadingDots / 3) % 4);
+                _lblLoading.Text = "동키카를 깨우는 중" + dots;
+                int innerCx = _card.Width / 2;
+                _lblLoading.Left = innerCx - _lblLoading.Width / 2;
             }
 
-            if (_fadeIn)
-            {
-                Opacity = Math.Min(1, Opacity + FadeDelta);
-                if (Opacity >= 1)
-                {
-                    _fadeIn = false;
-                    _fullyVisibleAt ??= DateTime.UtcNow;
-                }
-                TryClose(force: false);
-                return;
-            }
+            int hintV = 140 + (int)(35 * (0.5 + 0.5 * Math.Sin(_phase * 2f)));
+            hintV = Math.Clamp(hintV, 0, 255);
+            _lblHint.ForeColor = Color.FromArgb(255, hintV, Math.Max(0, hintV - 10), Math.Max(0, hintV - 12));
 
-            if (!_fadeOut)
-            {
-                TryClose(force: false);
-                return;
-            }
-
-            Opacity = Math.Max(0, Opacity - FadeDelta);
-            if (Opacity <= 0)
-            {
-                _animTimer.Stop();
-                _closing = true;
-                Close();
-            }
+            TryClose(force: false);
         }
 
         private void TryClose(bool force)
         {
-            if (_closing || _fadeOut) return;
+            if (_closing) return;
 
             if (!force)
             {
@@ -405,7 +391,20 @@ namespace Malcha.UI
                     return;
             }
 
-            _fadeIn = false;
+            BeginClose();
+        }
+
+        private void BeginClose()
+        {
+            if (_closing) return;
+            _closing = true;
+            _progress = 1f;
+            UpdateProgressBar();
+            _lblLoading.Text = "시작합니다…";
+            LayoutSplash();
+
+            try { TransitionStarting?.Invoke(); } catch { }
+
             _fadeOut = true;
         }
 
@@ -413,8 +412,7 @@ namespace Malcha.UI
         {
             _animTimer.Stop();
             _animTimer.Dispose();
-            _progressFill.BackgroundImage?.Dispose();
-            _onClosed?.Invoke();
+            try { _onClosed?.Invoke(); } catch { }
             base.OnFormClosed(e);
         }
     }
