@@ -36,7 +36,7 @@ namespace Malcha.Data
         }
 
         // 정제 전 스냅샷을 backups/{이름}_{시각}.catalog 에 저장
-        public static string CreateTimestampedBackup(string catalogPath)
+        public static string CreateTimestampedBackup(string catalogPath,int frameCount)
         {
             if (string.IsNullOrWhiteSpace(catalogPath) || !File.Exists(catalogPath))
                 return string.Empty;
@@ -50,7 +50,7 @@ namespace Malcha.Data
                 baseName = Path.GetFileNameWithoutExtension(baseName);
 
             var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var backupPath = Path.Combine(backupDir, $"{baseName}_{stamp}.catalog");
+            var backupPath = Path.Combine(backupDir, $"{baseName}_{stamp}_{frameCount}.catalog");
 
             File.Copy(catalogPath, backupPath, overwrite: false);
             return backupPath;

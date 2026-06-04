@@ -478,6 +478,7 @@ namespace Malcha
                     int next = _session.CurrentIndex + 1;
                     if (next >= _session.CurrentFrames.Count) break;
                     ShowFrame(next);
+                    lstDataList.ClearSelected();
                     lstDataList.SelectedIndex = _session.CurrentIndex;
                     UpdatePlaybackStatusBar();
                     await Task.Delay(PlaybackSettings.DelayMs(_playbackSpeed), _playCts.Token);
