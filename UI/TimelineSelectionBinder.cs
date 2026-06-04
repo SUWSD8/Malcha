@@ -87,6 +87,7 @@ namespace Malcha.UI
         // DrawItem·Mouse·Paint 이벤트 연결
         public void Attach()
         {
+            _list.SelectionMode = SelectionMode.MultiExtended;
             _list.DrawMode = DrawMode.OwnerDrawFixed;
             _list.DrawItem += OnListDrawItem;
             _list.MouseDown += OnListMouseDown;
@@ -152,6 +153,7 @@ namespace Malcha.UI
                 if ((mods & Keys.Shift) != 0) _selection.SetEnd(idx);
                 else _selection.SetStart(idx);
                 _listRangeDrag = false;
+                SyncListBoxSelectionToRange();
                 _refreshUi();
                 return;
             }
@@ -166,7 +168,7 @@ namespace Malcha.UI
             _listAnchor = idx;
             _listRangeDrag = true;
             _selection.SetRange(idx, idx);
-            _list.SelectedIndex = idx;
+            ListBoxDragSelectHelper.SelectIndexRange(_list, idx, idx);
             _list.Capture = true;
             _refreshUi();
         }
@@ -183,6 +185,7 @@ namespace Malcha.UI
             if (idx < 0) return;
 
             _selection.SetRange(_listAnchor, idx);
+            SyncListBoxSelectionToRange();
             _refreshUi();
         }
 
@@ -192,10 +195,16 @@ namespace Malcha.UI
             _listRangeDrag = false;
             if (_list.Capture) _list.Capture = false;
 
-            var (s, _) = _selection.GetRange();
-            if (s >= 0 && _list.SelectedIndex != s)
-                _list.SelectedIndex = s;
+            SyncListBoxSelectionToRange();
             _refreshUi();
+        }
+
+        private void SyncListBoxSelectionToRange()
+        {
+            var (s, end) = _selection.GetRange();
+            if (s < 0) return;
+            int e = end >= 0 ? end : s;
+            ListBoxDragSelectHelper.SelectIndexRange(_list, s, e);
         }
 
         // Ctrl+드래그로 타임라인 구간 선택, Shift로 해제

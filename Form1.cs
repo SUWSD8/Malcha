@@ -10,17 +10,17 @@ namespace Malcha
     public partial class Form1 : Form
     {
         private CancellationTokenSource? _playCts;
-        private float _playbackSpeed = 1f;
-        private System.Windows.Forms.Timer? _speedFeedbackTimer;
-        private System.Windows.Forms.Timer? _speedOverlayTimer;
-        private Label? _speedFlashOverlay;
-
         private readonly CatalogSession _session = new();
         private readonly FrameRangeSelection _selection = new();
         private readonly FrameRangeSelection _deletedSelection = new();
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
         private CrossTestController? _crossTestController;
+
+        private float _playbackSpeed = 1.0f;
+        private Label? _speedFlashOverlay;
+        private System.Windows.Forms.Timer? _speedFeedbackTimer;
+        private System.Windows.Forms.Timer? _speedOverlayTimer;
 
         public Form1()
         {
@@ -55,12 +55,12 @@ namespace Malcha
         {
             var listMenu = new ContextMenuStrip();
             listMenu.Items.Add("선택 항목 삭제", null, async (_, _) =>
-                await _catalogController!.HandleDeleteListItemsAsync(lstDataList.SelectedIndices.Cast<int>().ToList()));
+                await _catalogController!.HandleDeleteListItemsAsync(GetActiveListDeleteIndices()));
             lstDataList.ContextMenuStrip = listMenu;
             lstDataList.KeyDown += (_, e) =>
             {
                 if (e.KeyCode == Keys.Delete)
-                    _ = _catalogController!.HandleDeleteListItemsAsync(lstDataList.SelectedIndices.Cast<int>().ToList());
+                    _ = _catalogController!.HandleDeleteListItemsAsync(GetActiveListDeleteIndices());
             };
 
             var trackMenu = new ContextMenuStrip();
@@ -134,6 +134,15 @@ namespace Malcha
             };
             picVideoScreen.Controls.Add(_speedFlashOverlay);
             picVideoScreen.Resize += (_, _) => CenterSpeedFlashOverlay();
+        }
+
+        // 프레임 리스트 삭제 대상 — 주황 구간(_selection) 우선, 없으면 ListBox 다중 선택
+        private List<int> GetActiveListDeleteIndices()
+        {
+            if (_selection.HasSelection)
+                return _selection.ToIndexList();
+
+            return lstDataList.SelectedIndices.Cast<int>().ToList();
         }
 
         // 구간 선택 UI·상태바 갱신
@@ -478,15 +487,18 @@ namespace Malcha
             finally { StopPlayback(); }
         }
 
-        private async void btnSaveCatalog_Click(object sender, EventArgs e)
+        private void btnUndo_Click(object? sender, EventArgs e)
         {
-            // 방금 만든 통합 덤프 저장 메서드 하나만 심플하게 호출하면 끝!
-            await _catalogController.HandleSaveSessionAsync();
+            if (_catalogController == null) return;
+            if (_catalogController.TryRecoverFromUndo()) return;
+            MessageBox.Show(this, "되돌릴 이전 상태가 없습니다.", "되돌리기",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void btnUndo_Click(object sender, EventArgs e)
+        private async void btnSaveCatalog_Click(object? sender, EventArgs e)
         {
-            _catalogController!.TryRecoverFromUndo();
+            if (_catalogController == null) return;
+            await _catalogController.HandleSaveSessionAsync();
         }
     }
 }
