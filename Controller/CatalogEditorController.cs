@@ -46,6 +46,32 @@ namespace Malcha.Controller
             {
                 string selectedFolder = dlg.SelectedPath;
 
+                string lastSavedFileName = "merged_final.catalog";
+                string lastSavedFilePath = Path.Combine(selectedFolder, lastSavedFileName);
+
+                if (File.Exists(lastSavedFilePath))
+                {
+                    // 사용자에게 이전에 작업한 내역을 이어서 할지 묻습니다 (UX 향상)
+                    var result = MessageBox.Show(
+                        $"이전에 작업한 저장 파일({lastSavedFileName})이 발견되었습니다.\n해당 파일부터 이어서 작업하시겠습니까?\n\n(아니오를 누르면 원본 파일들을 처음부터 새로 병합합니다.)",
+                        "이전 작업 불러오기",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        // 사용자가 '예'를 누르면, 마지막 작업 파일 1개만 로드하도록 넘깁니다.
+                        // (배열에 lastSavedFilePath 하나만 담아서 전달)
+                        await LoadMultipleCatalogsAsync(new[] { lastSavedFilePath }, selectedFolder);
+                        return; // 로드 완료 후 메서드 종료
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        return; // 폴더 선택 자체를 취소함
+                    }
+                    // '아니오'를 누른 경우, 아래의 원본 탐색 및 새로 병합 로직으로 계속 진행됩니다.
+                }
+
                 // 1. 하위 폴더(backups 등) 무시하고 최상단에서만 검색
                 string[] topLevelCatalogs = Directory.GetFiles(selectedFolder, "*.catalog", SearchOption.TopDirectoryOnly);
 
