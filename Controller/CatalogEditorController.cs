@@ -46,6 +46,32 @@ namespace Malcha.Controller
             {
                 string selectedFolder = dlg.SelectedPath;
 
+                string lastSavedFileName = "merged_final.catalog";
+                string lastSavedFilePath = Path.Combine(selectedFolder, lastSavedFileName);
+
+                if (File.Exists(lastSavedFilePath))
+                {
+                    // 사용자에게 이전에 작업한 내역을 이어서 할지 묻습니다 (UX 향상)
+                    var result = MessageBox.Show(
+                        $"이전에 작업한 저장 파일({lastSavedFileName})이 발견되었습니다.\n해당 파일부터 이어서 작업하시겠습니까?\n\n(아니오를 누르면 원본 파일들을 처음부터 새로 병합합니다.)",
+                        "이전 작업 불러오기",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        // 사용자가 '예'를 누르면, 마지막 작업 파일 1개만 로드하도록 넘깁니다.
+                        // (배열에 lastSavedFilePath 하나만 담아서 전달)
+                        await LoadMultipleCatalogsAsync(new[] { lastSavedFilePath }, selectedFolder);
+                        return; // 로드 완료 후 메서드 종료
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        return; // 폴더 선택 자체를 취소함
+                    }
+                    // '아니오'를 누른 경우, 아래의 원본 탐색 및 새로 병합 로직으로 계속 진행됩니다.
+                }
+
                 // 1. 하위 폴더(backups 등) 무시하고 최상단에서만 검색
                 string[] topLevelCatalogs = Directory.GetFiles(selectedFolder, "*.catalog", SearchOption.TopDirectoryOnly);
 
@@ -451,7 +477,9 @@ namespace Malcha.Controller
             {
                 progress = _view.ShowProgress("복구 중");
 
-                try { CatalogPaths.CreateTimestampedBackup(workingPath); } catch { }
+                try { 
+                    //CatalogPaths.CreateTimestampedBackup(workingPath); 
+                } catch { }
 
                 _session.CurrentCatalogPath = workingPath;
                 _session.CurrentFrames = backupFrames;
@@ -509,8 +537,10 @@ namespace Malcha.Controller
                 // (10개 원본 카탈로그의 백업을 만드는 게 아닙니다!)
                 if (File.Exists(targetSavePath))
                 {
+                    var existingFileFrames = await _catalog.LoadCatalogFileAsync(targetSavePath);
+                    int existingFileFrameCount = existingFileFrames?.Count ?? 0;
                     // 이거 하나면 ' merged_final_2026xxxx.catalog ' 식으로 예쁘게 빠집니다.
-                    CatalogPaths.CreateTimestampedBackup(targetSavePath);
+                    CatalogPaths.CreateTimestampedBackup(targetSavePath, existingFileFrameCount);
                 }
 
                 // 3. 순수하게 메모리의 프레임을 JSON 덤프로 저장
@@ -522,7 +552,7 @@ namespace Malcha.Controller
                     _view.ShowMessage($"전체 병합 및 정제 결과가 저장되었습니다.\n\n저장 위치:\n{targetSavePath}",
                                       "저장 성공", icon : MessageBoxIcon.Information);
 
-                    _session.ClearUndo(); // 저장 직후 실행 취소 스택 비우기
+                    //_session.ClearUndo(); // 저장 직후 실행 취소 스택 비우기
                 }
                 else
                 {
@@ -660,7 +690,11 @@ namespace Malcha.Controller
             _view.SetCatalogBusy(true);
             try
             {
-                try { CatalogPaths.CreateTimestampedBackup(catalogPath); } catch { }
+                try {
+                    var existingFileFrames = await _catalog.LoadCatalogFileAsync(catalogPath);
+                    int existingFileFrameCount = existingFileFrames?.Count ?? 0;
+                    CatalogPaths.CreateTimestampedBackup(catalogPath, existingFileFrameCount); 
+                } catch { }
                 var ok = await _catalog.SaveCatalogAsync(catalogPath, _session.CurrentFrames);
                 _view.UpdateCatalogPathFromSession();
                 if (!ok) _view.ShowMessage("저장 실패", "저장", icon: MessageBoxIcon.Error);
