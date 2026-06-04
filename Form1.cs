@@ -55,12 +55,12 @@ namespace Malcha
         {
             var listMenu = new ContextMenuStrip();
             listMenu.Items.Add("선택 항목 삭제", null, async (_, _) =>
-                await _catalogController!.HandleDeleteListItemsAsync(lstDataList.SelectedIndices.Cast<int>().ToList()));
+                await _catalogController!.HandleDeleteListItemsAsync(GetActiveListDeleteIndices()));
             lstDataList.ContextMenuStrip = listMenu;
             lstDataList.KeyDown += (_, e) =>
             {
                 if (e.KeyCode == Keys.Delete)
-                    _ = _catalogController!.HandleDeleteListItemsAsync(lstDataList.SelectedIndices.Cast<int>().ToList());
+                    _ = _catalogController!.HandleDeleteListItemsAsync(GetActiveListDeleteIndices());
             };
 
             var trackMenu = new ContextMenuStrip();
@@ -134,6 +134,15 @@ namespace Malcha
             };
             picVideoScreen.Controls.Add(_speedFlashOverlay);
             picVideoScreen.Resize += (_, _) => CenterSpeedFlashOverlay();
+        }
+
+        // 프레임 리스트 삭제 대상 — 주황 구간(_selection) 우선, 없으면 ListBox 다중 선택
+        private List<int> GetActiveListDeleteIndices()
+        {
+            if (_selection.HasSelection)
+                return _selection.ToIndexList();
+
+            return lstDataList.SelectedIndices.Cast<int>().ToList();
         }
 
         // 구간 선택 UI·상태바 갱신
