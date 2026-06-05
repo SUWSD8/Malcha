@@ -168,14 +168,14 @@ namespace Malcha
         {
             if (e.KeyCode == Keys.F1) { HelpDialog.ShowFor(this); e.Handled = true; return; }
 
-            float digitSpeed = PlaybackSettings.SpeedFromDigitKey(e.KeyCode);
-            if (digitSpeed > 0f)
-            {
-                if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
-                    SetPlaybackSpeed(digitSpeed);
-                e.Handled = true;
-                return;
-            }
+            //float digitSpeed = _playbackSpeed + PlaybackSettings.SpeedFromDigitKey(e.KeyCode);
+            //if (digitSpeed > 0f)
+            //{
+            //    if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
+            //        SetPlaybackSpeed(digitSpeed);
+            //    e.Handled = true;
+            //    return;
+            //}
 
             if (_session.CurrentFrames.Count == 0) return;
             switch (e.KeyCode)
@@ -193,6 +193,35 @@ namespace Malcha
                     e.Handled = true; break;
                 case Keys.Z when e.Control:
                     _catalogController!.TryRecoverFromUndo(); e.Handled = true; break;
+
+                case Keys.Right when e.Control: StepFrame(5); e.Handled = true; break;
+                case Keys.Left when e.Control: StepFrame(-5); e.Handled = true; break;
+
+                case Keys.Right: StepFrame(1); e.Handled = true; break;
+                case Keys.Left: StepFrame(-1); e.Handled = true; break;
+
+                
+
+                case Keys.Q: SetRangeStart(); e.Handled = true; break;
+                case Keys.W: SetRangeEnd(); e.Handled = true; break;
+                case Keys.Delete:
+                    if (IsTypingInTextField()) break;
+                    _ = _catalogController!.HandleDeleteSelectionAsync();
+                    e.Handled = true; break;
+                case Keys.Up:
+                    if (_playbackSpeed < 5f)
+                    {
+                        if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
+                            SetPlaybackSpeed(_playbackSpeed + 0.25f);
+                    }
+                    e.Handled = true; break;
+                case Keys.Down:
+                    if (_playbackSpeed > 0.25f) {
+                        if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
+                            SetPlaybackSpeed(_playbackSpeed - 0.25f);
+                    }
+                    e.Handled = true; break;
+
             }
         }
 
@@ -457,6 +486,7 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             ShowFrame(Math.Clamp(_session.CurrentIndex + delta, 0, _session.CurrentFrames.Count - 1));
+            lstDataList.ClearSelected();
             lstDataList.SelectedIndex = _session.CurrentIndex;
         }
 
