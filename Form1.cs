@@ -585,6 +585,7 @@ namespace Malcha
                 {
                     lstSave.SelectedIndex = index;
                     // 디자이너에서 ContextMenuStrip을 ListBox에 연결해두면 이 위치에서 메뉴가 뜹니다.
+                    cmsSaveFile.Show(lstSave,e.Location);
                 }
                 else
                 {
