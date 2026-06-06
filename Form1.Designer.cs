@@ -40,6 +40,7 @@
             txtFilePath = new TextBox();
             btnSelectData = new Button();
             groupBox2 = new GroupBox();
+            lstSave = new ListBox();
             picVideoScreen = new PictureBox();
             trbTimeline = new TrackBar();
             btnPlayPause = new Button();
@@ -92,7 +93,6 @@
             이름 = new DataGridViewTextBoxColumn();
             시간 = new DataGridViewTextBoxColumn();
             설명 = new DataGridViewTextBoxColumn();
-            lstSave = new ListBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -218,6 +218,7 @@
             btnSelectData.TabIndex = 8;
             btnSelectData.Text = "데이터 선택";
             btnSelectData.UseVisualStyleBackColor = false;
+            btnSelectData.Click += btnSelectData_Click;
             // 
             // groupBox2
             // 
@@ -246,6 +247,20 @@
             groupBox2.Size = new Size(686, 404);
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
+            // 
+            // lstSave
+            // 
+            lstSave.AllowDrop = true;
+            lstSave.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            lstSave.BackColor = Color.FromArgb(48, 42, 41);
+            lstSave.ForeColor = SystemColors.MenuBar;
+            lstSave.FormattingEnabled = true;
+            lstSave.Location = new Point(9, 271);
+            lstSave.Name = "lstSave";
+            lstSave.Size = new Size(126, 64);
+            lstSave.TabIndex = 66;
+            lstSave.MouseDoubleClick += lstSave_MouseDoubleClick;
+            lstSave.MouseDown += lstSave_MouseDown;
             // 
             // picVideoScreen
             // 
@@ -920,17 +935,6 @@
             설명.MinimumWidth = 10;
             설명.Name = "설명";
             설명.ReadOnly = true;
-            // 
-            // lstSave
-            // 
-            lstSave.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
-            lstSave.BackColor = Color.FromArgb(48, 42, 41);
-            lstSave.ForeColor = SystemColors.MenuBar;
-            lstSave.FormattingEnabled = true;
-            lstSave.Location = new Point(9, 271);
-            lstSave.Name = "lstSave";
-            lstSave.Size = new Size(126, 64);
-            lstSave.TabIndex = 66;
             // 
             // Form1
             // 

@@ -543,6 +543,7 @@ namespace Malcha.Controller
                     int existingFileFrameCount = existingFileFrames?.Count ?? 0;
                     // 이거 하나면 ' merged_final_2026xxxx.catalog ' 식으로 예쁘게 빠집니다.
                     CatalogPaths.CreateTimestampedBackup(targetSavePath, existingFileFrameCount);
+
                 }
 
                 // 3. 순수하게 메모리의 프레임을 JSON 덤프로 저장
@@ -551,6 +552,8 @@ namespace Malcha.Controller
 
                 if (isSuccess)
                 {
+                    string saveDicPath = SaveFileManager.Instance.SaveFolderPath;
+                    CatalogPaths.CreateTimestampedSave(targetSavePath, saveDicPath, _session.CurrentFrames.Count);  
                     _view.ShowMessage($"전체 병합 및 정제 결과가 저장되었습니다.\n\n저장 위치:\n{targetSavePath}",
                                       "저장 성공", icon : MessageBoxIcon.Information);
 
@@ -746,5 +749,6 @@ namespace Malcha.Controller
             return _view.ShowMessage($"{target}을(를) 삭제 목록으로 이동?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
                 "프레임 삭제", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
         }
+        public void RefreshFrameList() => _view.RequestRefreshFrameList();
     }
 }
