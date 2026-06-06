@@ -45,6 +45,8 @@ namespace Malcha.Controller
             if (dlg.ShowDialog(_view.Owner) == DialogResult.OK) 
             {
                 string selectedFolder = dlg.SelectedPath;
+                
+                SaveFileManager.Instance.SetDataDirectory(selectedFolder);
 
                 string lastSavedFileName = "merged_final.catalog";
                 string lastSavedFilePath = Path.Combine(selectedFolder, lastSavedFileName);

@@ -92,6 +92,7 @@
             이름 = new DataGridViewTextBoxColumn();
             시간 = new DataGridViewTextBoxColumn();
             설명 = new DataGridViewTextBoxColumn();
+            lstSave = new ListBox();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).BeginInit();
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
@@ -221,6 +222,7 @@
             // groupBox2
             // 
             groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox2.Controls.Add(lstSave);
             groupBox2.Controls.Add(picVideoScreen);
             groupBox2.Controls.Add(trbTimeline);
             groupBox2.Controls.Add(btnPlayPause);
@@ -919,6 +921,17 @@
             설명.Name = "설명";
             설명.ReadOnly = true;
             // 
+            // lstSave
+            // 
+            lstSave.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            lstSave.BackColor = Color.FromArgb(48, 42, 41);
+            lstSave.ForeColor = SystemColors.MenuBar;
+            lstSave.FormattingEnabled = true;
+            lstSave.Location = new Point(9, 271);
+            lstSave.Name = "lstSave";
+            lstSave.Size = new Size(126, 64);
+            lstSave.TabIndex = 66;
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(96F, 96F);
@@ -1023,5 +1036,6 @@
         private Button btnUndo;
         private SplitContainer splitContainer2;
         private SplitContainer splitContainer3;
+        private ListBox lstSave;
     }
 }

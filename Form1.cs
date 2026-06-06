@@ -1,4 +1,5 @@
 using Malcha.Controller;
+using Malcha.Data;
 using Malcha.Service;
 using Malcha.UI;
 using Malcha.View;
@@ -200,7 +201,7 @@ namespace Malcha
                 case Keys.Right: StepFrame(1); e.Handled = true; break;
                 case Keys.Left: StepFrame(-1); e.Handled = true; break;
 
-                
+
 
                 case Keys.Q: SetRangeStart(); e.Handled = true; break;
                 case Keys.W: SetRangeEnd(); e.Handled = true; break;
@@ -216,7 +217,8 @@ namespace Malcha
                     }
                     e.Handled = true; break;
                 case Keys.Down:
-                    if (_playbackSpeed > 0.25f) {
+                    if (_playbackSpeed > 0.25f)
+                    {
                         if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
                             SetPlaybackSpeed(_playbackSpeed - 0.25f);
                     }
@@ -530,6 +532,11 @@ namespace Malcha
         {
             if (_catalogController == null) return;
             await _catalogController.HandleSaveSessionAsync();
+            List<FileInfo> Saves = SaveFileManager.Instance.GetSavedFilesList();
+            foreach(var save in Saves) {
+                lstSave.Items.Add(save);
+            }
         }
+
     }
 }
