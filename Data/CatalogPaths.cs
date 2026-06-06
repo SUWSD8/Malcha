@@ -56,6 +56,26 @@ namespace Malcha.Data
             return backupPath;
         }
 
+        public static string CreateTimestampedSave(string catalogPath, string saveDicPath,int frameCount)
+        {
+            if (string.IsNullOrWhiteSpace(catalogPath) || !File.Exists(catalogPath))
+                return string.Empty;
+
+            var dir = Path.GetDirectoryName(catalogPath) ?? Environment.CurrentDirectory;
+            var saveDir = Path.Combine(dir, saveDicPath);
+            
+
+            var baseName = Path.GetFileNameWithoutExtension(catalogPath);
+            if (baseName.EndsWith(".catalog", StringComparison.OrdinalIgnoreCase))
+                baseName = Path.GetFileNameWithoutExtension(baseName);
+
+            var stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var savePath = Path.Combine(saveDicPath, $"{baseName}_{stamp}_{frameCount}.catalog");
+
+            File.Copy(catalogPath, savePath, overwrite: false);
+            return savePath;
+        }
+
         // UI 표시용 [작업]/[백업] 라벨
         public static string GetDisplayLabel(string catalogPath)
         {

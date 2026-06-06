@@ -1,7 +1,9 @@
 using Malcha.Controller;
+using Malcha.Data;
 using Malcha.Service;
 using Malcha.UI;
 using Malcha.View;
+using Microsoft.VisualBasic;
 using static Malcha.UI.TimelineSelectionBinder;
 
 namespace Malcha
@@ -16,6 +18,7 @@ namespace Malcha
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
         private CrossTestController? _crossTestController;
+        private SaveFileController _saveController;
 
         private float _playbackSpeed = 1.0f;
         private Label? _speedFlashOverlay;
@@ -25,12 +28,12 @@ namespace Malcha
         public Form1()
         {
             InitializeComponent();
-
             _display = new CatalogDisplayController(
                 chtDataGraph, picVideoScreen, trbTimeline,
                 lblAngleValue, lblThrottleValue, lblModeValue, lblRecordCount);
 
             InitializeCatalogController();
+            _saveController = new SaveFileController(_session, _catalogController);
             _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
@@ -77,7 +80,7 @@ namespace Malcha
         // 버튼·키·Paint 이벤트 핸들러 연결
         private void SetupEventHandlers()
         {
-            btnSelectData.Click += async (_, _) => await _catalogController!.HandleSelectDataAsync();
+            //btnSelectData.Click += async (_, _) => await _catalogController!.HandleSelectDataAsync();
             btnRefresh.Click += async (_, _) => await _catalogController!.HandleRefreshAsync();
             btnRecover.Click += async (_, _) => await _catalogController!.HandleRecoverAsync();
             btnApplyFilter.Click += async (_, _) => await _catalogController!.HandleApplyFilterAsync();
@@ -200,7 +203,7 @@ namespace Malcha
                 case Keys.Right: StepFrame(1); e.Handled = true; break;
                 case Keys.Left: StepFrame(-1); e.Handled = true; break;
 
-                
+
 
                 case Keys.Q: SetRangeStart(); e.Handled = true; break;
                 case Keys.W: SetRangeEnd(); e.Handled = true; break;
@@ -216,7 +219,8 @@ namespace Malcha
                     }
                     e.Handled = true; break;
                 case Keys.Down:
-                    if (_playbackSpeed > 0.25f) {
+                    if (_playbackSpeed > 0.25f)
+                    {
                         if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
                             SetPlaybackSpeed(_playbackSpeed - 0.25f);
                     }
@@ -530,6 +534,114 @@ namespace Malcha
         {
             if (_catalogController == null) return;
             await _catalogController.HandleSaveSessionAsync();
+            RefreshListBox();
+        }
+        private void RefreshListBox()
+        {
+            lstSave.Items.Clear(); // 기존 목록 지우기
+
+            try
+            {
+                var files = _saveController.GetSaveFilesForUI();
+                foreach (var file in files)
+                {
+                    // ListBox는 텍스트 하나만 들어가므로 이름만 추가
+                    lstSave.Items.Add(file.Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+        private async void lstSave_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // 빈 공간을 더블클릭한 것이 아닌지 확인
+            int index = lstSave.IndexFromPoint(e.Location);
+            if (index != ListBox.NoMatches)
+            {
+                string selectedFileName = lstSave.Items[index].ToString();
+                try
+                {
+                    bool isSuccess = await _saveController.RequestLoadSaveFile(selectedFileName);
+                    if(!isSuccess) MessageBox.Show("현재 작업 중인 내용이 저장되지 않았습니다. 먼저 저장하시겠습니까?", "로드 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    MessageBox.Show($"'{selectedFileName}' 로드 완료!");
+                    // 프레임 업데이트는 세션이 변경될 때 CatalogEditorController에서 ICatalogView.CompleteCatalogLoadAsync()를 호출하여 처리합니다.
+                    _catalogController.RefreshFrameList(); // 목록 새로고침 요청 (세션 변경 감지 후에도 처리되지만, 확실히 하기 위해 추가)
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "로드 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+        private void lstSave_MouseDown(object sender, MouseEventArgs e)
+        {
+            // 우클릭을 했을 때, 마우스 위치에 있는 아이템을 강제로 선택 상태로 만듦
+            if (e.Button == MouseButtons.Right)
+            {
+                int index = lstSave.IndexFromPoint(e.Location);
+                if (index != ListBox.NoMatches)
+                {
+                    lstSave.SelectedIndex = index;
+                    // 디자이너에서 ContextMenuStrip을 ListBox에 연결해두면 이 위치에서 메뉴가 뜹니다.
+                    cmsSaveFile.Show(lstSave,e.Location);
+                }
+                else
+                {
+                    lstSave.ClearSelected(); // 빈 공간 우클릭 시 선택 해제
+                }
+            }
+        }
+        private void MenuDelete_Click(object sender, EventArgs e)
+        {
+            if (lstSave.SelectedItem == null) return;
+
+            string selectedFileName = lstSave.SelectedItem.ToString();
+
+            var result = MessageBox.Show($"'{selectedFileName}' 파일을 삭제하시겠습니까?", "삭제 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    _saveController.RequestDelete(selectedFileName);
+                    RefreshListBox(); // 삭제 후 목록 새로고침
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "삭제 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+        private void MenuRename_Click(object sender, EventArgs e)
+        {
+            if (lstSave.SelectedItem == null) return;
+
+            string oldName = lstSave.SelectedItem.ToString();
+
+            // InputBox를 띄워 새 이름을 입력받음 (Microsoft.VisualBasic 참조 필요)
+            // 만약 이게 번거롭다면 Form을 하나 새로 만들어서 (TextBox + 확인 버튼) 띄워도 됩니다.
+            string newName = Interaction.InputBox("새로운 파일 이름을 입력하세요:", "이름 변경", oldName);
+
+            if (!string.IsNullOrWhiteSpace(newName) && oldName != newName)
+            {
+                try
+                {
+                    _saveController.RequestRename(oldName, newName);
+                    RefreshListBox(); // 이름 변경 후 목록 새로고침
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "이름 변경 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+
+        private async void btnSelectData_Click(object sender, EventArgs e)
+        {
+            await _catalogController!.HandleSelectDataAsync();
+            RefreshListBox();
         }
     }
 }

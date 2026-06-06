@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
@@ -40,6 +41,10 @@
             txtFilePath = new TextBox();
             btnSelectData = new Button();
             groupBox2 = new GroupBox();
+            lstSave = new ListBox();
+            cmsSaveFile = new ContextMenuStrip(components);
+            toolStripMenuItemRename = new ToolStripMenuItem();
+            toolStripMenuItemDelete = new ToolStripMenuItem();
             picVideoScreen = new PictureBox();
             trbTimeline = new TrackBar();
             btnPlayPause = new Button();
@@ -102,6 +107,7 @@
             splitContainer3.SuspendLayout();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
+            cmsSaveFile.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picVideoScreen).BeginInit();
             ((System.ComponentModel.ISupportInitialize)trbTimeline).BeginInit();
             groupBox3.SuspendLayout();
@@ -217,10 +223,12 @@
             btnSelectData.TabIndex = 8;
             btnSelectData.Text = "데이터 선택";
             btnSelectData.UseVisualStyleBackColor = false;
+            btnSelectData.Click += btnSelectData_Click;
             // 
             // groupBox2
             // 
             groupBox2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            groupBox2.Controls.Add(lstSave);
             groupBox2.Controls.Add(picVideoScreen);
             groupBox2.Controls.Add(trbTimeline);
             groupBox2.Controls.Add(btnPlayPause);
@@ -244,6 +252,42 @@
             groupBox2.Size = new Size(686, 404);
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
+            // 
+            // lstSave
+            // 
+            lstSave.AllowDrop = true;
+            lstSave.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            lstSave.BackColor = Color.FromArgb(48, 42, 41);
+            lstSave.ContextMenuStrip = cmsSaveFile;
+            lstSave.ForeColor = SystemColors.MenuBar;
+            lstSave.FormattingEnabled = true;
+            lstSave.Location = new Point(9, 271);
+            lstSave.Name = "lstSave";
+            lstSave.Size = new Size(126, 64);
+            lstSave.TabIndex = 66;
+            lstSave.MouseDoubleClick += lstSave_MouseDoubleClick;
+            lstSave.MouseDown += lstSave_MouseDown;
+            // 
+            // cmsSaveFile
+            // 
+            cmsSaveFile.Items.AddRange(new ToolStripItem[] { toolStripMenuItemRename, toolStripMenuItemDelete });
+            cmsSaveFile.Name = "cmsSaveFile";
+            cmsSaveFile.Size = new Size(127, 48);
+            cmsSaveFile.Text = "이름 변경";
+            // 
+            // toolStripMenuItemRename
+            // 
+            toolStripMenuItemRename.Name = "toolStripMenuItemRename";
+            toolStripMenuItemRename.Size = new Size(126, 22);
+            toolStripMenuItemRename.Text = "이름 변경";
+            toolStripMenuItemRename.Click += MenuRename_Click;
+            // 
+            // toolStripMenuItemDelete
+            // 
+            toolStripMenuItemDelete.Name = "toolStripMenuItemDelete";
+            toolStripMenuItemDelete.Size = new Size(126, 22);
+            toolStripMenuItemDelete.Text = "삭제";
+            toolStripMenuItemDelete.Click += MenuDelete_Click;
             // 
             // picVideoScreen
             // 
@@ -940,6 +984,7 @@
             groupBox1.PerformLayout();
             groupBox2.ResumeLayout(false);
             groupBox2.PerformLayout();
+            cmsSaveFile.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)picVideoScreen).EndInit();
             ((System.ComponentModel.ISupportInitialize)trbTimeline).EndInit();
             groupBox3.ResumeLayout(false);
@@ -1023,5 +1068,9 @@
         private Button btnUndo;
         private SplitContainer splitContainer2;
         private SplitContainer splitContainer3;
+        private ListBox lstSave;
+        private ContextMenuStrip cmsSaveFile;
+        private ToolStripMenuItem toolStripMenuItemRename;
+        private ToolStripMenuItem toolStripMenuItemDelete;
     }
 }
