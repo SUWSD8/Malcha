@@ -121,7 +121,7 @@ namespace Malcha
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
-            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · 배속: 키보드 0~5 또는 NumPad 0~5");
+            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · 배속 프리셋: 0~5·NumPad · 미세조절: ↑↓");
         }
 
         private void SetupPlaybackSpeedUi()
@@ -166,19 +166,21 @@ namespace Malcha
             toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
         }
 
-        // 단축키 처리 (F1, Space, 0~5 배속, [, ], Esc, Ctrl+Z)
+        // 단축키 처리 (F1, Space, 0~5 프리셋, ↑↓ 미세조절, [, ], Esc, Ctrl+Z)
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F1) { HelpDialog.ShowFor(this); e.Handled = true; return; }
 
-            //float digitSpeed = _playbackSpeed + PlaybackSettings.SpeedFromDigitKey(e.KeyCode);
-            //if (digitSpeed > 0f)
-            //{
-            //    if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
-            //        SetPlaybackSpeed(digitSpeed);
-            //    e.Handled = true;
-            //    return;
-            //}
+            if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
+            {
+                float preset = PlaybackSettings.PresetSpeedFromDigitKey(e.KeyCode);
+                if (preset > 0f)
+                {
+                    SetPlaybackSpeed(preset);
+                    e.Handled = true;
+                    return;
+                }
+            }
 
             if (_session.CurrentFrames.Count == 0) return;
             switch (e.KeyCode)
@@ -212,19 +214,15 @@ namespace Malcha
                     _ = _catalogController!.HandleDeleteSelectionAsync();
                     e.Handled = true; break;
                 case Keys.Up:
-                    if (_playbackSpeed < 5f)
-                    {
-                        if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
-                            SetPlaybackSpeed(_playbackSpeed + 0.25f);
-                    }
-                    e.Handled = true; break;
+                    if (!IsTypingInTextField() && _playbackSpeed < PlaybackSettings.MaxSpeed)
+                        SetPlaybackSpeed(Math.Min(PlaybackSettings.MaxSpeed, _playbackSpeed + PlaybackSettings.ArrowSpeedStep));
+                    e.Handled = true;
+                    break;
                 case Keys.Down:
-                    if (_playbackSpeed > 0.25f)
-                    {
-                        if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
-                            SetPlaybackSpeed(_playbackSpeed - 0.25f);
-                    }
-                    e.Handled = true; break;
+                    if (!IsTypingInTextField() && _playbackSpeed > PlaybackSettings.MinSpeed)
+                        SetPlaybackSpeed(Math.Max(PlaybackSettings.MinSpeed, _playbackSpeed - PlaybackSettings.ArrowSpeedStep));
+                    e.Handled = true;
+                    break;
 
             }
         }
