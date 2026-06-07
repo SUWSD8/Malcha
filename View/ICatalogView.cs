@@ -23,6 +23,7 @@ namespace Malcha.View
         void RequestClearImageCache();
         void RequestRefreshSelectionUi();
         void RequestShowFrame(int index);
+        void RequestRefreshFrameListDuringPlayback(int playheadIndex);
         void RequestStopPlayback();
         void OnFramesRemoved(int start, int count);
         void ResetChartHighlight();

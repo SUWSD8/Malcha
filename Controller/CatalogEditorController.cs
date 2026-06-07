@@ -619,7 +619,7 @@ namespace Malcha.Controller
             var savePath = _session.CurrentCatalogPath;
             var result = _session.MoveRangeToDeleted(start, end);
             if (result == null) return 0;
-            AfterFramesMovedToDeleted(result);
+            AfterFramesMovedToDeleted(result, keepPlayback: false);
             if (persistAfter && !string.IsNullOrEmpty(savePath))
                 _ = PersistAfterEditAsync(result.Count, savePath);
             return result.Count;
@@ -631,7 +631,7 @@ namespace Malcha.Controller
             var savePath = _session.CurrentCatalogPath;
             var result = _session.MoveIndicesToDeleted(indices);
             if (result == null) return 0;
-            AfterFramesMovedToDeleted(result);
+            AfterFramesMovedToDeleted(result, keepPlayback: false);
             if (persistAfter && !string.IsNullOrEmpty(savePath))
                 _ = PersistAfterEditAsync(result.Count, savePath);
             return result.Count;
@@ -674,13 +674,36 @@ namespace Malcha.Controller
             return RestoreFromDeletedList(payload.Indices, persistAfter: false);
         }
 
-        private void AfterFramesMovedToDeleted(CatalogSession.DeleteRangeResult result)
+        // 재생 중 구간 컷 — 확인 없음, 재생 유지
+        public bool TryCutSelectionDuringPlayback()
         {
-            _view.RequestStopPlayback();
+            var r = _selection.GetRange();
+            if (r.s < 0) return false;
+            int eidx = r.e >= 0 ? r.e : r.s;
+            var result = _session.MoveRangeToDeleted(r.s, eidx);
+            if (result == null) return false;
+            AfterFramesMovedToDeleted(result, keepPlayback: true);
+            _selection.Clear();
+            WriteDeletedAudit(r.s, eidx);
+            return true;
+        }
+
+        private void AfterFramesMovedToDeleted(CatalogSession.DeleteRangeResult result, bool keepPlayback = false)
+        {
+            if (!keepPlayback)
+                _view.RequestStopPlayback();
+
             _view.OnFramesRemoved(result.Start, result.Count);
             _selection.OnFramesRemoved(result.Start, result.Count);
-            _view.RequestRefreshFrameList();
-            _view.SetStatusText($"삭제 목록 — {_session.DeletedEntries.Count:N0} (방금 +{result.Count:N0})");
+
+            if (keepPlayback)
+                _view.RequestRefreshFrameListDuringPlayback(result.NewIndex);
+            else
+                _view.RequestRefreshFrameList();
+
+            _view.SetStatusText(keepPlayback
+                ? $"컷 +{result.Count:N0} · 재생 계속 · 삭제 목록 {_session.DeletedEntries.Count:N0}"
+                : $"삭제 목록 — {_session.DeletedEntries.Count:N0} (방금 +{result.Count:N0})");
         }
 
         // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)

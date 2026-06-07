@@ -111,9 +111,9 @@ namespace Malcha
             tips.SetToolTip(btnNextFrame, "다음 프레임 (1)");
             tips.SetToolTip(btnRewind, "5프레임 뒤로");
             tips.SetToolTip(btnFastForward, "5프레임 앞으로");
-            tips.SetToolTip(btnSetStartPoint, "구간 시작 ([)");
-            tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
-            tips.SetToolTip(btnDeleteSelection, "선택 구간을 삭제 목록으로 이동");
+            tips.SetToolTip(btnSetStartPoint, "구간 시작 In — I · [ · Q");
+            tips.SetToolTip(btnSetEndPoint, "구간 끝 Out — O · ] · W");
+            tips.SetToolTip(btnDeleteSelection, "선택 구간 컷 (정지 중) · 재생 중: X / Delete");
             tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제 · 리스트 드래그: 구간");
             tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
@@ -121,7 +121,7 @@ namespace Malcha
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
-            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · 배속 프리셋: 0~5·NumPad · 미세조절: ↑↓");
+            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · In/Out: I O · 컷: X · 배속: 0~5·↑↓");
         }
 
         private void SetupPlaybackSpeedUi()
@@ -189,8 +189,12 @@ namespace Malcha
                     BtnPlayPause_Click(null, EventArgs.Empty);
                     e.Handled = true;
                     break;
-                case Keys.OemOpenBrackets: SetRangeStart(); e.Handled = true; break;
-                case Keys.OemCloseBrackets: SetRangeEnd(); e.Handled = true; break;
+                case Keys.OemOpenBrackets:
+                case Keys.I when !IsTypingInTextField():
+                    SetRangeStart(); e.Handled = true; break;
+                case Keys.OemCloseBrackets:
+                case Keys.O when !IsTypingInTextField():
+                    SetRangeEnd(); e.Handled = true; break;
                 case Keys.Escape:
                     if (_selection.HasSelection) { _selection.Clear(); RefreshSelectionUi(); }
                     else if (_deletedSelection.HasSelection) { _deletedSelection.Clear(); RefreshDeletedSelectionUi(); }
@@ -209,9 +213,15 @@ namespace Malcha
 
                 case Keys.Q: SetRangeStart(); e.Handled = true; break;
                 case Keys.W: SetRangeEnd(); e.Handled = true; break;
+                case Keys.X when !IsTypingInTextField():
+                    if (_playCts != null) CutSelectionDuringPlayback();
+                    else _ = _catalogController!.HandleDeleteSelectionAsync();
+                    e.Handled = true;
+                    break;
                 case Keys.Delete:
                     if (IsTypingInTextField()) break;
-                    _ = _catalogController!.HandleDeleteSelectionAsync();
+                    if (_playCts != null) CutSelectionDuringPlayback();
+                    else _ = _catalogController!.HandleDeleteSelectionAsync();
                     e.Handled = true; break;
                 case Keys.Up:
                     if (!IsTypingInTextField() && _playbackSpeed < PlaybackSettings.MaxSpeed)
@@ -330,8 +340,14 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             int i = Math.Max(0, _session.CurrentIndex) + 1;
-            toolStripStatusLabel1.Text =
+            string text =
                 $"재생 {PlaybackSettings.FormatSpeedLabel(_playbackSpeed)} · 프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+            if (_selection.HasSelection)
+            {
+                var (s, e) = _selection.GetRange();
+                text += $" · In~Out {s}~{e}";
+            }
+            toolStripStatusLabel1.Text = text;
         }
 
         private void HidePlaybackSpeedIndicators()
@@ -342,20 +358,35 @@ namespace Malcha
             btnPlayPause.Text = "재생 / 정지";
         }
 
-        // 현재 프레임을 구간 시작으로 설정
+        // 현재 프레임을 구간 시작(In)으로 설정
         private void SetRangeStart()
         {
             if (_session.CurrentFrames.Count == 0) return;
             _selection.SetStart(_session.CurrentIndex);
             RefreshSelectionUi();
+            if (_playCts != null) UpdatePlaybackStatusBar();
         }
 
-        // 현재 프레임을 구간 끝으로 설정
+        // 현재 프레임을 구간 끝(Out)으로 설정
         private void SetRangeEnd()
         {
             if (_session.CurrentFrames.Count == 0) return;
             _selection.SetEnd(_session.CurrentIndex);
             RefreshSelectionUi();
+            if (_playCts != null) UpdatePlaybackStatusBar();
+        }
+
+        // 재생 중 선택 구간 컷 (확인 없음)
+        private void CutSelectionDuringPlayback()
+        {
+            if (_playCts == null || _catalogController == null) return;
+            if (!_selection.HasSelection)
+            {
+                toolStripStatusLabel1.Text = "컷할 구간 없음 — I 또는 [ 로 In, O 또는 ] 로 Out";
+                return;
+            }
+            if (_catalogController.TryCutSelectionDuringPlayback())
+                UpdatePlaybackStatusBar();
         }
 
         // 세션 프레임으로 차트 갱신
@@ -467,17 +498,18 @@ namespace Malcha
                 pred?.Angle);
         }
 
-        // 리스트 선택 변경 → 해당 프레임 표시
+        // 리스트 선택 변경 → 해당 프레임 표시 (재생 중 무시)
         private void OnListSelectionChanged()
         {
+            if (_playCts != null) return;
             if (lstDataList.SelectedIndex < 0 || lstDataList.SelectedIndex == _session.CurrentIndex) return;
             ShowFrame(lstDataList.SelectedIndex);
         }
 
-        // 타임라인 스크롤 → 해당 프레임 표시
+        // 타임라인 스크롤 → 해당 프레임 표시 (재생 중 무시)
         private void OnTimelineScroll()
         {
-            if (_session.CurrentFrames.Count == 0) return;
+            if (_session.CurrentFrames.Count == 0 || _playCts != null) return;
             ShowFrame(trbTimeline.Value);
             if (lstDataList.SelectedIndex != _session.CurrentIndex)
                 lstDataList.SelectedIndex = _session.CurrentIndex;
