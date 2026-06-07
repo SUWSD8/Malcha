@@ -59,7 +59,7 @@ namespace Malcha
             ShowFrame(0);
             if (lstDataList.SelectedIndex != 0) lstDataList.SelectedIndex = 0;
             lstDataList.Invalidate();
-            trbTimeline.Invalidate();
+            InvalidateTimelineMarkers();
             picVideoScreen.Invalidate();
             RefreshPlaybackSpeedIndicators();
             await _display.PreloadAsync(_session.FrameImagePaths, _session.CurrentFrames, 5);
@@ -88,7 +88,8 @@ namespace Malcha
             playheadIndex = Math.Clamp(playheadIndex, 0, _session.CurrentFrames.Count - 1);
             _session.CurrentIndex = playheadIndex;
             _display.ShowFrame(playheadIndex, _session.CurrentFrames, _session.FrameImagePaths, this);
-            trbTimeline.Invalidate();
+            SyncTimeline(playheadIndex);
+            InvalidateTimelineMarkers();
             lstDataList.Invalidate();
             picVideoScreen.Invalidate();
         }
@@ -145,7 +146,7 @@ namespace Malcha
             }
             else ClearPlayback();
             lstDataList.Invalidate();
-            trbTimeline.Invalidate();
+            InvalidateTimelineMarkers();
         }
     }
 }

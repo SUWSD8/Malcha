@@ -46,7 +46,7 @@
             toolStripMenuItemRename = new ToolStripMenuItem();
             toolStripMenuItemDelete = new ToolStripMenuItem();
             picVideoScreen = new PictureBox();
-            trbTimeline = new TrackBar();
+            trbTimeline = new Malcha.UI.TimelineTrackBar();
             btnPlayPause = new Button();
             btnFastForward = new Button();
             btnRewind = new Button();
@@ -1015,7 +1015,7 @@
         private TextBox txtFilePath;
         private Button btnSelectData;
         private PictureBox picVideoScreen;
-        private TrackBar trbTimeline;
+        private Malcha.UI.TimelineTrackBar trbTimeline;
         private Button btnPlayPause;
         private Button btnFastForward;
         private Button btnRewind;

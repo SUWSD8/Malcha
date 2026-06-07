@@ -55,11 +55,6 @@ namespace Malcha.Controller
             _modeLabel.Text = f.Mode ?? string.Empty;
             _recordCountLabel.Text = $"{index}/{Math.Max(0, frames.Count - 1)}";
 
-            _timeline.Minimum = 0;
-            _timeline.Maximum = Math.Max(0, frames.Count - 1);
-            _timeline.Enabled = frames.Count > 0;
-            if (_timeline.Value != index) _timeline.Value = index;
-
             HighlightChart(index, frames);
             LoadFrameImage(index, f, frames, imagePaths);
             return index;

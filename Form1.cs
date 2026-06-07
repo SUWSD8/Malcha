@@ -1,5 +1,6 @@
 using Malcha.Controller;
 using Malcha.Data;
+using Malcha.Model;
 using Malcha.Service;
 using Malcha.UI;
 using Malcha.View;
@@ -24,6 +25,8 @@ namespace Malcha
         private Label? _speedFlashOverlay;
         private System.Windows.Forms.Timer? _speedFeedbackTimer;
         private System.Windows.Forms.Timer? _speedOverlayTimer;
+        private TimelineSelectionBinder? _timelineBinder;
+        private bool _timelineSync;
 
         public Form1()
         {
@@ -37,7 +40,9 @@ namespace Malcha
             _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
-            new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi).Attach();
+            _timelineBinder = new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi,
+                () => _session.DeletedEntries, () => _session.CurrentFrames.Count, OnDeletedTimelineHover);
+            _timelineBinder.Attach();
             new DeletedListSelectionBinder(lstDeleted, _deletedSelection, RefreshDeletedSelectionUi).Attach();
             new FrameListDragDropBinder(
                 lstDataList, lstDeleted, groupBox2, _selection, _deletedSelection,
@@ -94,7 +99,8 @@ namespace Malcha
             btnFastForward.Click += (_, _) => StepFrame(5);
             btnRewind.Click += (_, _) => StepFrame(-5);
             btnPlayPause.Click += BtnPlayPause_Click;
-            trbTimeline.Scroll += (_, _) => OnTimelineScroll();
+            trbTimeline.Scroll += (_, _) => OnTimelineUserChanged();
+            trbTimeline.ValueChanged += (_, _) => OnTimelineUserChanged();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
             btnCrossTest.Click += async (_, _) =>
                 await _crossTestController!.RunAsync((ITrainingView)this, (ICatalogView)this, RefreshFrameOverlay);
@@ -114,7 +120,7 @@ namespace Malcha
             tips.SetToolTip(btnSetStartPoint, "구간 시작 In — I · [ · Q");
             tips.SetToolTip(btnSetEndPoint, "구간 끝 Out — O · ] · W");
             tips.SetToolTip(btnDeleteSelection, "선택 구간 컷 (정지 중) · 재생 중: X / Delete");
-            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제 · 리스트 드래그: 구간");
+            tips.SetToolTip(trbTimeline, "썸=재생 · 빨강=삭제 구간(마우스 올리면 정보) · 주황=선택 · Ctrl+드래그: 구간");
             tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
@@ -151,16 +157,56 @@ namespace Malcha
         // 구간 선택 UI·상태바 갱신
         private void RefreshSelectionUi()
         {
-            trbTimeline.Invalidate();
+            InvalidateTimelineMarkers();
             lstDataList.Invalidate();
             if (!_selection.HasSelection) return;
             var (s, e) = _selection.GetRange();
-            toolStripStatusLabel1.Text = $"구간 {s}~{e} ({_selection.FrameCount:N0}) · Esc 해제";
+            toolStripStatusLabel1.Text = $"In {s} · Out {e} ({_selection.FrameCount:N0}프레임) · Esc 해제";
+        }
+
+        private void InvalidateTimelineMarkers() => _timelineBinder?.InvalidateTimeline();
+
+        private void OnDeletedTimelineHover(string? text)
+        {
+            if (!string.IsNullOrEmpty(text))
+            {
+                toolStripStatusLabel1.Text = text;
+                toolStripStatusLabel1.ForeColor = Color.FromArgb(255, 160, 140);
+                return;
+            }
+
+            toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
+            if (_playCts != null) UpdatePlaybackStatusBar();
+            else if (_selection.HasSelection) RefreshSelectionUi();
+            else if (_deletedSelection.HasSelection) RefreshDeletedSelectionUi();
+            else RestoreIdleStatusBar();
+        }
+
+        private void SyncTimeline(int activeIndex)
+        {
+            var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
+            int max = TimelineVirtualMap.VirtualMax(_session.CurrentFrames.Count, _session.DeletedEntries);
+            trbTimeline.Minimum = 0;
+            trbTimeline.Maximum = max;
+            trbTimeline.Enabled = _session.CurrentFrames.Count > 0;
+            if (_session.CurrentFrames.Count == 0) return;
+
+            _timelineSync = true;
+            try
+            {
+                trbTimeline.Value = Math.Clamp(
+                    TimelineVirtualMap.ActiveToVirtual(activeIndex, ranges), 0, max);
+            }
+            finally
+            {
+                _timelineSync = false;
+            }
         }
 
         private void RefreshDeletedSelectionUi()
         {
             lstDeleted.Invalidate();
+            InvalidateTimelineMarkers();
             if (!_deletedSelection.HasSelection) return;
             var (s, e) = _deletedSelection.GetRange();
             toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
@@ -324,7 +370,10 @@ namespace Malcha
             if (_session.CurrentFrames.Count > 0)
             {
                 int i = Math.Max(0, _session.CurrentIndex) + 1;
-                toolStripStatusLabel1.Text = $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+                string time = FormatFrameTimestamp(_session.CurrentFrames, _session.CurrentIndex);
+                toolStripStatusLabel1.Text = string.IsNullOrEmpty(time)
+                    ? $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0}"
+                    : $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0} · {time}";
             }
         }
 
@@ -340,8 +389,11 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             int i = Math.Max(0, _session.CurrentIndex) + 1;
+            string time = FormatFrameTimestamp(_session.CurrentFrames, _session.CurrentIndex);
             string text =
                 $"재생 {PlaybackSettings.FormatSpeedLabel(_playbackSpeed)} · 프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+            if (!string.IsNullOrEmpty(time))
+                text += $" · {time}";
             if (_selection.HasSelection)
             {
                 var (s, e) = _selection.GetRange();
@@ -398,11 +450,33 @@ namespace Malcha
             if (_session.CurrentFrames.Count == 0) return;
             index = Math.Clamp(index, 0, _session.CurrentFrames.Count - 1);
             _session.CurrentIndex = index;
-            _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            _timelineSync = true;
+            try
+            {
+                _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            }
+            finally
+            {
+                _timelineSync = false;
+            }
+            SyncTimeline(index);
             RefreshModelLabels();
             picVideoScreen.Invalidate();
+            InvalidateTimelineMarkers();
             if (_playCts == null && _speedFeedbackTimer is not { Enabled: true })
                 RestoreIdleStatusBar();
+        }
+
+        private static string FormatFrameTimestamp(IReadOnlyList<Frame> frames, int index)
+        {
+            if (index < 0 || index >= frames.Count) return string.Empty;
+            long ts = frames[index].TimestampMs;
+            if (ts > 1_000_000_000_000L)
+                return DateTimeOffset.FromUnixTimeMilliseconds(ts).ToLocalTime().ToString("HH:mm:ss.fff");
+            long t0 = frames[0].TimestampMs;
+            if (t0 > 0 && ts >= t0)
+                return $"+{(ts - t0) / 1000.0:F2}s";
+            return $"#{index}";
         }
 
         // 교차 테스트 HUD·모델 라벨 갱신
@@ -506,11 +580,15 @@ namespace Malcha
             ShowFrame(lstDataList.SelectedIndex);
         }
 
-        // 타임라인 스크롤 → 해당 프레임 표시 (재생 중 무시)
-        private void OnTimelineScroll()
+        // 타임라인 드래그/클릭 → 해당 프레임 (재생 중·프로그램 동기화 시 무시)
+        private void OnTimelineUserChanged()
         {
-            if (_session.CurrentFrames.Count == 0 || _playCts != null) return;
-            ShowFrame(trbTimeline.Value);
+            if (_session.CurrentFrames.Count == 0 || _playCts != null || _timelineSync) return;
+            var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
+            int active = TimelineVirtualMap.VirtualToActive(
+                trbTimeline.Value, _session.CurrentFrames.Count, ranges);
+            if (active == _session.CurrentIndex) return;
+            ShowFrame(active);
             if (lstDataList.SelectedIndex != _session.CurrentIndex)
                 lstDataList.SelectedIndex = _session.CurrentIndex;
         }
