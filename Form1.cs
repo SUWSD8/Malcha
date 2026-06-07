@@ -120,6 +120,7 @@ namespace Malcha
             tips.SetToolTip(btnSetStartPoint, "구간 시작 In — I · [ · Q");
             tips.SetToolTip(btnSetEndPoint, "구간 끝 Out — O · ] · W");
             tips.SetToolTip(btnDeleteSelection, "선택 구간 컷 (정지 중) · 재생 중: X / Delete");
+            tips.SetToolTip(btnApplyFilter, "필터 적용 — 제거 예상 미리보기 후 정제 (선택)");
             tips.SetToolTip(trbTimeline, "썸=재생 · 빨강=삭제 구간(마우스 올리면 정보) · 주황=선택 · Ctrl+드래그: 구간");
             tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");

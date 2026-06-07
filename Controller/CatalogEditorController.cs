@@ -377,13 +377,7 @@ namespace Malcha.Controller
             if (_session.CurrentFrames.Count == 0) { _view.ShowMessage("정제할 데이터 없음", "알림"); return; }
 
             var options = new FrameRefinementFilter.Options();
-            if (!RefinementOptionsDialog.TryShow(_view.Owner, options, out options))
-                return;
-
-            string imageBefore = ImageCoverage.FormatSummary(_session.CurrentFrames, _session.FrameImagePaths);
-            if (_view.ShowMessage(
-                    $"현재 {_session.CurrentFrames.Count:N0}개 프레임을 정제합니다.\n{imageBefore}\n\n계속?",
-                    "필터 적용", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+            if (!RefinementDialog.TryShow(_view.Owner, _session.CurrentFrames, options, out options))
                 return;
 
             _session.PushUndo();
@@ -394,6 +388,7 @@ namespace Malcha.Controller
             {
                 progress = _view.ShowProgress("데이터 정제");
                 var uiProgress = new Progress<FrameRefinementFilter.ProgressReport>(r => progress.Report(r.Percent, r.Message));
+                string imageBefore = ImageCoverage.FormatSummary(_session.CurrentFrames, _session.FrameImagePaths);
                 FrameRefinementFilter.Result refineResult;
                 try
                 {
@@ -425,12 +420,7 @@ namespace Malcha.Controller
                 _view.SetStatusText(
                     $"정제 {_session.CurrentFrames.Count:N0}프 · {imageAfter} · WSL 재연동 필요");
 
-                _view.ShowMessage(
-                    FormatRefineResultMessage(refineResult, imageBefore, imageAfter),
-                    "필터 적용",
-                    icon: refineResult.RemovedTotal > refineResult.OriginalCount * 0.5
-                        ? MessageBoxIcon.Warning
-                        : MessageBoxIcon.Information);
+                RefinementResultDialog.Show(_view.Owner, refineResult, imageBefore, imageAfter);
             }
             catch (Exception ex) { _view.ShowMessage($"정제 오류: {ex.Message}", "필터 적용", icon: MessageBoxIcon.Error); }
             finally { _view.CloseProgress(progress); _view.SetCatalogBusy(false); _view.EnsureVisible(); }
@@ -830,31 +820,6 @@ namespace Malcha.Controller
             if (indices.Count > maxShow)
                 text += $" … 외 {indices.Count - maxShow}개";
             return text;
-        }
-
-        private static string FormatRefineResultMessage(
-            FrameRefinementFilter.Result result,
-            string imageBefore,
-            string imageAfter)
-        {
-            double removedPct = result.OriginalCount > 0
-                ? 100.0 * result.RemovedTotal / result.OriginalCount
-                : 0;
-            var lines = new List<string>
-            {
-                $"프레임: {result.OriginalCount:N0} → {result.Frames.Count:N0}  (−{result.RemovedTotal:N0}, {removedPct:F1}%)",
-                $"  · 중복 {result.RemovedDuplicate:N0}  · 스파이크 {result.RemovedSpike:N0}  · 범위초과 {result.RemovedOutOfRange:N0}"
-            };
-            if (result.RemovedWrongMode > 0)
-                lines.Add($"  · user 외 모드 {result.RemovedWrongMode:N0}");
-            lines.Add(string.Empty);
-            lines.Add($"이미지: {imageBefore}");
-            lines.Add($"       → {imageAfter}");
-            lines.Add(string.Empty);
-            lines.Add("★ 「정제 데이터 연동」 후 학습하세요.");
-            if (removedPct >= 50)
-                lines.Add("※ 50% 이상 제거됨 — 필터 설정을 완화하는 것을 권장합니다.");
-            return string.Join(Environment.NewLine, lines);
         }
     }
 }

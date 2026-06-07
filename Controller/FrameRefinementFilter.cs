@@ -45,6 +45,13 @@ namespace Malcha
             public int RemovedTotal => OriginalCount - Frames.Count;
         }
 
+        // UI 미리보기용 — 실제 데이터 변경 없음
+        internal static Result Preview(IReadOnlyList<Frame> frames, Options? options = null)
+        {
+            var copy = frames is List<Frame> list ? new List<Frame>(list) : new List<Frame>(frames);
+            return Refine(copy, options);
+        }
+
         // 프레임 목록 정제 실행
         internal static Result Refine(
             IReadOnlyList<Frame> frames,
