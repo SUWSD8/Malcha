@@ -14,7 +14,7 @@ namespace Malcha
 
         private void InitializeTrainingPanel()
         {
-            _trainingController = new TrainingController(this);
+            _trainingController = new TrainingController(this, _session);
             _scoreToolTip = new ToolTip();
             dgvPilotList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvPilotList.MultiSelect = false;
@@ -139,6 +139,10 @@ namespace Malcha
                 "모델 삭제",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning) == DialogResult.Yes;
+
+        bool ITrainingView.ConfirmTrainWithStaleSync(string message) =>
+            MessageBox.Show(this, message, "학습 데이터 불일치",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
 
         string? ITrainingView.PromptMycarFolder(string? suggestedUncPath) =>
             MycarFolderDialog.Show(this, suggestedUncPath);

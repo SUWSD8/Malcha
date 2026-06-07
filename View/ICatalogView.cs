@@ -25,6 +25,7 @@ namespace Malcha.View
         void RequestShowFrame(int index);
         void RequestRefreshFrameListDuringPlayback(int playheadIndex);
         void RequestStopPlayback();
+        void RequestClearCrossTestUi();
         void OnFramesRemoved(int start, int count);
         void ResetChartHighlight();
 

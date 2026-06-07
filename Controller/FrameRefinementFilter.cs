@@ -18,6 +18,12 @@ namespace Malcha
 
             // 허용 범위를 벗어난 절대값(센서 오류)
             public double OutOfRangeLimit { get; set; } = 1.25;
+
+            // 중복으로 제거하더라도 이 간격마다 최소 1프레임 유지 (CNN 입력 다양성)
+            public int MinKeepStride { get; set; } = 4;
+
+            // true면 user/mode=user 프레임만 유지
+            public bool UserModeOnly { get; set; }
         }
 
         // 정제 진행률 보고
@@ -35,6 +41,7 @@ namespace Malcha
             public int RemovedDuplicate { get; init; }
             public int RemovedSpike { get; init; }
             public int RemovedOutOfRange { get; init; }
+            public int RemovedWrongMode { get; init; }
             public int RemovedTotal => OriginalCount - Frames.Count;
         }
 
@@ -51,7 +58,8 @@ namespace Malcha
                 return result;
 
             var kept = new List<Frame>(frames.Count);
-            int dup = 0, spike = 0, outOfRange = 0;
+            int dup = 0, spike = 0, outOfRange = 0, wrongMode = 0;
+            int lastKeptSourceIndex = -1;
             int reportEvery = Math.Max(1, frames.Count / 100);
 
             for (int i = 0; i < frames.Count; i++)
@@ -70,6 +78,12 @@ namespace Malcha
 
                 var cur = frames[i];
 
+                if (options.UserModeOnly && !IsUserMode(cur))
+                {
+                    wrongMode++;
+                    continue;
+                }
+
                 if (IsOutOfRange(cur, options.OutOfRangeLimit))
                 {
                     outOfRange++;
@@ -78,8 +92,14 @@ namespace Malcha
 
                 if (kept.Count > 0 && ValuesSimilar(cur, kept[kept.Count - 1], options.ValueEpsilon))
                 {
-                    dup++;
-                    continue;
+                    bool keepForStride = options.MinKeepStride > 0
+                        && lastKeptSourceIndex >= 0
+                        && i - lastKeptSourceIndex >= options.MinKeepStride;
+                    if (!keepForStride)
+                    {
+                        dup++;
+                        continue;
+                    }
                 }
 
                 if (IsIsolatedSpike(frames, i, options.SpikeThreshold))
@@ -89,6 +109,7 @@ namespace Malcha
                 }
 
                 kept.Add(cur);
+                lastKeptSourceIndex = i;
             }
 
             ReindexFrames(kept);
@@ -101,9 +122,13 @@ namespace Malcha
                 OriginalCount = frames.Count,
                 RemovedDuplicate = dup,
                 RemovedSpike = spike,
-                RemovedOutOfRange = outOfRange
+                RemovedOutOfRange = outOfRange,
+                RemovedWrongMode = wrongMode
             };
         }
+
+        private static bool IsUserMode(Frame f) =>
+            string.Equals(f.Mode, "user", StringComparison.OrdinalIgnoreCase);
 
         // 정제 후 프레임 Index 재부여
         private static void ReindexFrames(List<Frame> frames)

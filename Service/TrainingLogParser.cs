@@ -42,6 +42,8 @@ namespace Malcha.Service
         private readonly List<TrainingEpoch> _collectedEpochs = new();
 
         public bool HadPythonError { get; private set; }
+        public bool SawEarlyStopping { get; private set; }
+        public bool SawTrainingFinished { get; private set; }
         public IReadOnlyList<TrainingEpoch> CollectedEpochs => _collectedEpochs;
         public int? PlannedTotalEpochs { get; private set; }
 
@@ -54,6 +56,8 @@ namespace Malcha.Service
             _collectedEpochs.Clear();
             PlannedTotalEpochs = null;
             HadPythonError = false;
+            SawEarlyStopping = false;
+            SawTrainingFinished = false;
         }
 
         public string? TryFormat(string? rawLine)
@@ -62,6 +66,15 @@ namespace Malcha.Service
             var line = rawLine.Trim();
 
             if (IsImportantStatus(line)) return line;
+
+            if (line.Contains("early stopping", StringComparison.OrdinalIgnoreCase))
+            {
+                SawEarlyStopping = true;
+                return "[조기 종료] Early Stopping — val_loss가 patience 동안 개선되지 않아 학습 중단";
+            }
+
+            if (line.Contains("Finished training", StringComparison.OrdinalIgnoreCase))
+                SawTrainingFinished = true;
 
             if (IsPythonError(line))
             {
@@ -155,7 +168,9 @@ namespace Malcha.Service
             || line.Contains("KeyError", StringComparison.OrdinalIgnoreCase)
             || line.Contains("IndexError", StringComparison.OrdinalIgnoreCase)
             || line.Contains("FileNotFoundError", StringComparison.OrdinalIgnoreCase)
-            || line.Contains("Exception:", StringComparison.OrdinalIgnoreCase);
+            || line.Contains("Exception:", StringComparison.OrdinalIgnoreCase)
+            || line.Contains("conda: command not found", StringComparison.OrdinalIgnoreCase)
+            || line.StartsWith("[오류]", StringComparison.Ordinal);
 
         private static bool IsImportantStatus(string line) =>
             line.Contains("Saving model", StringComparison.OrdinalIgnoreCase)

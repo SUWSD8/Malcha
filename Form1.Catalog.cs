@@ -95,6 +95,12 @@ namespace Malcha
         }
 
         void ICatalogView.RequestStopPlayback() => StopPlayback();
+
+        void ICatalogView.RequestClearCrossTestUi()
+        {
+            HideModelLabels();
+            picVideoScreen.Invalidate();
+        }
         void ICatalogView.OnFramesRemoved(int start, int count) => _display.DeleteCacheRange(start, count);
         void ICatalogView.ResetChartHighlight() => _display.ResetChartHighlight();
 

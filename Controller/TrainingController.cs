@@ -19,6 +19,8 @@ namespace Malcha.Controller
     {
 
         private readonly ITrainingView _view;
+        private readonly CatalogSession _session;
+        private readonly WslDataSyncService _dataSync = WslDataSyncService.Instance;
 
         private readonly WslTrainingService _wsl = WslTrainingService.Instance;
 
@@ -30,11 +32,12 @@ namespace Malcha.Controller
         private CancellationTokenSource? _trainCts;
         private volatile bool _trainingInProgress;
 
-        public TrainingController(ITrainingView view)
+        public TrainingController(ITrainingView view, CatalogSession session)
 
         {
 
             _view = view;
+            _session = session;
 
             _view.ViewLoaded += async (_, _) =>
             {
@@ -79,10 +82,31 @@ namespace Malcha.Controller
 
             {
 
-                _view.ShowError("'정제 데이터 연동' 버튼으로 WSL data를 먼저 보내 주세요.");
+                _view.ShowError("'정제 데이터 연동' 후 프레임·이미지 수가 1:1로 일치해야 학습할 수 있습니다.\n연동 로그에서 프레임/이미지 수를 확인하세요.");
 
                 return;
 
+            }
+
+            string fingerprint = TrainingDataFingerprint.Compute(_session.CurrentFrames, _session.FrameImagePaths);
+            if (!_dataSync.IsSyncedWith(fingerprint))
+            {
+                string staleMsg =
+                    "현재 화면의 카탈로그가 마지막 WSL 연동과 다릅니다.\n" +
+                    "(필터·편집·삭제 후 「정제 데이터 연동」을 하지 않은 상태)\n\n" +
+                    "그래도 WSL tub 데이터로 학습을 진행할까요?\n" +
+                    "「아니오」를 누르고 연동 후 다시 시도하는 것을 권장합니다.";
+                if (!_view.ConfirmTrainWithStaleSync(staleMsg))
+                    return;
+            }
+
+            var (total, _, missingImages) = ImageCoverage.Summarize(_session.CurrentFrames, _session.FrameImagePaths);
+            if (missingImages > 0 && total > 0)
+            {
+                _view.ShowError(
+                    $"화면에 이미지 누락 프레임 {missingImages:N0}/{total:N0}개가 있습니다.\n" +
+                    "정제 데이터 연동 전에 이미지 경로를 확인하세요.");
+                return;
             }
 
 
@@ -139,7 +163,10 @@ namespace Malcha.Controller
                     if (_trainCts.Token.IsCancellationRequested) return;
 
                     _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] 학습 실패");
-                    _view.ShowError("WSL 학습 실패");
+                    string detail = _logParser.HadPythonError
+                        ? "Python 오류(KeyError 등) — 정제 데이터 연동·프레임/이미지 수를 확인하세요."
+                        : "WSL train.py가 0이 아닌 코드로 종료됐습니다. 학습 로그의 [오류] 줄을 확인하세요.";
+                    _view.ShowError($"WSL 학습 실패\n\n{detail}");
                     return;
                 }
 
@@ -151,6 +178,8 @@ namespace Malcha.Controller
                     _view.ShowError("학습 중 Python 오류(KeyError 등)가 발생했습니다.\n정제 데이터 연동 후 프레임·이미지 수를 확인하세요.");
                     return;
                 }
+
+                AppendTrainingCompletionSummary(name);
 
                 _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] 학습 완료 — 결과 불러오는 중…");
                 await LoadHistoryAsync(name, true, _logParser.CollectedEpochs.ToList());
@@ -187,6 +216,33 @@ namespace Malcha.Controller
             _view.SetTrainingButtonEnabled(true);
             _view.SetTrainingButtonText("학습 시작");
             _view.SetForceStopTrainingEnabled(false);
+        }
+
+        private void AppendTrainingCompletionSummary(string modelName)
+        {
+            int last = _logParser.CollectedEpochs.Count > 0
+                ? _logParser.CollectedEpochs[^1].Epoch
+                : 0;
+            int? planned = _logParser.PlannedTotalEpochs;
+            string epochPart = planned.HasValue && planned.Value > 0
+                ? $"Epoch {last}/{planned.Value}"
+                : $"Epoch {last}";
+
+            if (_logParser.SawEarlyStopping)
+            {
+                _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] {epochPart} — DonkeyCar Early Stopping으로 종료");
+                _view.AppendLog("  ※ train loss는 아직 하강 중일 수 있음 (val_loss 개선 정체 시 중단)");
+                return;
+            }
+
+            if (planned.HasValue && last > 0 && last < planned.Value)
+            {
+                _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] {epochPart} — 계획 epoch 미만 종료 (로그에서 [오류]·Traceback 확인)");
+                return;
+            }
+
+            if (last > 0)
+                _view.AppendLog($"[{DateTime.Now:HH:mm:ss}] {epochPart} — 전체 epoch 완료");
         }
 
 

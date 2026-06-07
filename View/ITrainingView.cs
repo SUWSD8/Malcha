@@ -29,6 +29,7 @@ namespace Malcha.View
         void ShowInfo(string title, string message);
         void ShowError(string message);
         bool ConfirmDeleteModel(TrainingResult model, string timeLabel);
+        bool ConfirmTrainWithStaleSync(string message);
 
         // mycar 폴더 선택 (취소 시 null)
         string? PromptMycarFolder(string? suggestedUncPath);

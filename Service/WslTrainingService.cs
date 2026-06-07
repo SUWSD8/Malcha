@@ -69,7 +69,9 @@ namespace Malcha.Service
             TrainingSettingsRepository.Instance.Save(new TrainingSettingsRepository.TrainingSettings
             {
                 Distro = _distro,
-                CarDirectoryLinux = _carDirectoryLinux
+                CarDirectoryLinux = _carDirectoryLinux,
+                LastSyncedFingerprint = WslDataSyncService.Instance.LastSyncedFingerprint,
+                LastSyncedFrameCount = WslDataSyncService.Instance.LastSyncedFrameCount
             });
         }
 
@@ -113,9 +115,9 @@ namespace Malcha.Service
             if (!IsConfigured)
                 throw new InvalidOperationException("mycar 폴더가 설정되지 않았습니다.");
 
+            // 학습 프로세스는 Task.Run 취소와 분리 — 취소는 RunTrainProcess 내부에서 WSL 프로세스만 중단
             return await Task.Run(
-                () => RunTrainProcess(tubDirName, modelFileName, output, cancellationToken),
-                cancellationToken).ConfigureAwait(false);
+                () => RunTrainProcess(tubDirName, modelFileName, output, cancellationToken)).ConfigureAwait(false);
         }
 
         // models/{name}.h5 가중치 파일 삭제
@@ -140,6 +142,7 @@ namespace Malcha.Service
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "wsl.exe",
+                    // conda는 .bashrc 초기화가 필요 — -lc 는 conda: command not found 로 즉시 실패
                     Arguments = $"-d {_distro} -- bash -ic \"conda activate e2e_env && cd {_carDirectoryLinux} && python3 -u train.py --tub {tubDirName} --model models/{modelFileName}\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
@@ -169,7 +172,11 @@ namespace Malcha.Service
                 while (!process.WaitForExit(200))
                     cancellationToken.ThrowIfCancellationRequested();
 
-                return process.ExitCode == 0;
+                process.WaitForExit();
+                int exitCode = process.ExitCode;
+                if (exitCode != 0)
+                    output?.Report($"[오류] WSL 종료 코드 {exitCode} — 로그에 conda/train.py 오류가 있는지 확인하세요.");
+                return exitCode == 0;
             }
             catch (OperationCanceledException)
             {

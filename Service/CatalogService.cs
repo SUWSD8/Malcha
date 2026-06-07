@@ -95,11 +95,12 @@ namespace Malcha.Service
         // FrameRefinementFilter로 프레임 자동 정제
         public Task<FrameRefinementFilter.Result> RefineAsync(
             IReadOnlyList<Frame> frames,
+            FrameRefinementFilter.Options? options,
             IProgress<FrameRefinementFilter.ProgressReport>? progress,
             CancellationToken cancellationToken)
         {
             var copy = frames is List<Frame> list ? list : new List<Frame>(frames);
-            return Task.Run(() => FrameRefinementFilter.Refine(copy, null, progress, cancellationToken), cancellationToken);
+            return Task.Run(() => FrameRefinementFilter.Refine(copy, options, progress, cancellationToken), cancellationToken);
         }
 
         // 최신 백업과 정제본을 병합
