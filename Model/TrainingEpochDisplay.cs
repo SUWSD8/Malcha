@@ -5,6 +5,7 @@ namespace Malcha.Model
     internal static class TrainingEpochDisplay
     {
         private const int RecentEpochCount = 5;
+        private const int MaxCompactEpochRows = 12;
 
         public static string NormalizeModelName(string name)
         {
@@ -24,22 +25,39 @@ namespace Malcha.Model
 
             if (epochs.Count == 0)
             {
-                lines.Add($"[{modelName}] 점수 대기");
+                string totalHint = plannedTotal.HasValue ? $"/{plannedTotal.Value}" : string.Empty;
+                lines.Add($"[{modelName}]  반복 0{totalHint}회 — 점수 대기");
                 return lines;
             }
 
             int total = plannedTotal ?? epochs[^1].Epoch;
-            var last = epochs[^1];
             var best = TrainingScore.BestValEpoch(epochs)!;
             double bestScore = TrainingScore.FromLoss(best.ValLoss);
-            double lastValScore = TrainingScore.FromLoss(last.ValLoss);
-            double lastTrainScore = TrainingScore.FromLoss(last.Loss);
 
             lines.Add(string.Format(CultureInfo.InvariantCulture,
-                "★ {0}  최고 {1:F1}점 (Ep{2})", modelName, bestScore, best.Epoch));
+                "[{0}]  반복 {1}/{2}회", modelName, epochs.Count, total));
             lines.Add(string.Format(CultureInfo.InvariantCulture,
-                "현재 Ep{0}  검증 {1:F1} | 학습 {2:F1}  ({3}/{4}ep)",
-                last.Epoch, lastValScore, lastTrainScore, epochs.Count, total));
+                "★ Ep {0}/{1}  최고 검증 {2:F1}점", best.Epoch, total, bestScore));
+
+            int showFrom = epochs.Count <= MaxCompactEpochRows
+                ? 0
+                : epochs.Count - MaxCompactEpochRows;
+            if (showFrom > 0)
+                lines.Add($"— 최근 {epochs.Count - showFrom}회 (전체 {epochs.Count}회) —");
+
+            for (int i = showFrom; i < epochs.Count; i++)
+            {
+                var e = epochs[i];
+                double valSc = TrainingScore.FromLoss(e.ValLoss);
+                double trainSc = TrainingScore.FromLoss(e.Loss);
+                string mark = string.Empty;
+                if (Math.Abs(e.ValLoss - best.ValLoss) < 1e-9) mark += " ★";
+                if (i == epochs.Count - 1) mark += " ◀";
+                lines.Add(string.Format(CultureInfo.InvariantCulture,
+                    "  Ep {0,3}/{1}  검증 {2:F1} | 학습 {3:F1}{4}",
+                    e.Epoch, total, valSc, trainSc, mark));
+            }
+
             return lines;
         }
 
