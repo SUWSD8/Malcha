@@ -26,11 +26,11 @@ namespace Malcha.Service
             if (!wsl.IsConfigured)
                 throw new InvalidOperationException("mycar 폴더가 설정되지 않았습니다.");
 
-            var modelFile = modelName.EndsWith(".h5", StringComparison.OrdinalIgnoreCase)
-                ? modelName : $"{modelName}.h5";
-            var modelUnc = wsl.GetUncPath($"{wsl.CarDirectoryLinux}/models/{modelFile}");
-            if (!File.Exists(modelUnc))
-                throw new FileNotFoundException($"모델 파일 없음: {modelUnc}");
+            string logicalName = WslTrainingService.NormalizeBaseName(modelName);
+            if (!wsl.ModelWeightsExist(logicalName))
+                throw new FileNotFoundException($"모델 파일 없음: {wsl.GetModelWeightsUncPath(logicalName)}");
+
+            var modelFile = WslTrainingService.ToFinalFileName(logicalName);
 
             var workDir = Path.Combine(Path.GetTempPath(), "MalchaCrossTest", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDir);
@@ -38,7 +38,7 @@ namespace Malcha.Service
             try
             {
                 return await RunBatchCoreAsync(
-                    wsl, modelName, modelFile, frames, modelType, progress, cancellationToken, workDir);
+                    wsl, logicalName, modelFile, frames, modelType, progress, cancellationToken, workDir);
             }
             catch (OperationCanceledException)
             {

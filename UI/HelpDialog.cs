@@ -34,7 +34,7 @@ namespace Malcha
                 (Array.Empty<string>(), "점수 영역 — 100점 만점 요약 (검증 val loss 기준). 마우스를 올리면 epoch별 상세."),
                 (Array.Empty<string>(), "모델 목록 — 이름·시간·설명. 같은 이름이 여러 개면 시간으로 구분."),
                 (Array.Empty<string>(), "학습 시작 — mycar/data 로 학습. 로그에 「data: N 프레임, M 이미지」가 나오면 연동 확인."),
-                (Array.Empty<string>(), "학습 강제 종료 — 진행 중인 WSL 학습 중단."),
+                (Array.Empty<string>(), "학습 강제 종료 — 중단 후 .h5 저장·모델 목록 반영 → 목록에서 선택 → 교차 테스트"),
                 (Array.Empty<string>(), "교차 테스트 — 선택 모델로 카탈로그 inference, 주황(기록)·노랑(예측) 화살표 비교"),
                 (Array.Empty<string>(), "설명 추가 — 선택한 모델에 메모 저장."),
                 (Array.Empty<string>(), "모델 삭제 — 목록에서 행을 클릭해 선택 후 삭제 (database.json 1건 + .h5)."),

@@ -28,7 +28,7 @@ namespace Malcha.Controller
                 return;
             }
 
-            string modelName = trainingView.SelectedModelName;
+            string modelName = WslTrainingService.NormalizeBaseName(trainingView.SelectedModelName);
             if (string.IsNullOrWhiteSpace(modelName))
             {
                 trainingView.ShowError("모델 목록에서 테스트할 모델을 선택하세요.");

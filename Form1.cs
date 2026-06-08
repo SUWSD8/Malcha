@@ -125,6 +125,8 @@ namespace Malcha
             tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
+            tips.SetToolTip(btnshutdown, "학습 중단 — 처음 학습이면 Ep까지 저장 · 기존 모델 있으면 .h5 유지");
+            tips.SetToolTip(btnRestoreModelBackup, "선택 모델의 .malcha_backup.h5 → .h5 복구 (학습 시작 시 자동 백업)");
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");

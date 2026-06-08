@@ -91,6 +91,7 @@
             tableLayoutPanel1 = new TableLayoutPanel();
             btnEnableDelete = new Button();
             btnconnet = new Button();
+            btnRestoreModelBackup = new Button();
             lstViewScore = new ListBox();
             txtModelMemo = new TextBox();
             dgvPilotList = new DataGridView();
@@ -865,11 +866,14 @@
             tableLayoutPanel1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             tableLayoutPanel1.Controls.Add(btnEnableDelete, 0, 0);
             tableLayoutPanel1.Controls.Add(btnconnet, 1, 0);
-            tableLayoutPanel1.Location = new Point(3, 484);
+            tableLayoutPanel1.Controls.Add(btnRestoreModelBackup, 0, 1);
+            tableLayoutPanel1.SetColumnSpan(btnRestoreModelBackup, 2);
+            tableLayoutPanel1.Location = new Point(3, 448);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
-            tableLayoutPanel1.RowCount = 1;
+            tableLayoutPanel1.RowCount = 2;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            tableLayoutPanel1.Size = new Size(505, 36);
+            tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel1.Size = new Size(505, 72);
             tableLayoutPanel1.TabIndex = 67;
             // 
             // btnEnableDelete
@@ -899,6 +903,20 @@
             btnconnet.TabIndex = 65;
             btnconnet.Text = "설명 추가";
             btnconnet.UseVisualStyleBackColor = false;
+            // 
+            // btnRestoreModelBackup
+            // 
+            btnRestoreModelBackup.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            btnRestoreModelBackup.BackColor = Color.FromArgb(53, 48, 49);
+            btnRestoreModelBackup.FlatStyle = FlatStyle.Popup;
+            btnRestoreModelBackup.Font = new Font("맑은 고딕", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
+            btnRestoreModelBackup.ForeColor = SystemColors.ButtonHighlight;
+            btnRestoreModelBackup.Location = new Point(3, 39);
+            btnRestoreModelBackup.Name = "btnRestoreModelBackup";
+            btnRestoreModelBackup.Size = new Size(499, 30);
+            btnRestoreModelBackup.TabIndex = 66;
+            btnRestoreModelBackup.Text = " 백업에서 복구 (.malcha_backup.h5) ";
+            btnRestoreModelBackup.UseVisualStyleBackColor = false;
             // 
             // lstViewScore
             // 
@@ -1056,6 +1074,7 @@
         private TextBox txtModelMemo;
         private Button btnconnet;
         private Button btnEnableDelete;
+        private Button btnRestoreModelBackup;
         private Button btnCrossTest;
         private Button btnRunTraining;
         private DataGridView dgvPilotList;
