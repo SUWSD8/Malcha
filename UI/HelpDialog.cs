@@ -44,6 +44,9 @@ namespace Malcha
                 (Array.Empty<string>(), "★ 최고 점수 — 학습 중 가장 좋았던 검증(val) 성능. epoch가 지나도 이 값은 유지됩니다."),
                 (Array.Empty<string>(), "현재 Ep — 마지막 epoch의 검증·학습 점수. 검증 점수가 내려가면 과적합일 수 있습니다."),
                 (Array.Empty<string>(), "공식: 점수 = 100 ÷ (1 + val_loss). loss가 줄수록 점수는 올라갑니다."),
+                (Array.Empty<string>(), "원본(중복 프레임 많음)은 val 점수가 높게 나오기 쉽습니다. 정제 후 점수가 낮아져도 실주행 품질은 나아질 수 있습니다."),
+                (Array.Empty<string>(), "교차 테스트 — 예측(노랑)이 기록(주황)을 따라가야 합니다. 예측이 거의 안 움직이면 정제가 주행 프레임까지 지운 경우가 많습니다."),
+                (Array.Empty<string>(), "필터 「스마트 권장」= 화면이 거의 같고 라벨도 같을 때만 제거. 코너·장면 변화는 유지."),
                 (Array.Empty<string>(), "같은 data로 학습을 여러 번 해도 점수가 비슷한 것은 정상입니다. data·epoch·수동 편집을 바꿀 때 차이가 납니다."),
             }),
             ("데이터", new[]

@@ -83,8 +83,16 @@ namespace Malcha.Controller
 
                 double mae = ComputeAngleMae(start, end);
                 var predAngles = predictions.Select(p => p.Angle).ToList();
+                var predThrottles = predictions.Select(p => p.Throttle).ToList();
                 string spread = predAngles.Count > 0
                     ? $"\n예측 조향 범위: {predAngles.Min():F3} ~ {predAngles.Max():F3}"
+                    : "";
+                double angleSpan = predAngles.Count > 0 ? predAngles.Max() - predAngles.Min() : 0;
+                double throttleSpan = predThrottles.Count > 0 ? predThrottles.Max() - predThrottles.Min() : 0;
+                string collapseWarn = angleSpan < 0.05 && throttleSpan < 0.05
+                    ? "\n\n⚠ 예측값이 거의 변하지 않습니다.\n" +
+                      "  · 정제가 주행 프레임까지 지웠거나 학습 epoch가 부족할 수 있습니다.\n" +
+                      "  · 「권장」 정제(정지 구간만) 후 재학습·재연동을 권장합니다."
                     : "";
                 string errNote = result.Errors.Count > 0
                     ? $"\n\n실패 {result.Errors.Count:N0}건 (이미지 없음 등)"
@@ -94,7 +102,7 @@ namespace Malcha.Controller
 
                 trainingView.ShowInfo("교차 테스트 완료",
                     $"모델: {modelName}\n{rangeLabel}\n예측: {predictions.Count:N0} 프레임\n조향 MAE: {mae:F3}{spread}\n\n" +
-                    "주황 = 기록값 · 노랑 = 모델 예측\n프레임을 이동하며 비교하세요." + errNote);
+                    "주황 = 기록값 · 노랑 = 모델 예측\n프레임을 이동하며 비교하세요." + collapseWarn + errNote);
             }
             catch (OperationCanceledException)
             {

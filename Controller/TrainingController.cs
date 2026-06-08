@@ -132,7 +132,12 @@ namespace Malcha.Controller
 
             _view.AppendLog(WslDataSyncService.Instance.DescribeSyncedData());
 
-
+            if (WslDataSyncService.Instance.TryGetSyncedDataCounts(out int syncFrames, out _)
+                && syncFrames > 0 && syncFrames < 2500)
+            {
+                _view.AppendLog(
+                    $"※ data {syncFrames:N0}프 — 미정제 원본보다 적으면 val 점수·epoch가 낮게 나올 수 있음");
+            }
 
             var logProgress = new Progress<string>(line =>
             {

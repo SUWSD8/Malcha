@@ -377,7 +377,7 @@ namespace Malcha.Controller
             if (_session.CurrentFrames.Count == 0) { _view.ShowMessage("정제할 데이터 없음", "알림"); return; }
 
             var options = new FrameRefinementFilter.Options();
-            if (!RefinementDialog.TryShow(_view.Owner, _session.CurrentFrames, options, out options))
+            if (!RefinementDialog.TryShow(_view.Owner, _session.CurrentFrames, _session.FrameImagePaths, options, out options))
                 return;
 
             _session.PushUndo();
@@ -393,7 +393,9 @@ namespace Malcha.Controller
                 try
                 {
                     refineResult = await _catalog.RefineAsync(
-                        _session.CurrentFrames.ToList(), options, uiProgress, progress.Token);
+                        _session.CurrentFrames.ToList(),
+                        _session.FrameImagePaths,
+                        options, uiProgress, progress.Token);
                 }
                 catch (OperationCanceledException) { _view.ShowMessage("정제 취소", "필터 적용"); return; }
 
