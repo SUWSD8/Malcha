@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Malcha.Service
 {
-    // WSL train.py 원시 출력 → UI에 필요한 줄만 추출 + Epoch 점수 수집
+    // WSL train.py 원시 출력 → Epoch 점수·Python 오류 수집 (lstLog는 원시 줄 그대로 표시)
     internal sealed class TrainingLogParser
     {
         // Epoch N/M ... loss ... val_loss (한 줄 요약)

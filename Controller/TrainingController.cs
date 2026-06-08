@@ -164,12 +164,12 @@ namespace Malcha.Controller
 
             var logProgress = new Progress<string>(line =>
             {
-                var formatted = _logParser.TryFormat(line);
-                if (formatted == null) return;
+                if (!string.IsNullOrWhiteSpace(line))
+                    _view.AppendLog(line);
 
-                _view.AppendLog(formatted);
-
-                if (_logParser.CollectedEpochs.Count > 0)
+                int epochCountBefore = _logParser.CollectedEpochs.Count;
+                _logParser.TryFormat(line);
+                if (_logParser.CollectedEpochs.Count > epochCountBefore)
                     RefreshLiveScores(name);
             });
 
