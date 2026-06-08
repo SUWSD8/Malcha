@@ -41,8 +41,7 @@ namespace Malcha
             _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
-            _timelineBinder = new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi,
-                () => _session.DeletedEntries, () => _session.CurrentFrames.Count, OnDeletedTimelineHover);
+            _timelineBinder = new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi);
             _timelineBinder.Attach();
             new DeletedListSelectionBinder(lstDeleted, _deletedSelection, RefreshDeletedSelectionUi).Attach();
             new FrameListDragDropBinder(
@@ -124,7 +123,7 @@ namespace Malcha
             tips.SetToolTip(btnSetEndPoint, "구간 끝 Out — O · ] · W");
             tips.SetToolTip(btnDeleteSelection, "선택 구간 컷 (정지 중) · 재생 중: X / Delete");
             tips.SetToolTip(btnApplyFilter, "필터 적용 — 제거 예상 미리보기 후 정제 (선택)");
-            tips.SetToolTip(trbTimeline, "썸=재생 · 빨강=삭제 구간(마우스 올리면 정보) · 주황=선택 · Ctrl+드래그: 구간");
+            tips.SetToolTip(trbTimeline, "썸=재생 · 주황=선택 구간 · Ctrl+드래그: 구간");
             tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
@@ -172,22 +171,6 @@ namespace Malcha
 
         private void InvalidateTimelineMarkers() => _timelineBinder?.InvalidateTimeline();
 
-        private void OnDeletedTimelineHover(string? text)
-        {
-            if (!string.IsNullOrEmpty(text))
-            {
-                toolStripStatusLabel1.Text = text;
-                toolStripStatusLabel1.ForeColor = Color.FromArgb(255, 160, 140);
-                return;
-            }
-
-            toolStripStatusLabel1.ForeColor = SystemColors.ButtonHighlight;
-            if (_playCts != null) UpdatePlaybackStatusBar();
-            else if (_selection.HasSelection) RefreshSelectionUi();
-            else if (_deletedSelection.HasSelection) RefreshDeletedSelectionUi();
-            else RestoreIdleStatusBar();
-        }
-
         private void SyncTimeline(int activeIndex)
         {
             if (_session.CurrentFrames.Count == 0)
@@ -196,10 +179,8 @@ namespace Malcha
                 return;
             }
 
-            var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
-            int max = TimelineVirtualMap.VirtualMax(_session.CurrentFrames.Count, _session.DeletedEntries);
-            int target = Math.Clamp(
-                TimelineVirtualMap.ActiveToVirtual(activeIndex, ranges), 0, max);
+            int max = Math.Max(0, _session.CurrentFrames.Count - 1);
+            int target = Math.Clamp(activeIndex, 0, max);
 
             _timelineSync = true;
             try
@@ -226,9 +207,7 @@ namespace Malcha
 
             if (_session.CurrentFrames.Count == 0) return;
 
-            var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
-            int active = TimelineVirtualMap.VirtualToActive(
-                trbTimeline.Value, _session.CurrentFrames.Count, ranges);
+            int active = Math.Clamp(trbTimeline.Value, 0, _session.CurrentFrames.Count - 1);
 
             if (active != _session.CurrentIndex)
                 ShowFrame(active, syncTimeline: false);
@@ -629,9 +608,7 @@ namespace Malcha
             if (IsTimelineScrubbing())
                 _timelineScrubbing = true;
 
-            var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
-            int active = TimelineVirtualMap.VirtualToActive(
-                trbTimeline.Value, _session.CurrentFrames.Count, ranges);
+            var active = Math.Clamp(trbTimeline.Value, 0, _session.CurrentFrames.Count - 1);
 
             bool scrubbing = IsTimelineScrubbing();
             if (active == _session.CurrentIndex && !scrubbing) return;
