@@ -1,3 +1,5 @@
+using Malcha.UI;
+
 namespace Malcha
 {
     internal static class Program
@@ -6,7 +8,9 @@ namespace Malcha
         static void Main()
         {
             ApplicationConfiguration.Initialize();
-            Application.Run(new Form1());
+
+            var splash = new SplashForm();
+            Application.Run(new MalchaApplicationContext(splash));
         }
     }
 }

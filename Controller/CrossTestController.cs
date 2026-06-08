@@ -58,11 +58,17 @@ namespace Malcha.Controller
                 progress = catalogView.ShowProgress("교차 테스트");
                 progress.Report(0, $"{modelName} · {rangeLabel}");
 
+                var uiProgress = new Progress<(int Percent, string Message)>(u =>
+                {
+                    if (progress.IsClosed) return;
+                    progress.Report(u.Percent, u.Message);
+                });
+
                 var result = await _crossTest.RunBatchAsync(
                     modelName,
                     frames,
                     modelType,
-                    new Progress<(int Percent, string Message)>(u => progress.Report(u.Percent, u.Message)),
+                    uiProgress,
                     progress.Token);
 
                 var predictions = result.Predictions.Select(p => new CrossTestFramePrediction

@@ -19,11 +19,13 @@ namespace Malcha
             dgvPilotList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvPilotList.MultiSelect = false;
             btnRunTraining.Click += (_, _) => RunTrainingRequested?.Invoke(this, EventArgs.Empty);
+            btnshutdown.Click += (_, _) => StopTrainingRequested?.Invoke(this, EventArgs.Empty);
             btnconnet.Click += (_, _) => UpdateCommentRequested?.Invoke(this, EventArgs.Empty);
             btnEnableDelete.Click += (_, _) => DeleteModelRequested?.Invoke(this, EventArgs.Empty);
             dgvPilotList.SelectionChanged += (_, _) => ModelSelectionChanged?.Invoke(this, EventArgs.Empty);
             dgvPilotList.CellToolTipTextNeeded += OnPilotListCellToolTipNeeded;
             Load += (_, _) => ViewLoaded?.Invoke(this, EventArgs.Empty);
+            btnshutdown.Enabled = false;
         }
 
         TrainingResult? ITrainingView.SelectedModel => GetSelectedModel();
@@ -51,12 +53,14 @@ namespace Malcha
 
         public event EventHandler? ViewLoaded;
         public event EventHandler? RunTrainingRequested;
+        public event EventHandler? StopTrainingRequested;
         public event EventHandler? UpdateCommentRequested;
         public event EventHandler? DeleteModelRequested;
         public event EventHandler? ModelSelectionChanged;
 
         void ITrainingView.SetTrainingButtonEnabled(bool enabled) => btnRunTraining.Enabled = enabled;
         void ITrainingView.SetTrainingButtonText(string text) => btnRunTraining.Text = text;
+        void ITrainingView.SetForceStopTrainingEnabled(bool enabled) => btnshutdown.Enabled = enabled;
 
         void ITrainingView.ClearLog()
         {

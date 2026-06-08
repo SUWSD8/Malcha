@@ -35,6 +35,28 @@ namespace Malcha.Service
             var workDir = Path.Combine(Path.GetTempPath(), "MalchaCrossTest", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(workDir);
 
+            try
+            {
+                return await RunBatchCoreAsync(
+                    wsl, modelName, modelFile, frames, modelType, progress, cancellationToken, workDir);
+            }
+            catch (OperationCanceledException)
+            {
+                try { Directory.Delete(workDir, true); } catch { }
+                throw;
+            }
+        }
+
+        private async Task<CrossTestBatchResult> RunBatchCoreAsync(
+            WslTrainingService wsl,
+            string modelName,
+            string modelFile,
+            IReadOnlyList<(int Index, string ImagePath)> frames,
+            string? modelType,
+            IProgress<(int Percent, string Message)>? progress,
+            CancellationToken cancellationToken,
+            string workDir)
+        {
             var manifestPath = Path.Combine(workDir, "manifest.json");
             var outputPath = Path.Combine(workDir, "predictions.json");
 
@@ -44,7 +66,8 @@ namespace Malcha.Service
                 modelType = modelType ?? string.Empty,
                 frames = frames.Select(f => new { index = f.Index, image = f.ImagePath }).ToArray()
             };
-            await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest), cancellationToken);
+            await File.WriteAllTextAsync(manifestPath, JsonSerializer.Serialize(manifest), cancellationToken)
+                .ConfigureAwait(false);
 
             var scriptPath = ResolveScriptPath();
             if (!File.Exists(scriptPath))
@@ -65,8 +88,21 @@ namespace Malcha.Service
 
             var log = new StringBuilder();
             bool ok = await Task.Run(
-                () => RunWslProcess(wsl.Distro, bashCmd, log, progress, frames.Count, cancellationToken),
-                cancellationToken);
+                () =>
+                {
+                    Process? wslProcess = null;
+                    try
+                    {
+                        return RunWslProcess(wsl.Distro, bashCmd, log, progress, frames.Count, cancellationToken, out wslProcess);
+                    }
+                    finally
+                    {
+                        TerminateWslProcess(wslProcess);
+                    }
+                },
+                cancellationToken).ConfigureAwait(false);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (!File.Exists(outputPath))
             {
@@ -76,7 +112,7 @@ namespace Malcha.Service
             }
 
             progress?.Report((95, "결과 읽는 중…"));
-            var json = await File.ReadAllTextAsync(outputPath, cancellationToken);
+            var json = await File.ReadAllTextAsync(outputPath, cancellationToken).ConfigureAwait(false);
             var parsed = JsonSerializer.Deserialize<CrossTestJsonRoot>(json, JsonOptions())
                 ?? throw new InvalidOperationException("예측 JSON 파싱 실패");
 
@@ -110,9 +146,10 @@ namespace Malcha.Service
             StringBuilder log,
             IProgress<(int Percent, string Message)>? progress,
             int frameCount,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            out Process? process)
         {
-            Process? process = null;
+            process = null;
             try
             {
                 var startInfo = new ProcessStartInfo
@@ -132,13 +169,13 @@ namespace Malcha.Service
 
                 process.OutputDataReceived += (_, e) =>
                 {
-                    if (string.IsNullOrWhiteSpace(e.Data)) return;
+                    if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(e.Data)) return;
                     log.AppendLine(e.Data);
                     progress?.Report((40, e.Data.Length > 60 ? e.Data[..60] + "…" : e.Data));
                 };
                 process.ErrorDataReceived += (_, e) =>
                 {
-                    if (string.IsNullOrWhiteSpace(e.Data)) return;
+                    if (cancellationToken.IsCancellationRequested || string.IsNullOrWhiteSpace(e.Data)) return;
                     log.AppendLine(e.Data);
                 };
 
@@ -158,9 +195,32 @@ namespace Malcha.Service
             }
             catch (OperationCanceledException)
             {
-                try { process?.Kill(entireProcessTree: true); } catch { }
                 throw;
             }
+        }
+
+        private static void TerminateWslProcess(Process? process)
+        {
+            if (process == null) return;
+            try
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            catch { }
+            try
+            {
+                process.CancelOutputRead();
+                process.CancelErrorRead();
+            }
+            catch { }
+            try
+            {
+                if (!process.HasExited)
+                    process.WaitForExit(1500);
+            }
+            catch { }
+            try { process.Dispose(); } catch { }
         }
 
         private static JsonSerializerOptions JsonOptions() => new() { PropertyNameCaseInsensitive = true };

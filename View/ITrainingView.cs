@@ -13,12 +13,14 @@ namespace Malcha.View
 
         event EventHandler? ViewLoaded;
         event EventHandler? RunTrainingRequested;
+        event EventHandler? StopTrainingRequested;
         event EventHandler? UpdateCommentRequested;
         event EventHandler? DeleteModelRequested;
         event EventHandler? ModelSelectionChanged;
 
         void SetTrainingButtonEnabled(bool enabled);
         void SetTrainingButtonText(string text);
+        void SetForceStopTrainingEnabled(bool enabled);
         void ClearLog();
         void BindModelList(IReadOnlyList<TrainingResult> models, int? selectModelNumber = null);
         void AppendLog(string message);

@@ -14,6 +14,8 @@ namespace Malcha.Controller
             Keys.D3 or Keys.NumPad3 => 2.0f,
             Keys.D4 or Keys.NumPad4 => 3.0f,
             Keys.D5 or Keys.NumPad5 => 4.0f,
+            Keys.Up => 0.5f, // ↑ 누를 때마다 0.5x씩 증가
+            Keys.Down => -0.5f, // ↓ 누를 때마다 0.5x씩 감소
             _ => 0f
         };
 

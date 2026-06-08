@@ -8,8 +8,8 @@ namespace Malcha.Service
     // [Service] 정제된 카탈로그·이미지를 WSL mycar/data(tub)로 복사
     internal class WslDataSyncService
     {
-        public const string CatalogFileName = "catalog_0.catalog";
-        public const string CatalogManifestFileName = "catalog_0.catalog_manifest";
+        public const string CatalogFileName = "merged_final.catalog";
+        public const string CatalogManifestFileName = "merged_final.catalog_manifest";
         public const string ManifestFileName = "manifest.json";
         // DonkeyCar tub — cam/image_array 파일은 data/images/ 아래
         public const string ImagesSubDir = "images";
