@@ -45,6 +45,34 @@ namespace Malcha.Controller
             if (dlg.ShowDialog(_view.Owner) == DialogResult.OK) 
             {
                 string selectedFolder = dlg.SelectedPath;
+                
+                SaveFileManager.Instance.SetDataDirectory(selectedFolder);
+
+                string lastSavedFileName = "merged_final.catalog";
+                string lastSavedFilePath = Path.Combine(selectedFolder, lastSavedFileName);
+
+                if (File.Exists(lastSavedFilePath))
+                {
+                    // 사용자에게 이전에 작업한 내역을 이어서 할지 묻습니다 (UX 향상)
+                    var result = MessageBox.Show(
+                        $"이전에 작업한 저장 파일({lastSavedFileName})이 발견되었습니다.\n해당 파일부터 이어서 작업하시겠습니까?\n\n(아니오를 누르면 원본 파일들을 처음부터 새로 병합합니다.)",
+                        "이전 작업 불러오기",
+                        MessageBoxButtons.YesNoCancel,
+                        MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
+                    {
+                        // 사용자가 '예'를 누르면, 마지막 작업 파일 1개만 로드하도록 넘깁니다.
+                        // (배열에 lastSavedFilePath 하나만 담아서 전달)
+                        await LoadMultipleCatalogsAsync(new[] { lastSavedFilePath }, selectedFolder);
+                        return; // 로드 완료 후 메서드 종료
+                    }
+                    else if (result == DialogResult.Cancel)
+                    {
+                        return; // 폴더 선택 자체를 취소함
+                    }
+                    // '아니오'를 누른 경우, 아래의 원본 탐색 및 새로 병합 로직으로 계속 진행됩니다.
+                }
 
                 // 1. 하위 폴더(backups 등) 무시하고 최상단에서만 검색
                 string[] topLevelCatalogs = Directory.GetFiles(selectedFolder, "*.catalog", SearchOption.TopDirectoryOnly);
@@ -142,6 +170,7 @@ namespace Malcha.Controller
             try
             {
                 await _dataSync.ClearSyncedDataAsync();
+                _dataSync.ClearSyncState();
                 _view.SetStatusText("WSL data 초기화 완료");
                 _view.ShowMessage(
                     $"WSL data를 비웠습니다.\n\n학습 전 「정제 데이터 연동」 또는\n새로고침 → WSL data 다시 연동을 실행하세요.",
@@ -234,6 +263,16 @@ namespace Malcha.Controller
             ProgressDialog? progress = null;
             try
             {
+                var (total, withImage, missing) = ImageCoverage.Summarize(_session.CurrentFrames, _session.FrameImagePaths);
+                if (missing > 0)
+                {
+                    if (_view.ShowMessage(
+                            $"연동 전 이미지 누락 {missing:N0}/{total:N0}개입니다.\n" +
+                            "누락 프레임은 tub에 복사되지 않아 학습이 불안정해질 수 있습니다.\n\n그래도 연동할까요?",
+                            "정제 데이터 연동", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                        return;
+                }
+
                 progress = _view.ShowProgress("정제 데이터 연동");
                 var uiProgress = new Progress<(int percent, string message)>(r =>
                     progress.Report(r.percent, r.message));
@@ -246,9 +285,28 @@ namespace Malcha.Controller
                     progress.Token);
 
                 _view.SetStatusText($"연동 완료 — {result.FrameCount:N0} 프레임, {result.ImageCount:N0} 이미지");
+                if (!result.IsComplete)
+                {
+                    string sample = result.MissingImageIndices.Count > 0
+                        ? FormatMissingIndexSample(result.MissingImageIndices)
+                        : "(인덱스 미확인)";
+                    _view.ShowMessage(
+                        $"연동은 완료됐지만 프레임·이미지 수가 일치하지 않습니다.\n\n" +
+                        $"프레임: {result.FrameCount:N0}\n이미지: {result.ImageCount:N0}\n" +
+                        $"누락: {result.MissingImageIndices.Count:N0}개\n예: {sample}\n\n" +
+                        "이 상태에서 학습하면 loss가 떨어지다 중간에 종료될 수 있습니다.\n" +
+                        "이미지 경로를 확인한 뒤 다시 연동하세요.",
+                        "정제 데이터 연동",
+                        icon: MessageBoxIcon.Warning);
+                    return;
+                }
+
                 _view.ShowMessage(
-                    $"WSL data 연동 완료\n\n프레임: {result.FrameCount:N0}\n이미지: {result.ImageCount:N0}\n경로: {result.TargetPath}",
+                    $"WSL data 연동 완료\n\n프레임: {result.FrameCount:N0}\n이미지: {result.ImageCount:N0} (1:1 일치)\n경로: {result.TargetPath}",
                     "정제 데이터 연동");
+
+                string fingerprint = TrainingDataFingerprint.Compute(_session.CurrentFrames, _session.FrameImagePaths);
+                _dataSync.RecordSuccessfulSync(fingerprint, result.FrameCount);
             }
             catch (OperationCanceledException)
             {
@@ -317,8 +375,10 @@ namespace Malcha.Controller
         public async Task HandleApplyFilterAsync()
         {
             if (_session.CurrentFrames.Count == 0) { _view.ShowMessage("정제할 데이터 없음", "알림"); return; }
-            if (_view.ShowMessage($"현재 {_session.CurrentFrames.Count:N0}개 프레임 정제?\n계속?",
-                    "필터 적용", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+
+            var options = new FrameRefinementFilter.Options();
+            if (!RefinementDialog.TryShow(_view.Owner, _session.CurrentFrames, _session.FrameImagePaths, options, out options))
+                return;
 
             _session.PushUndo();
             _view.RequestStopPlayback();
@@ -328,10 +388,14 @@ namespace Malcha.Controller
             {
                 progress = _view.ShowProgress("데이터 정제");
                 var uiProgress = new Progress<FrameRefinementFilter.ProgressReport>(r => progress.Report(r.Percent, r.Message));
+                string imageBefore = ImageCoverage.FormatSummary(_session.CurrentFrames, _session.FrameImagePaths);
                 FrameRefinementFilter.Result refineResult;
                 try
                 {
-                    refineResult = await _catalog.RefineAsync(_session.CurrentFrames.ToList(), uiProgress, progress.Token);
+                    refineResult = await _catalog.RefineAsync(
+                        _session.CurrentFrames.ToList(),
+                        _session.FrameImagePaths,
+                        options, uiProgress, progress.Token);
                 }
                 catch (OperationCanceledException) { _view.ShowMessage("정제 취소", "필터 적용"); return; }
 
@@ -345,17 +409,20 @@ namespace Malcha.Controller
                 if (!string.IsNullOrEmpty(_session.CurrentCatalogPath))
                     _session.Catalogs[_session.CurrentCatalogPath] = _session.CurrentFrames;
                 _session.FrameImagePaths = _catalog.ResolveFrameImagePaths(_session.CurrentCatalogPath, _session.CurrentFrames);
+
+                _session.ClearCrossTest();
+                _view.RequestClearCrossTestUi();
+                _dataSync.ClearSyncState();
                 _view.RequestClearImageCache();
                 _selection.Clear();
                 _view.ResetChartHighlight();
                 _view.RequestRefreshFrameList();
 
-                if (!string.IsNullOrEmpty(_session.CurrentCatalogPath) && File.Exists(_session.CurrentCatalogPath))
-                {
-                    //try { CatalogPaths.CreateTimestampedBackup(_session.CurrentCatalogPath); } catch { }
-                    //await _catalog.SaveCatalogAsync(_session.CurrentCatalogPath, _session.CurrentFrames);
-                }
-                _view.ShowMessage($"정제: {refineResult.OriginalCount:N0} → {refineResult.Frames.Count:N0}", "필터 적용");
+                string imageAfter = ImageCoverage.FormatSummary(_session.CurrentFrames, _session.FrameImagePaths);
+                _view.SetStatusText(
+                    $"정제 {_session.CurrentFrames.Count:N0}프 · {imageAfter} · WSL 재연동 필요");
+
+                RefinementResultDialog.Show(_view.Owner, refineResult, imageBefore, imageAfter);
             }
             catch (Exception ex) { _view.ShowMessage($"정제 오류: {ex.Message}", "필터 적용", icon: MessageBoxIcon.Error); }
             finally { _view.CloseProgress(progress); _view.SetCatalogBusy(false); _view.EnsureVisible(); }
@@ -451,7 +518,9 @@ namespace Malcha.Controller
             {
                 progress = _view.ShowProgress("복구 중");
 
-                try { CatalogPaths.CreateTimestampedBackup(workingPath); } catch { }
+                try { 
+                    //CatalogPaths.CreateTimestampedBackup(workingPath); 
+                } catch { }
 
                 _session.CurrentCatalogPath = workingPath;
                 _session.CurrentFrames = backupFrames;
@@ -509,8 +578,11 @@ namespace Malcha.Controller
                 // (10개 원본 카탈로그의 백업을 만드는 게 아닙니다!)
                 if (File.Exists(targetSavePath))
                 {
+                    var existingFileFrames = await _catalog.LoadCatalogFileAsync(targetSavePath);
+                    int existingFileFrameCount = existingFileFrames?.Count ?? 0;
                     // 이거 하나면 ' merged_final_2026xxxx.catalog ' 식으로 예쁘게 빠집니다.
-                    CatalogPaths.CreateTimestampedBackup(targetSavePath);
+                    CatalogPaths.CreateTimestampedBackup(targetSavePath, existingFileFrameCount);
+
                 }
 
                 // 3. 순수하게 메모리의 프레임을 JSON 덤프로 저장
@@ -519,10 +591,12 @@ namespace Malcha.Controller
 
                 if (isSuccess)
                 {
+                    string saveDicPath = SaveFileManager.Instance.SaveFolderPath;
+                    CatalogPaths.CreateTimestampedSave(targetSavePath, saveDicPath, _session.CurrentFrames.Count);  
                     _view.ShowMessage($"전체 병합 및 정제 결과가 저장되었습니다.\n\n저장 위치:\n{targetSavePath}",
                                       "저장 성공", icon : MessageBoxIcon.Information);
 
-                    _session.ClearUndo(); // 저장 직후 실행 취소 스택 비우기
+                    //_session.ClearUndo(); // 저장 직후 실행 취소 스택 비우기
                 }
                 else
                 {
@@ -584,7 +658,7 @@ namespace Malcha.Controller
             var savePath = _session.CurrentCatalogPath;
             var result = _session.MoveRangeToDeleted(start, end);
             if (result == null) return 0;
-            AfterFramesMovedToDeleted(result);
+            AfterFramesMovedToDeleted(result, keepPlayback: false);
             if (persistAfter && !string.IsNullOrEmpty(savePath))
                 _ = PersistAfterEditAsync(result.Count, savePath);
             return result.Count;
@@ -596,7 +670,7 @@ namespace Malcha.Controller
             var savePath = _session.CurrentCatalogPath;
             var result = _session.MoveIndicesToDeleted(indices);
             if (result == null) return 0;
-            AfterFramesMovedToDeleted(result);
+            AfterFramesMovedToDeleted(result, keepPlayback: false);
             if (persistAfter && !string.IsNullOrEmpty(savePath))
                 _ = PersistAfterEditAsync(result.Count, savePath);
             return result.Count;
@@ -639,13 +713,36 @@ namespace Malcha.Controller
             return RestoreFromDeletedList(payload.Indices, persistAfter: false);
         }
 
-        private void AfterFramesMovedToDeleted(CatalogSession.DeleteRangeResult result)
+        // 재생 중 구간 컷 — 확인 없음, 재생 유지
+        public bool TryCutSelectionDuringPlayback()
         {
-            _view.RequestStopPlayback();
+            var r = _selection.GetRange();
+            if (r.s < 0) return false;
+            int eidx = r.e >= 0 ? r.e : r.s;
+            var result = _session.MoveRangeToDeleted(r.s, eidx);
+            if (result == null) return false;
+            AfterFramesMovedToDeleted(result, keepPlayback: true);
+            _selection.Clear();
+            WriteDeletedAudit(r.s, eidx);
+            return true;
+        }
+
+        private void AfterFramesMovedToDeleted(CatalogSession.DeleteRangeResult result, bool keepPlayback = false)
+        {
+            if (!keepPlayback)
+                _view.RequestStopPlayback();
+
             _view.OnFramesRemoved(result.Start, result.Count);
             _selection.OnFramesRemoved(result.Start, result.Count);
-            _view.RequestRefreshFrameList();
-            _view.SetStatusText($"삭제 목록 — {_session.DeletedEntries.Count:N0} (방금 +{result.Count:N0})");
+
+            if (keepPlayback)
+                _view.RequestRefreshFrameListDuringPlayback(result.NewIndex);
+            else
+                _view.RequestRefreshFrameList();
+
+            _view.SetStatusText(keepPlayback
+                ? $"컷 +{result.Count:N0} · 재생 계속 · 삭제 목록 {_session.DeletedEntries.Count:N0}"
+                : $"삭제 목록 — {_session.DeletedEntries.Count:N0} (방금 +{result.Count:N0})");
         }
 
         // start~end 프레임 범위 삭제 (persistAfter=false면 저장 생략)
@@ -660,7 +757,11 @@ namespace Malcha.Controller
             _view.SetCatalogBusy(true);
             try
             {
-                try { CatalogPaths.CreateTimestampedBackup(catalogPath); } catch { }
+                try {
+                    var existingFileFrames = await _catalog.LoadCatalogFileAsync(catalogPath);
+                    int existingFileFrameCount = existingFileFrames?.Count ?? 0;
+                    CatalogPaths.CreateTimestampedBackup(catalogPath, existingFileFrameCount); 
+                } catch { }
                 var ok = await _catalog.SaveCatalogAsync(catalogPath, _session.CurrentFrames);
                 _view.UpdateCatalogPathFromSession();
                 if (!ok) _view.ShowMessage("저장 실패", "저장", icon: MessageBoxIcon.Error);
@@ -709,6 +810,18 @@ namespace Malcha.Controller
             string target = headline ?? (count == 1 ? $"#{start}" : $"{start}~{end} ({count}개)");
             return _view.ShowMessage($"{target}을(를) 삭제 목록으로 이동?\n현재 {_session.CurrentFrames.Count:N0} 프레임",
                 "프레임 삭제", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+        }
+        public void RefreshFrameList() => _view.RequestRefreshFrameList();
+
+        private static string FormatMissingIndexSample(IReadOnlyList<int> indices)
+        {
+            if (indices.Count == 0) return "(없음)";
+            const int maxShow = 8;
+            var parts = indices.Take(maxShow).Select(i => $"#{i}");
+            string text = string.Join(", ", parts);
+            if (indices.Count > maxShow)
+                text += $" … 외 {indices.Count - maxShow}개";
+            return text;
         }
     }
 }

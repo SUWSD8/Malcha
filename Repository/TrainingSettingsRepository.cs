@@ -36,6 +36,8 @@ namespace Malcha.Repository
         {
             public string Distro { get; set; } = "Ubuntu-22.04";
             public string CarDirectoryLinux { get; set; } = string.Empty;
+            public string? LastSyncedFingerprint { get; set; }
+            public int LastSyncedFrameCount { get; set; }
         }
     }
 }

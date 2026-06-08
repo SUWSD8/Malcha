@@ -1,5 +1,6 @@
 using Malcha.Controller;
 using Malcha.Model;
+using Malcha.Service;
 using Malcha.View;
 using Malcha.UI;
 
@@ -14,22 +15,25 @@ namespace Malcha
 
         private void InitializeTrainingPanel()
         {
-            _trainingController = new TrainingController(this);
+            _trainingController = new TrainingController(this, _session);
             _scoreToolTip = new ToolTip();
             dgvPilotList.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvPilotList.MultiSelect = false;
             btnRunTraining.Click += (_, _) => RunTrainingRequested?.Invoke(this, EventArgs.Empty);
+            btnshutdown.Click += (_, _) => StopTrainingRequested?.Invoke(this, EventArgs.Empty);
             btnconnet.Click += (_, _) => UpdateCommentRequested?.Invoke(this, EventArgs.Empty);
             btnEnableDelete.Click += (_, _) => DeleteModelRequested?.Invoke(this, EventArgs.Empty);
+            btnRestoreModelBackup.Click += (_, _) => RestoreModelFromBackupRequested?.Invoke(this, EventArgs.Empty);
             dgvPilotList.SelectionChanged += (_, _) => ModelSelectionChanged?.Invoke(this, EventArgs.Empty);
             dgvPilotList.CellToolTipTextNeeded += OnPilotListCellToolTipNeeded;
             Load += (_, _) => ViewLoaded?.Invoke(this, EventArgs.Empty);
+            btnshutdown.Enabled = false;
         }
 
         TrainingResult? ITrainingView.SelectedModel => GetSelectedModel();
 
         string ITrainingView.SelectedModelName =>
-            GetSelectedModel()?.Name.Trim() ?? DefaultModelName;
+            WslTrainingService.NormalizeBaseName(GetSelectedModel()?.Name.Trim() ?? DefaultModelName);
 
         int ITrainingView.SelectedModelNumber =>
             GetSelectedModel()?.Number ?? -1;
@@ -51,12 +55,15 @@ namespace Malcha
 
         public event EventHandler? ViewLoaded;
         public event EventHandler? RunTrainingRequested;
+        public event EventHandler? StopTrainingRequested;
         public event EventHandler? UpdateCommentRequested;
         public event EventHandler? DeleteModelRequested;
+        public event EventHandler? RestoreModelFromBackupRequested;
         public event EventHandler? ModelSelectionChanged;
 
         void ITrainingView.SetTrainingButtonEnabled(bool enabled) => btnRunTraining.Enabled = enabled;
         void ITrainingView.SetTrainingButtonText(string text) => btnRunTraining.Text = text;
+        void ITrainingView.SetForceStopTrainingEnabled(bool enabled) => btnshutdown.Enabled = enabled;
 
         void ITrainingView.ClearLog()
         {
@@ -124,10 +131,17 @@ namespace Malcha
         void ITrainingView.ClearEpochScores(string modelName) =>
             ((ITrainingView)this).BindEpochScores(modelName, Array.Empty<TrainingEpoch>());
 
-        void ITrainingView.ShowInfo(string title, string message) =>
+        void ITrainingView.ShowInfo(string title, string message)
+        {
+            if (InvokeRequired) { BeginInvoke(() => ((ITrainingView)this).ShowInfo(title, message)); return; }
             MessageBox.Show(this, message, title, MessageBoxButtons.OK, MessageBoxIcon.Information);
-        void ITrainingView.ShowError(string message) =>
+        }
+
+        void ITrainingView.ShowError(string message)
+        {
+            if (InvokeRequired) { BeginInvoke(() => ((ITrainingView)this).ShowError(message)); return; }
             MessageBox.Show(this, message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
 
         bool ITrainingView.ConfirmDeleteModel(TrainingResult model, string timeLabel) =>
             MessageBox.Show(this,
@@ -135,6 +149,19 @@ namespace Malcha
                 "모델 삭제",
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Warning) == DialogResult.Yes;
+
+        bool ITrainingView.ConfirmTrainWithStaleSync(string message) =>
+            MessageBox.Show(this, message, "학습 데이터 불일치",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes;
+
+        bool ITrainingView.ConfirmRestoreFromBackup(string modelName) =>
+            MessageBox.Show(this,
+                $"models/{modelName}.h5 를\n" +
+                $"models/{modelName}.malcha_backup.h5 내용으로 되돌립니다.\n\n" +
+                "계속할까요?",
+                "백업에서 복구",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question) == DialogResult.Yes;
 
         string? ITrainingView.PromptMycarFolder(string? suggestedUncPath) =>
             MycarFolderDialog.Show(this, suggestedUncPath);

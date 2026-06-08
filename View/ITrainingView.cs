@@ -13,12 +13,15 @@ namespace Malcha.View
 
         event EventHandler? ViewLoaded;
         event EventHandler? RunTrainingRequested;
+        event EventHandler? StopTrainingRequested;
         event EventHandler? UpdateCommentRequested;
         event EventHandler? DeleteModelRequested;
+        event EventHandler? RestoreModelFromBackupRequested;
         event EventHandler? ModelSelectionChanged;
 
         void SetTrainingButtonEnabled(bool enabled);
         void SetTrainingButtonText(string text);
+        void SetForceStopTrainingEnabled(bool enabled);
         void ClearLog();
         void BindModelList(IReadOnlyList<TrainingResult> models, int? selectModelNumber = null);
         void AppendLog(string message);
@@ -27,6 +30,8 @@ namespace Malcha.View
         void ShowInfo(string title, string message);
         void ShowError(string message);
         bool ConfirmDeleteModel(TrainingResult model, string timeLabel);
+        bool ConfirmTrainWithStaleSync(string message);
+        bool ConfirmRestoreFromBackup(string modelName);
 
         // mycar 폴더 선택 (취소 시 null)
         string? PromptMycarFolder(string? suggestedUncPath);

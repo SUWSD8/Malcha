@@ -20,6 +20,22 @@ namespace Malcha.Service
             return result;
         }
 
+        // 로그에서 수집한 epoch로 UI 요약 생성 (강제 종료·database 미갱신 시)
+        public TrainingSummary BuildSummaryFromLive(string modelName, IReadOnlyList<TrainingEpoch> epochs)
+        {
+            if (epochs.Count == 0)
+                throw new InvalidOperationException("학습 기록(Epoch) 없음");
+            var last = epochs[^1];
+            var best = TrainingScore.BestValEpoch(epochs)!;
+            return new TrainingSummary
+            {
+                ModelName = modelName,
+                TotalEpochs = last.Epoch,
+                FinalLoss = last.Loss,
+                FinalValLoss = best.ValLoss
+            };
+        }
+
         // 최종 Epoch 기준으로 UI 표시용 요약 생성
         public TrainingSummary BuildSummary(TrainingResult result)
         {
