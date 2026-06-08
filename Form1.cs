@@ -27,6 +27,7 @@ namespace Malcha
         private System.Windows.Forms.Timer? _speedOverlayTimer;
         private TimelineSelectionBinder? _timelineBinder;
         private bool _timelineSync;
+        private bool _timelineScrubbing;
 
         public Form1()
         {
@@ -99,8 +100,10 @@ namespace Malcha
             btnFastForward.Click += (_, _) => StepFrame(5);
             btnRewind.Click += (_, _) => StepFrame(-5);
             btnPlayPause.Click += BtnPlayPause_Click;
-            trbTimeline.Scroll += (_, _) => OnTimelineUserChanged();
             trbTimeline.ValueChanged += (_, _) => OnTimelineUserChanged();
+            trbTimeline.ThumbDragStarted += (_, _) => _timelineScrubbing = true;
+            trbTimeline.ThumbDragEnded += (_, _) => FinishTimelineScrub();
+            MouseUp += (_, _) => FinishTimelineScrub();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
             btnCrossTest.Click += async (_, _) =>
                 await _crossTestController!.RunAsync((ITrainingView)this, (ICatalogView)this, RefreshFrameOverlay);
@@ -187,24 +190,58 @@ namespace Malcha
 
         private void SyncTimeline(int activeIndex)
         {
+            if (_session.CurrentFrames.Count == 0)
+            {
+                trbTimeline.Enabled = false;
+                return;
+            }
+
             var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
             int max = TimelineVirtualMap.VirtualMax(_session.CurrentFrames.Count, _session.DeletedEntries);
-            trbTimeline.Minimum = 0;
-            trbTimeline.Maximum = max;
-            trbTimeline.Enabled = _session.CurrentFrames.Count > 0;
-            if (_session.CurrentFrames.Count == 0) return;
+            int target = Math.Clamp(
+                TimelineVirtualMap.ActiveToVirtual(activeIndex, ranges), 0, max);
 
             _timelineSync = true;
             try
             {
-                trbTimeline.Value = Math.Clamp(
-                    TimelineVirtualMap.ActiveToVirtual(activeIndex, ranges), 0, max);
+                if (trbTimeline.Maximum != max)
+                {
+                    trbTimeline.Minimum = 0;
+                    trbTimeline.Maximum = max;
+                }
+                trbTimeline.Enabled = true;
+                if (trbTimeline.Value != target)
+                    trbTimeline.Value = target;
             }
             finally
             {
                 _timelineSync = false;
             }
         }
+
+        private void FinishTimelineScrub()
+        {
+            if (!_timelineScrubbing && !trbTimeline.IsThumbDragging) return;
+            _timelineScrubbing = false;
+
+            if (_session.CurrentFrames.Count == 0) return;
+
+            var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
+            int active = TimelineVirtualMap.VirtualToActive(
+                trbTimeline.Value, _session.CurrentFrames.Count, ranges);
+
+            if (active != _session.CurrentIndex)
+                ShowFrame(active, syncTimeline: false);
+
+            if (lstDataList.SelectedIndex != _session.CurrentIndex)
+                lstDataList.SelectedIndex = _session.CurrentIndex;
+
+            SyncTimeline(_session.CurrentIndex);
+        }
+
+        private bool IsTimelineScrubbing() =>
+            _timelineScrubbing || trbTimeline.IsThumbDragging
+            || (Control.MouseButtons & MouseButtons.Left) != 0;
 
         private void RefreshDeletedSelectionUi()
         {
@@ -448,7 +485,7 @@ namespace Malcha
         private void RefreshChartFromFrames() => _display.RefreshChart(_session.CurrentFrames);
 
         // 지정 인덱스 프레임 표시
-        private void ShowFrame(int index)
+        private void ShowFrame(int index, bool syncTimeline = true)
         {
             if (_session.CurrentFrames.Count == 0) return;
             index = Math.Clamp(index, 0, _session.CurrentFrames.Count - 1);
@@ -462,7 +499,8 @@ namespace Malcha
             {
                 _timelineSync = false;
             }
-            SyncTimeline(index);
+            if (syncTimeline)
+                SyncTimeline(index);
             RefreshModelLabels();
             picVideoScreen.Invalidate();
             InvalidateTimelineMarkers();
@@ -587,12 +625,20 @@ namespace Malcha
         private void OnTimelineUserChanged()
         {
             if (_session.CurrentFrames.Count == 0 || _playCts != null || _timelineSync) return;
+
+            if (IsTimelineScrubbing())
+                _timelineScrubbing = true;
+
             var ranges = TimelineVirtualMap.BuildRanges(_session.DeletedEntries);
             int active = TimelineVirtualMap.VirtualToActive(
                 trbTimeline.Value, _session.CurrentFrames.Count, ranges);
-            if (active == _session.CurrentIndex) return;
-            ShowFrame(active);
-            if (lstDataList.SelectedIndex != _session.CurrentIndex)
+
+            bool scrubbing = IsTimelineScrubbing();
+            if (active == _session.CurrentIndex && !scrubbing) return;
+
+            ShowFrame(active, syncTimeline: !scrubbing);
+
+            if (!scrubbing && lstDataList.SelectedIndex != _session.CurrentIndex)
                 lstDataList.SelectedIndex = _session.CurrentIndex;
         }
 

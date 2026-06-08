@@ -6,6 +6,11 @@ namespace Malcha.UI
     internal sealed class TimelineTrackBar : TrackBar
     {
         public event PaintEventHandler? PostPaint;
+        public event EventHandler? ThumbDragStarted;
+        public event EventHandler? ThumbDragEnded;
+
+        /// <summary>썸을 드래그 중 (WM_HSCROLL TB_THUMBTRACK ~ TB_ENDTRACK)</summary>
+        public bool IsThumbDragging { get; private set; }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct NativeRect
@@ -16,7 +21,10 @@ namespace Malcha.UI
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, ref NativeRect lParam);
 
+        private const int WM_HSCROLL = 0x0114;
         private const int TBM_GETCHANNELRECT = 0x040A;
+        private const int TB_THUMBTRACK = 5;
+        private const int TB_ENDTRACK = 8;
 
         public Rectangle ChannelRect
         {
@@ -61,14 +69,35 @@ namespace Malcha.UI
 
         protected override void WndProc(ref Message m)
         {
+            if (m.Msg == WM_HSCROLL)
+            {
+                int code = m.WParam.ToInt32() & 0xFFFF;
+                if (code == TB_THUMBTRACK && !IsThumbDragging)
+                {
+                    IsThumbDragging = true;
+                    ThumbDragStarted?.Invoke(this, EventArgs.Empty);
+                }
+            }
+
             base.WndProc(ref m);
-            if (m.Msg != 0x000F) return; // WM_PAINT
 
-            var handler = PostPaint;
-            if (handler == null) return;
+            if (m.Msg == WM_HSCROLL)
+            {
+                int code = m.WParam.ToInt32() & 0xFFFF;
+                if (code == TB_ENDTRACK && IsThumbDragging)
+                {
+                    IsThumbDragging = false;
+                    ThumbDragEnded?.Invoke(this, EventArgs.Empty);
+                }
+            }
+            else if (m.Msg == 0x000F) // WM_PAINT
+            {
+                var handler = PostPaint;
+                if (handler == null) return;
 
-            using var g = Graphics.FromHwnd(Handle);
-            handler(this, new PaintEventArgs(g, ClientRectangle));
+                using var g = Graphics.FromHwnd(Handle);
+                handler(this, new PaintEventArgs(g, ClientRectangle));
+            }
         }
 
         private Rectangle FallbackChannelRect()
