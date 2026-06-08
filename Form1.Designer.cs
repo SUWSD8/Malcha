@@ -33,6 +33,10 @@
             System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.Series series4 = new System.Windows.Forms.DataVisualization.Charting.Series();
             splitContainer1 = new SplitContainer();
             splitContainer3 = new SplitContainer();
             groupBox1 = new GroupBox();
@@ -85,13 +89,15 @@
             btnshutdown = new Button();
             lstLog = new ListBox();
             groupBox5 = new GroupBox();
+            tableLayoutPanel3 = new TableLayoutPanel();
+            lstViewScore = new ListBox();
+            chtErrorrate = new System.Windows.Forms.DataVisualization.Charting.Chart();
             tableLayoutPanel2 = new TableLayoutPanel();
             btnRunTraining = new Button();
             btnCrossTest = new Button();
             tableLayoutPanel1 = new TableLayoutPanel();
             btnEnableDelete = new Button();
             btnconnet = new Button();
-            lstViewScore = new ListBox();
             txtModelMemo = new TextBox();
             dgvPilotList = new DataGridView();
             이름 = new DataGridViewTextBoxColumn();
@@ -119,6 +125,8 @@
             splitContainer2.SuspendLayout();
             groupBox4.SuspendLayout();
             groupBox5.SuspendLayout();
+            tableLayoutPanel3.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)chtErrorrate).BeginInit();
             tableLayoutPanel2.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)dgvPilotList).BeginInit();
@@ -256,7 +264,7 @@
             // lstSave
             // 
             lstSave.AllowDrop = true;
-            lstSave.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            lstSave.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             lstSave.BackColor = Color.FromArgb(48, 42, 41);
             lstSave.ContextMenuStrip = cmsSaveFile;
             lstSave.ForeColor = SystemColors.MenuBar;
@@ -802,9 +810,9 @@
             // 
             // groupBox5
             // 
+            groupBox5.Controls.Add(tableLayoutPanel3);
             groupBox5.Controls.Add(tableLayoutPanel2);
             groupBox5.Controls.Add(tableLayoutPanel1);
-            groupBox5.Controls.Add(lstViewScore);
             groupBox5.Controls.Add(txtModelMemo);
             groupBox5.Controls.Add(dgvPilotList);
             groupBox5.Dock = DockStyle.Fill;
@@ -814,6 +822,59 @@
             groupBox5.TabIndex = 1;
             groupBox5.TabStop = false;
             // 
+            // tableLayoutPanel3
+            // 
+            tableLayoutPanel3.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            tableLayoutPanel3.ColumnCount = 2;
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 69.5652161F));
+            tableLayoutPanel3.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30.434782F));
+            tableLayoutPanel3.Controls.Add(lstViewScore, 1, 0);
+            tableLayoutPanel3.Controls.Add(chtErrorrate, 0, 0);
+            tableLayoutPanel3.Location = new Point(3, 12);
+            tableLayoutPanel3.Name = "tableLayoutPanel3";
+            tableLayoutPanel3.RowCount = 1;
+            tableLayoutPanel3.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            tableLayoutPanel3.Size = new Size(506, 206);
+            tableLayoutPanel3.TabIndex = 70;
+            // 
+            // lstViewScore
+            // 
+            lstViewScore.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lstViewScore.BackColor = Color.FromArgb(48, 42, 41);
+            lstViewScore.ForeColor = SystemColors.MenuBar;
+            lstViewScore.FormattingEnabled = true;
+            lstViewScore.Location = new Point(355, 3);
+            lstViewScore.Name = "lstViewScore";
+            lstViewScore.Size = new Size(148, 199);
+            lstViewScore.TabIndex = 60;
+            // 
+            // chtErrorrate
+            // 
+            chtErrorrate.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            chtErrorrate.BackColor = Color.FromArgb(48, 42, 41);
+            chartArea2.Name = "ChartArea1";
+            chtErrorrate.ChartAreas.Add(chartArea2);
+            legend2.Name = "Legend1";
+            chtErrorrate.Legends.Add(legend2);
+            chtErrorrate.Location = new Point(3, 3);
+            chtErrorrate.Name = "chtErrorrate";
+            series3.BorderColor = Color.Transparent;
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Color = Color.FromArgb(208, 111, 118);
+            series3.Legend = "Legend1";
+            series3.Name = "반복횟수";
+            series4.ChartArea = "ChartArea1";
+            series4.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+            series4.Color = Color.FromArgb(109, 125, 218);
+            series4.Legend = "Legend1";
+            series4.Name = "오류율";
+            chtErrorrate.Series.Add(series3);
+            chtErrorrate.Series.Add(series4);
+            chtErrorrate.Size = new Size(346, 200);
+            chtErrorrate.TabIndex = 69;
+            chtErrorrate.Text = "chart1";
+            // 
             // tableLayoutPanel2
             // 
             tableLayoutPanel2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -822,7 +883,7 @@
             tableLayoutPanel2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             tableLayoutPanel2.Controls.Add(btnRunTraining, 0, 0);
             tableLayoutPanel2.Controls.Add(btnCrossTest, 1, 0);
-            tableLayoutPanel2.Location = new Point(3, 173);
+            tableLayoutPanel2.Location = new Point(3, 221);
             tableLayoutPanel2.Name = "tableLayoutPanel2";
             tableLayoutPanel2.RowCount = 1;
             tableLayoutPanel2.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
@@ -900,17 +961,6 @@
             btnconnet.Text = "설명 추가";
             btnconnet.UseVisualStyleBackColor = false;
             // 
-            // lstViewScore
-            // 
-            lstViewScore.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            lstViewScore.BackColor = Color.FromArgb(48, 42, 41);
-            lstViewScore.ForeColor = SystemColors.MenuBar;
-            lstViewScore.FormattingEnabled = true;
-            lstViewScore.Location = new Point(8, 18);
-            lstViewScore.Name = "lstViewScore";
-            lstViewScore.Size = new Size(492, 139);
-            lstViewScore.TabIndex = 60;
-            // 
             // txtModelMemo
             // 
             txtModelMemo.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -932,11 +982,11 @@
             dgvPilotList.BackgroundColor = Color.FromArgb(103, 98, 98);
             dgvPilotList.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             dgvPilotList.Columns.AddRange(new DataGridViewColumn[] { 이름, 시간, 설명 });
-            dgvPilotList.Location = new Point(8, 215);
+            dgvPilotList.Location = new Point(8, 261);
             dgvPilotList.Name = "dgvPilotList";
             dgvPilotList.RowHeadersVisible = false;
             dgvPilotList.RowHeadersWidth = 82;
-            dgvPilotList.Size = new Size(492, 227);
+            dgvPilotList.Size = new Size(492, 181);
             dgvPilotList.TabIndex = 61;
             // 
             // 이름
@@ -1000,6 +1050,8 @@
             groupBox4.PerformLayout();
             groupBox5.ResumeLayout(false);
             groupBox5.PerformLayout();
+            tableLayoutPanel3.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)chtErrorrate).EndInit();
             tableLayoutPanel2.ResumeLayout(false);
             tableLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)dgvPilotList).EndInit();
@@ -1072,5 +1124,7 @@
         private ContextMenuStrip cmsSaveFile;
         private ToolStripMenuItem toolStripMenuItemRename;
         private ToolStripMenuItem toolStripMenuItemDelete;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chtErrorrate;
+        private TableLayoutPanel tableLayoutPanel3;
     }
 }
