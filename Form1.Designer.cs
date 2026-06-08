@@ -261,9 +261,9 @@
             lstSave.ContextMenuStrip = cmsSaveFile;
             lstSave.ForeColor = SystemColors.MenuBar;
             lstSave.FormattingEnabled = true;
-            lstSave.Location = new Point(9, 271);
+            lstSave.Location = new Point(9, 181);
             lstSave.Name = "lstSave";
-            lstSave.Size = new Size(126, 64);
+            lstSave.Size = new Size(126, 154);
             lstSave.TabIndex = 66;
             lstSave.MouseDoubleClick += lstSave_MouseDoubleClick;
             lstSave.MouseDown += lstSave_MouseDown;
@@ -417,7 +417,7 @@
             lblModeValue.AutoSize = true;
             lblModeValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModeValue.ForeColor = SystemColors.ButtonHighlight;
-            lblModeValue.Location = new Point(49, 189);
+            lblModeValue.Location = new Point(49, 107);
             lblModeValue.Name = "lblModeValue";
             lblModeValue.Size = new Size(39, 20);
             lblModeValue.TabIndex = 41;
@@ -428,7 +428,7 @@
             lblThrottleValue.AutoSize = true;
             lblThrottleValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblThrottleValue.ForeColor = SystemColors.ButtonHighlight;
-            lblThrottleValue.Location = new Point(49, 128);
+            lblThrottleValue.Location = new Point(49, 71);
             lblThrottleValue.Name = "lblThrottleValue";
             lblThrottleValue.Size = new Size(69, 20);
             lblThrottleValue.TabIndex = 40;
@@ -439,7 +439,7 @@
             lblAngleValue.AutoSize = true;
             lblAngleValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblAngleValue.ForeColor = SystemColors.ButtonHighlight;
-            lblAngleValue.Location = new Point(49, 68);
+            lblAngleValue.Location = new Point(49, 37);
             lblAngleValue.Name = "lblAngleValue";
             lblAngleValue.Size = new Size(69, 20);
             lblAngleValue.TabIndex = 39;
@@ -450,7 +450,7 @@
             lblModelValue.AutoSize = true;
             lblModelValue.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModelValue.ForeColor = Color.FromArgb(255, 215, 64);
-            lblModelValue.Location = new Point(49, 248);
+            lblModelValue.Location = new Point(49, 147);
             lblModelValue.Name = "lblModelValue";
             lblModelValue.Size = new Size(69, 20);
             lblModelValue.TabIndex = 65;
@@ -462,7 +462,7 @@
             lblModelAngle.AutoSize = true;
             lblModelAngle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModelAngle.ForeColor = Color.FromArgb(255, 215, 64);
-            lblModelAngle.Location = new Point(32, 218);
+            lblModelAngle.Location = new Point(32, 127);
             lblModelAngle.Name = "lblModelAngle";
             lblModelAngle.Size = new Size(98, 20);
             lblModelAngle.TabIndex = 64;
@@ -474,7 +474,7 @@
             lblModeTitle.AutoSize = true;
             lblModeTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblModeTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblModeTitle.Location = new Point(32, 159);
+            lblModeTitle.Location = new Point(32, 88);
             lblModeTitle.Name = "lblModeTitle";
             lblModeTitle.Size = new Size(86, 20);
             lblModeTitle.TabIndex = 37;
@@ -485,7 +485,7 @@
             lblThrottleTitle.AutoSize = true;
             lblThrottleTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblThrottleTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblThrottleTitle.Location = new Point(32, 98);
+            lblThrottleTitle.Location = new Point(32, 54);
             lblThrottleTitle.Name = "lblThrottleTitle";
             lblThrottleTitle.Size = new Size(100, 20);
             lblThrottleTitle.TabIndex = 36;
@@ -496,7 +496,7 @@
             lblAngleTitle.AutoSize = true;
             lblAngleTitle.Font = new Font("맑은 고딕", 11.25F, FontStyle.Bold, GraphicsUnit.Point, 129);
             lblAngleTitle.ForeColor = SystemColors.ButtonHighlight;
-            lblAngleTitle.Location = new Point(32, 38);
+            lblAngleTitle.Location = new Point(32, 17);
             lblAngleTitle.Name = "lblAngleTitle";
             lblAngleTitle.Size = new Size(84, 20);
             lblAngleTitle.TabIndex = 35;
