@@ -59,7 +59,7 @@ namespace Malcha
             ShowFrame(0);
             if (lstDataList.SelectedIndex != 0) lstDataList.SelectedIndex = 0;
             lstDataList.Invalidate();
-            trbTimeline.Invalidate();
+            InvalidateTimelineMarkers();
             picVideoScreen.Invalidate();
             RefreshPlaybackSpeedIndicators();
             await _display.PreloadAsync(_session.FrameImagePaths, _session.CurrentFrames, 5);
@@ -70,7 +70,37 @@ namespace Malcha
         void ICatalogView.RequestClearImageCache() => _display.ClearCache();
         void ICatalogView.RequestRefreshSelectionUi() => RefreshSelectionUi();
         void ICatalogView.RequestShowFrame(int index) => ShowFrame(index);
+        void ICatalogView.RequestRefreshFrameListDuringPlayback(int playheadIndex)
+        {
+            _catalog.PopulateListBox(lstDataList, _session.CurrentFrames, _session.FrameImagePaths);
+            RefreshDeletedListUi();
+            RefreshChartFromFrames();
+            UpdateCatalogPathDisplay();
+            _session.ClearCrossTest();
+
+            if (_session.CurrentFrames.Count == 0)
+            {
+                StopPlayback();
+                ClearPlayback();
+                return;
+            }
+
+            playheadIndex = Math.Clamp(playheadIndex, 0, _session.CurrentFrames.Count - 1);
+            _session.CurrentIndex = playheadIndex;
+            _display.ShowFrame(playheadIndex, _session.CurrentFrames, _session.FrameImagePaths, this);
+            SyncTimeline(playheadIndex);
+            InvalidateTimelineMarkers();
+            lstDataList.Invalidate();
+            picVideoScreen.Invalidate();
+        }
+
         void ICatalogView.RequestStopPlayback() => StopPlayback();
+
+        void ICatalogView.RequestClearCrossTestUi()
+        {
+            HideModelLabels();
+            picVideoScreen.Invalidate();
+        }
         void ICatalogView.OnFramesRemoved(int start, int count) => _display.DeleteCacheRange(start, count);
         void ICatalogView.ResetChartHighlight() => _display.ResetChartHighlight();
 
@@ -122,7 +152,7 @@ namespace Malcha
             }
             else ClearPlayback();
             lstDataList.Invalidate();
-            trbTimeline.Invalidate();
+            InvalidateTimelineMarkers();
         }
     }
 }

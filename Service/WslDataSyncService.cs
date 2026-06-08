@@ -1,4 +1,5 @@
 using Malcha.Model;
+using Malcha.Repository;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -16,17 +17,78 @@ namespace Malcha.Service
 
         private static readonly WslDataSyncService _instance = new();
         public static WslDataSyncService Instance => _instance;
-        private WslDataSyncService() { }
+        private WslDataSyncService()
+        {
+            LoadSyncState();
+        }
+
+        public string? LastSyncedFingerprint { get; private set; }
+        public int LastSyncedFrameCount { get; private set; }
+
+        public bool IsSyncedWith(string fingerprint) =>
+            !string.IsNullOrEmpty(LastSyncedFingerprint)
+            && !string.IsNullOrEmpty(fingerprint)
+            && string.Equals(LastSyncedFingerprint, fingerprint, StringComparison.OrdinalIgnoreCase);
+
+        public void RecordSuccessfulSync(string fingerprint, int frameCount)
+        {
+            LastSyncedFingerprint = fingerprint;
+            LastSyncedFrameCount = frameCount;
+            PersistSyncState();
+        }
+
+        public void ClearSyncState()
+        {
+            LastSyncedFingerprint = null;
+            LastSyncedFrameCount = 0;
+            PersistSyncState();
+        }
+
+        private void LoadSyncState()
+        {
+            var saved = TrainingSettingsRepository.Instance.Load();
+            if (saved == null) return;
+            LastSyncedFingerprint = saved.LastSyncedFingerprint;
+            LastSyncedFrameCount = saved.LastSyncedFrameCount;
+        }
+
+        private void PersistSyncState()
+        {
+            var saved = TrainingSettingsRepository.Instance.Load() ?? new TrainingSettingsRepository.TrainingSettings();
+            saved.LastSyncedFingerprint = LastSyncedFingerprint;
+            saved.LastSyncedFrameCount = LastSyncedFrameCount;
+            TrainingSettingsRepository.Instance.Save(saved);
+        }
 
         // WSL tub 폴더 UNC 경로 (설정된 mycar/data)
         public string TubUncPath => WslTrainingService.Instance.TubUncPath;
 
-        // train.py --tub data 에 사용할 catalog 존재 여부
+        // train.py --tub data 에 사용할 catalog 존재 여부 (프레임·이미지 1:1 일치 필요)
         public bool HasTrainingData()
         {
             if (!WslTrainingService.Instance.IsConfigured) return false;
+            return TryGetSyncedDataCounts(out int frames, out int images)
+                && frames > 0
+                && frames == images;
+        }
+
+        // tub 내 catalog 줄 수와 images 폴더 파일 수
+        public bool TryGetSyncedDataCounts(out int frameCount, out int imageCount)
+        {
+            frameCount = 0;
+            imageCount = 0;
+            if (!WslTrainingService.Instance.IsConfigured) return false;
+
             var catalogPath = Path.Combine(TubUncPath, CatalogFileName);
-            return File.Exists(catalogPath) && new FileInfo(catalogPath).Length > 0;
+            if (!File.Exists(catalogPath) || new FileInfo(catalogPath).Length == 0)
+                return false;
+
+            frameCount = File.ReadLines(catalogPath).Count(l => !string.IsNullOrWhiteSpace(l));
+            var imagesDir = Path.Combine(TubUncPath, ImagesSubDir);
+            imageCount = CountImagesInDir(imagesDir);
+            if (imageCount == 0)
+                imageCount = CountImagesInDir(TubUncPath);
+            return true;
         }
 
         // 연동된 data 폴더 상태 요약 (로그·확인용)
@@ -89,7 +151,8 @@ namespace Malcha.Service
                         cancellationToken.ThrowIfCancellationRequested();
 
                         var src = frames[i];
-                        string imageName = ResolveImageFileName(src, i, imagePaths);
+                        // DonkeyCar tub 규칙: 프레임 인덱스와 이미지 파일명 1:1 (병합·정제 후 basename 충돌 방지)
+                        string imageName = $"{i}_cam_image_array_.jpg";
                         var export = new Frame
                         {
                             Index = i,
@@ -115,7 +178,7 @@ namespace Malcha.Service
                 }
 
                 progress?.Report((60, "이미지 복사 중…"));
-                int copiedImages = CopyImages(frames, imagePaths, targetDir, exportFrames, cancellationToken);
+                var copyResult = CopyImages(frames, imagePaths, targetDir, exportFrames, cancellationToken);
 
                 progress?.Report((85, "manifest 작성 중…"));
                 WriteCatalogManifest(targetDir, lineLengths);
@@ -126,7 +189,8 @@ namespace Malcha.Service
                 return new SyncResult
                 {
                     FrameCount = exportFrames.Count,
-                    ImageCount = copiedImages,
+                    ImageCount = copyResult.CopiedCount,
+                    MissingImageIndices = copyResult.MissingIndices,
                     TargetPath = targetDir
                 };
             }, cancellationToken);
@@ -174,18 +238,8 @@ namespace Malcha.Service
             return dir;
         }
 
-        // 프레임에 대응하는 이미지 파일명 결정
-        private static string ResolveImageFileName(Frame frame, int index, IReadOnlyList<string> imagePaths)
-        {
-            if (index < imagePaths.Count && !string.IsNullOrEmpty(imagePaths[index]))
-                return Path.GetFileName(imagePaths[index]);
-            if (!string.IsNullOrEmpty(frame.ImagePath))
-                return Path.GetFileName(frame.ImagePath);
-            return $"{index}_cam_image_array_.jpg";
-        }
-
-        // 이미지 파일을 tub/data/images/ 로 복사 (DonkeyCar train.py 경로 규칙)
-        private static int CopyImages(
+        // 이미지 파일을 tub/data/images/ 로 복사 — 프레임마다 고유 파일명, 누락 인덱스 수집
+        private static CopyImagesResult CopyImages(
             IReadOnlyList<Frame> frames,
             IReadOnlyList<string> imagePaths,
             string targetDir,
@@ -194,17 +248,20 @@ namespace Malcha.Service
         {
             var imagesDir = ImagesDirectory(targetDir);
             int copied = 0;
+            var missing = new List<int>();
             for (int i = 0; i < frames.Count; i++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 string? srcPath = i < imagePaths.Count ? imagePaths[i] : null;
-                if (string.IsNullOrEmpty(srcPath) || !File.Exists(srcPath))
-                    continue;
-
                 string destName = exportFrames[i].ImagePath;
                 string destPath = Path.Combine(imagesDir, destName);
-                if (File.Exists(destPath)) continue;
+
+                if (string.IsNullOrEmpty(srcPath) || !File.Exists(srcPath))
+                {
+                    missing.Add(i);
+                    continue;
+                }
 
                 try
                 {
@@ -214,9 +271,16 @@ namespace Malcha.Service
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"이미지 복사 실패 {srcPath}: {ex.Message}");
+                    missing.Add(i);
                 }
             }
-            return copied;
+            return new CopyImagesResult { CopiedCount = copied, MissingIndices = missing };
+        }
+
+        private sealed class CopyImagesResult
+        {
+            public int CopiedCount { get; init; }
+            public IReadOnlyList<int> MissingIndices { get; init; } = Array.Empty<int>();
         }
 
         // catalog_0.catalog_manifest 생성
@@ -287,6 +351,8 @@ namespace Malcha.Service
         {
             public int FrameCount { get; init; }
             public int ImageCount { get; init; }
+            public IReadOnlyList<int> MissingImageIndices { get; init; } = Array.Empty<int>();
+            public bool IsComplete => FrameCount > 0 && FrameCount == ImageCount && MissingImageIndices.Count == 0;
             public string TargetPath { get; init; } = string.Empty;
         }
     }
