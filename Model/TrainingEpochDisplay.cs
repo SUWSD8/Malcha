@@ -15,6 +15,9 @@ namespace Malcha.Model
             return name;
         }
 
+        private static string FormatLoss(double loss) =>
+            loss.ToString("F4", CultureInfo.InvariantCulture);
+
         public static IReadOnlyList<string> ToCompactLines(
             string modelName,
             IReadOnlyList<TrainingEpoch> epochs,
@@ -37,7 +40,8 @@ namespace Malcha.Model
             lines.Add(string.Format(CultureInfo.InvariantCulture,
                 "[{0}]  반복 {1}/{2}회", modelName, epochs.Count, total));
             lines.Add(string.Format(CultureInfo.InvariantCulture,
-                "★ Ep {0}/{1}  최고 검증 {2:F1}점", best.Epoch, total, bestScore));
+                "★ Ep {0}/{1}  최고 검증 {2:F1}점  (오류 {3})",
+                best.Epoch, total, bestScore, FormatLoss(best.ValLoss)));
 
             int showFrom = epochs.Count <= MaxCompactEpochRows
                 ? 0
@@ -54,8 +58,8 @@ namespace Malcha.Model
                 if (Math.Abs(e.ValLoss - best.ValLoss) < 1e-9) mark += " ★";
                 if (i == epochs.Count - 1) mark += " ◀";
                 lines.Add(string.Format(CultureInfo.InvariantCulture,
-                    "  Ep {0,3}/{1}  검증 {2:F1} | 학습 {3:F1}{4}",
-                    e.Epoch, total, valSc, trainSc, mark));
+                    "  Ep {0,3}/{1}  검증 {2:F1}(오류 {3}) | 학습 {4:F1}(오류 {5}){6}",
+                    e.Epoch, total, valSc, FormatLoss(e.ValLoss), trainSc, FormatLoss(e.Loss), mark));
             }
 
             return lines;
@@ -75,8 +79,8 @@ namespace Malcha.Model
             var lines = new List<string>
             {
                 $"모델: {modelName}  ({epochs.Count}/{total} epoch)",
-                $"최고 검증 {TrainingScore.FromLoss(best.ValLoss):F1}점 (Ep{best.Epoch}, val={best.ValLoss:F4})",
-                "※ 점수는 검증(val) loss 기준 — 학습 loss와 다를 수 있음",
+                $"최고 검증 {TrainingScore.FromLoss(best.ValLoss):F1}점 (Ep{best.Epoch}, 검증 오류 {FormatLoss(best.ValLoss)})",
+                "※ 점수는 검증(val) loss 기준 · 오류 = val_loss / loss (낮을수록 좋음)",
                 "",
                 "최근 epoch (검증 점수):"
             };
@@ -88,7 +92,10 @@ namespace Malcha.Model
                 double sc = TrainingScore.FromLoss(e.ValLoss);
                 string mark = i == epochs.Count - 1 ? " ◀ 현재" : "";
                 if (Math.Abs(e.ValLoss - best.ValLoss) < 1e-9) mark += " ★최고";
-                lines.Add($"  Ep {e.Epoch,3}  val {e.ValLoss:F4} → {sc,5:F1}점{mark}");
+                lines.Add(string.Format(CultureInfo.InvariantCulture,
+                    "  Ep {0,3}  검증 {1:F1}점(오류 {2}) | 학습 {3:F1}점(오류 {4}){5}",
+                    e.Epoch, sc, FormatLoss(e.ValLoss),
+                    TrainingScore.FromLoss(e.Loss), FormatLoss(e.Loss), mark));
             }
             return string.Join(Environment.NewLine, lines);
         }
