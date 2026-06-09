@@ -28,6 +28,7 @@ namespace Malcha
             dgvPilotList.CellToolTipTextNeeded += OnPilotListCellToolTipNeeded;
             Load += (_, _) => ViewLoaded?.Invoke(this, EventArgs.Empty);
             btnshutdown.Enabled = false;
+            ChartAdapter.InitializeErrorRateChart(chtErrorrate);
         }
 
         TrainingResult? ITrainingView.SelectedModel => GetSelectedModel();
@@ -126,6 +127,8 @@ namespace Malcha
 
             _scoreToolTip?.SetToolTip(lstViewScore,
                 TrainingEpochDisplay.ToDetailText(modelName, epochs, plannedTotal));
+
+            ChartAdapter.BindErrorRateChart(chtErrorrate, epochs, plannedTotal);
         }
 
         void ITrainingView.ClearEpochScores(string modelName) =>
