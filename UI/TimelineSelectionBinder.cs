@@ -76,7 +76,9 @@ namespace Malcha.UI
         private readonly Action _refreshUi;
         private bool _rangeDrag;
         private bool _listRangeDrag;
+        private bool _listPendingClick;
         private int _listAnchor = -1;
+        private Point _listDragStart;
 
         public TimelineSelectionBinder(TimelineTrackBar timeline, ListBox list,
             FrameRangeSelection selection, Action refreshUi)
@@ -164,7 +166,7 @@ namespace Malcha.UI
             g.DrawString(label, font, brush, tx, ty);
         }
 
-        // Ctrl+클릭: 구간 끝/시작 · 일반 드래그: 구간 선택
+        // 일반 클릭=프레임 이동 · 드래그=구간 선택 · Ctrl+클릭=In/Out
         private void OnListMouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
@@ -177,50 +179,82 @@ namespace Malcha.UI
                 if ((mods & Keys.Shift) != 0) _selection.SetEnd(idx);
                 else _selection.SetStart(idx);
                 _listRangeDrag = false;
+                _listPendingClick = false;
                 SyncListBoxSelectionToRange();
                 _refreshUi();
                 return;
             }
 
-            // 이미 선택된 구간 위에서 누르면 구간 유지 → 이후 드래그로 이동
+            _listAnchor = idx;
+            _listDragStart = e.Location;
+            _listPendingClick = true;
+            _listRangeDrag = false;
+
             if (_selection.Contains(idx))
             {
-                _listRangeDrag = false;
+                // 기존 구간 위: 클릭=이동 · 밖으로 드래그=삭제 목록 DnD (구간 재선택 안 함)
+                ListBoxDragSelectHelper.SelectIndexRange(_list, idx, idx);
                 return;
             }
 
-            _listAnchor = idx;
-            _listRangeDrag = true;
-            _selection.SetRange(idx, idx);
             ListBoxDragSelectHelper.SelectIndexRange(_list, idx, idx);
             _list.Capture = true;
-            _refreshUi();
         }
 
-        // 리스트 내 드래그로 구간 끝 갱신
+        // 드래그 임계값 넘으면 구간 선택 시작 (클릭만이면 In/Out 유지)
         private void OnListMouseMove(object? sender, MouseEventArgs e)
         {
+            if (_listPendingClick && !_listRangeDrag && e.Button == MouseButtons.Left)
+            {
+                if (!ListBoxDragSelectHelper.IsPastDragThreshold(_listDragStart, e.Location))
+                    return;
+
+                _listPendingClick = false;
+
+                if (_selection.Contains(_listAnchor))
+                    return;
+
+                _listRangeDrag = true;
+
+                var pt = _list.PointToClient(Cursor.Position);
+                int idx = _list.ClientRectangle.Contains(pt)
+                    ? ListBoxDragSelectHelper.IndexFromPointClamped(_list, pt)
+                    : _listAnchor;
+                if (idx < 0) idx = _listAnchor;
+
+                _selection.SetRange(_listAnchor, idx);
+                SyncListBoxSelectionToRange();
+                _refreshUi();
+                return;
+            }
+
             if (!_listRangeDrag || e.Button != MouseButtons.Left) return;
 
-            var pt = _list.PointToClient(Cursor.Position);
-            if (!_list.ClientRectangle.Contains(pt)) return;
+            var dragPt = _list.PointToClient(Cursor.Position);
+            if (!_list.ClientRectangle.Contains(dragPt)) return;
 
-            int idx = ListBoxDragSelectHelper.IndexFromPointClamped(_list, pt);
-            if (idx < 0) return;
+            int dragIdx = ListBoxDragSelectHelper.IndexFromPointClamped(_list, dragPt);
+            if (dragIdx < 0) return;
 
-            _selection.SetRange(_listAnchor, idx);
+            _selection.SetRange(_listAnchor, dragIdx);
             SyncListBoxSelectionToRange();
             _refreshUi();
         }
 
         private void OnListMouseUp(object? sender, MouseEventArgs e)
         {
-            if (!_listRangeDrag) return;
-            _listRangeDrag = false;
             if (_list.Capture) _list.Capture = false;
 
-            SyncListBoxSelectionToRange();
-            _refreshUi();
+            if (_listRangeDrag)
+            {
+                _listRangeDrag = false;
+                _listPendingClick = false;
+                SyncListBoxSelectionToRange();
+                _refreshUi();
+                return;
+            }
+
+            _listPendingClick = false;
         }
 
         private void SyncListBoxSelectionToRange()

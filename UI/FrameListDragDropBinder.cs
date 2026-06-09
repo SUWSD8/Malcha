@@ -80,6 +80,10 @@ namespace Malcha.UI
             if (e.Button != MouseButtons.Left) return;
             _dragStart = e.Location;
             _dragging = true;
+
+            int idx = ListBoxDragSelectHelper.IndexFromPointClamped(_activeList, e.Location);
+            if (idx >= 0 && _selection.Contains(idx))
+                _activeList.Capture = true;
         }
 
         private void OnActiveMouseMove(object? sender, MouseEventArgs e)
@@ -100,14 +104,22 @@ namespace Malcha.UI
             _activeList.DoDragDrop(payload, DragDropEffects.Move);
         }
 
-        private void OnActiveMouseUp(object? sender, MouseEventArgs e) =>
+        private void OnActiveMouseUp(object? sender, MouseEventArgs e)
+        {
             _dragging = false;
+            if (_activeList.Capture)
+                _activeList.Capture = false;
+        }
 
         private void OnDeletedMouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
             _dragStart = e.Location;
             _dragging = true;
+
+            int idx = ListBoxDragSelectHelper.IndexFromPointClamped(_deletedList, e.Location);
+            if (idx >= 0 && _deletedSelection.Contains(idx))
+                _deletedList.Capture = true;
         }
 
         private void OnDeletedMouseMove(object? sender, MouseEventArgs e)
@@ -128,8 +140,12 @@ namespace Malcha.UI
             _deletedList.DoDragDrop(payload, DragDropEffects.Move);
         }
 
-        private void OnDeletedMouseUp(object? sender, MouseEventArgs e) =>
+        private void OnDeletedMouseUp(object? sender, MouseEventArgs e)
+        {
             _dragging = false;
+            if (_deletedList.Capture)
+                _deletedList.Capture = false;
+        }
 
         private FrameDragPayload? BuildDeletedPayload()
         {
