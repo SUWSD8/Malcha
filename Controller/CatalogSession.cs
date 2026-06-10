@@ -125,12 +125,21 @@ namespace Malcha
             }
 
             int count = end - start + 1;
+            int playhead = CurrentIndex;
             CurrentFrames.RemoveRange(start, count);
             if (FrameImagePaths.Count >= start + count)
                 FrameImagePaths.RemoveRange(start, count);
 
-            CurrentIndex = System.Math.Max(0, System.Math.Min(CurrentFrames.Count - 1, start));
-            if (CurrentFrames.Count == 0) CurrentIndex = 0;
+            if (CurrentFrames.Count == 0)
+                CurrentIndex = 0;
+            else if (playhead > end)
+                CurrentIndex = playhead - count;
+            else if (playhead >= start)
+                CurrentIndex = Math.Min(start, CurrentFrames.Count - 1);
+            else
+                CurrentIndex = playhead;
+
+            CurrentIndex = Math.Clamp(CurrentIndex, 0, CurrentFrames.Count - 1);
 
             if (!string.IsNullOrEmpty(CurrentCatalogPath))
                 Catalogs[CurrentCatalogPath] = CurrentFrames;

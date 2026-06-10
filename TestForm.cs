@@ -22,8 +22,11 @@ namespace Malcha
                     MessageBox.Show("mycar 경로를 먼저 설정하세요.");
                     return;
                 }
-                if (await WslTrainingService.Instance.TrainAsync("mypilot.h5"))
+                var result = await WslTrainingService.Instance.TrainAsync("mypilot.h5");
+                if (result.Succeeded)
                     MessageBox.Show("학습 완료");
+                else if (result.WasCancelled)
+                    MessageBox.Show("학습 중단");
             }
             finally { btnTrain.Enabled = true; }
         }

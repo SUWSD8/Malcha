@@ -1,7 +1,10 @@
 using Malcha.Controller;
+using Malcha.Data;
+using Malcha.Model;
 using Malcha.Service;
 using Malcha.UI;
 using Malcha.View;
+using Microsoft.VisualBasic;
 using static Malcha.UI.TimelineSelectionBinder;
 
 namespace Malcha
@@ -16,25 +19,30 @@ namespace Malcha
         private CatalogDisplayController _display = null!;
         private readonly CatalogService _catalog = CatalogService.Instance;
         private CrossTestController? _crossTestController;
+        private SaveFileController _saveController;
 
         private float _playbackSpeed = 1.0f;
         private Label? _speedFlashOverlay;
         private System.Windows.Forms.Timer? _speedFeedbackTimer;
         private System.Windows.Forms.Timer? _speedOverlayTimer;
+        private TimelineSelectionBinder? _timelineBinder;
+        private bool _timelineSync;
+        private bool _timelineScrubbing;
 
         public Form1()
         {
             InitializeComponent();
-
             _display = new CatalogDisplayController(
                 chtDataGraph, picVideoScreen, trbTimeline,
                 lblAngleValue, lblThrottleValue, lblModeValue, lblRecordCount);
 
             InitializeCatalogController();
+            _saveController = new SaveFileController(_session, _catalogController);
             _crossTestController = new CrossTestController(_session, _selection);
             InitializeTrainingPanel();
 
-            new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi).Attach();
+            _timelineBinder = new TimelineSelectionBinder(trbTimeline, lstDataList, _selection, RefreshSelectionUi);
+            _timelineBinder.Attach();
             new DeletedListSelectionBinder(lstDeleted, _deletedSelection, RefreshDeletedSelectionUi).Attach();
             new FrameListDragDropBinder(
                 lstDataList, lstDeleted, groupBox2, _selection, _deletedSelection,
@@ -55,12 +63,12 @@ namespace Malcha
         {
             var listMenu = new ContextMenuStrip();
             listMenu.Items.Add("선택 항목 삭제", null, async (_, _) =>
-                await _catalogController!.HandleDeleteListItemsAsync(lstDataList.SelectedIndices.Cast<int>().ToList()));
+                await _catalogController!.HandleDeleteListItemsAsync(GetActiveListDeleteIndices()));
             lstDataList.ContextMenuStrip = listMenu;
             lstDataList.KeyDown += (_, e) =>
             {
                 if (e.KeyCode == Keys.Delete)
-                    _ = _catalogController!.HandleDeleteListItemsAsync(lstDataList.SelectedIndices.Cast<int>().ToList());
+                    _ = _catalogController!.HandleDeleteListItemsAsync(GetActiveListDeleteIndices());
             };
 
             var trackMenu = new ContextMenuStrip();
@@ -77,7 +85,7 @@ namespace Malcha
         // 버튼·키·Paint 이벤트 핸들러 연결
         private void SetupEventHandlers()
         {
-            btnSelectData.Click += async (_, _) => await _catalogController!.HandleSelectDataAsync();
+            //btnSelectData.Click += async (_, _) => await _catalogController!.HandleSelectDataAsync();
             btnRefresh.Click += async (_, _) => await _catalogController!.HandleRefreshAsync();
             btnRecover.Click += async (_, _) => await _catalogController!.HandleRecoverAsync();
             btnApplyFilter.Click += async (_, _) => await _catalogController!.HandleApplyFilterAsync();
@@ -91,7 +99,10 @@ namespace Malcha
             btnFastForward.Click += (_, _) => StepFrame(5);
             btnRewind.Click += (_, _) => StepFrame(-5);
             btnPlayPause.Click += BtnPlayPause_Click;
-            trbTimeline.Scroll += (_, _) => OnTimelineScroll();
+            trbTimeline.ValueChanged += (_, _) => OnTimelineUserChanged();
+            trbTimeline.ThumbDragStarted += (_, _) => _timelineScrubbing = true;
+            trbTimeline.ThumbDragEnded += (_, _) => FinishTimelineScrub();
+            MouseUp += (_, _) => FinishTimelineScrub();
             btnHelper.Click += (_, _) => HelpDialog.ShowFor(this);
             btnCrossTest.Click += async (_, _) =>
                 await _crossTestController!.RunAsync((ITrainingView)this, (ICatalogView)this, RefreshFrameOverlay);
@@ -108,17 +119,20 @@ namespace Malcha
             tips.SetToolTip(btnNextFrame, "다음 프레임 (1)");
             tips.SetToolTip(btnRewind, "5프레임 뒤로");
             tips.SetToolTip(btnFastForward, "5프레임 앞으로");
-            tips.SetToolTip(btnSetStartPoint, "구간 시작 ([)");
-            tips.SetToolTip(btnSetEndPoint, "구간 끝 (])");
-            tips.SetToolTip(btnDeleteSelection, "선택 구간을 삭제 목록으로 이동");
-            tips.SetToolTip(trbTimeline, "Ctrl+드래그: 구간 · Shift: 해제 · 리스트 드래그: 구간");
+            tips.SetToolTip(btnSetStartPoint, "구간 시작 In — I · [ · Q");
+            tips.SetToolTip(btnSetEndPoint, "구간 끝 Out — O · ] · W");
+            tips.SetToolTip(btnDeleteSelection, "선택 구간 컷 (정지 중) · 재생 중: X / Delete");
+            tips.SetToolTip(btnApplyFilter, "필터 적용 — 제거 예상 미리보기 후 정제 (선택)");
+            tips.SetToolTip(trbTimeline, "썸=재생 · 주황=선택 구간 · Ctrl+드래그: 구간");
             tips.SetToolTip(lstDataList, "드래그: 구간 선택 · 삭제 목록으로 끌면 이동");
             tips.SetToolTip(lstDeleted, "드래그: 구간 선택 · 위쪽으로 끌면 복구");
             tips.SetToolTip(btnChangeCleanData, "정제된 카탈로그를 WSL data로 보냅니다 (학습 전 필수)");
+            tips.SetToolTip(btnshutdown, "학습 중단 — 처음 학습이면 Ep까지 저장 · 기존 모델 있으면 .h5 유지");
+            tips.SetToolTip(btnRestoreModelBackup, "선택 모델의 .malcha_backup.h5 → .h5 복구 (학습 시작 시 자동 백업)");
             tips.SetToolTip(btnRefresh, "WSL data 연동·초기화 · 카탈로그 다시 읽기");
             tips.SetToolTip(btnCrossTest, "선택 모델로 카탈로그 inference · 주황=기록 · 노랑=예측");
             tips.SetToolTip(btnHelper, "F1 도움말");
-            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · 배속: 키보드 0~5 또는 NumPad 0~5");
+            tips.SetToolTip(btnPlayPause, "재생 / 정지 (Space) · In/Out: I O · 컷: X · 배속: 0~5·↑↓");
         }
 
         private void SetupPlaybackSpeedUi()
@@ -136,36 +150,101 @@ namespace Malcha
             picVideoScreen.Resize += (_, _) => CenterSpeedFlashOverlay();
         }
 
+        // 프레임 리스트 삭제 대상 — 주황 구간(_selection) 우선, 없으면 ListBox 다중 선택
+        private List<int> GetActiveListDeleteIndices()
+        {
+            if (_selection.HasSelection)
+                return _selection.ToIndexList();
+
+            return lstDataList.SelectedIndices.Cast<int>().ToList();
+        }
+
         // 구간 선택 UI·상태바 갱신
         private void RefreshSelectionUi()
         {
-            trbTimeline.Invalidate();
+            InvalidateTimelineMarkers();
             lstDataList.Invalidate();
             if (!_selection.HasSelection) return;
             var (s, e) = _selection.GetRange();
-            toolStripStatusLabel1.Text = $"구간 {s}~{e} ({_selection.FrameCount:N0}) · Esc 해제";
+            toolStripStatusLabel1.Text = $"In {s} · Out {e} ({_selection.FrameCount:N0}프레임) · Esc 해제";
         }
+
+        private void InvalidateTimelineMarkers() => _timelineBinder?.InvalidateTimeline();
+
+        private void SyncTimeline(int activeIndex)
+        {
+            if (_session.CurrentFrames.Count == 0)
+            {
+                trbTimeline.Enabled = false;
+                return;
+            }
+
+            int max = Math.Max(0, _session.CurrentFrames.Count - 1);
+            int target = Math.Clamp(activeIndex, 0, max);
+
+            _timelineSync = true;
+            try
+            {
+                if (trbTimeline.Maximum != max)
+                {
+                    trbTimeline.Minimum = 0;
+                    trbTimeline.Maximum = max;
+                }
+                trbTimeline.Enabled = true;
+                if (trbTimeline.Value != target)
+                    trbTimeline.Value = target;
+            }
+            finally
+            {
+                _timelineSync = false;
+            }
+        }
+
+        private void FinishTimelineScrub()
+        {
+            if (!_timelineScrubbing && !trbTimeline.IsThumbDragging) return;
+            _timelineScrubbing = false;
+
+            if (_session.CurrentFrames.Count == 0) return;
+
+            int active = Math.Clamp(trbTimeline.Value, 0, _session.CurrentFrames.Count - 1);
+
+            if (active != _session.CurrentIndex)
+                ShowFrame(active, syncTimeline: false);
+
+            if (lstDataList.SelectedIndex != _session.CurrentIndex)
+                lstDataList.SelectedIndex = _session.CurrentIndex;
+
+            SyncTimeline(_session.CurrentIndex);
+        }
+
+        private bool IsTimelineScrubbing() =>
+            _timelineScrubbing || trbTimeline.IsThumbDragging
+            || (Control.MouseButtons & MouseButtons.Left) != 0;
 
         private void RefreshDeletedSelectionUi()
         {
             lstDeleted.Invalidate();
+            InvalidateTimelineMarkers();
             if (!_deletedSelection.HasSelection) return;
             var (s, e) = _deletedSelection.GetRange();
             toolStripStatusLabel1.Text = $"삭제 목록 구간 {s}~{e} ({_deletedSelection.FrameCount:N0}) · Esc 해제";
         }
 
-        // 단축키 처리 (F1, Space, 0~5 배속, [, ], Esc, Ctrl+Z)
+        // 단축키 처리 (F1, Space, 0~5 프리셋, ↑↓ 미세조절, [, ], Esc, Ctrl+Z)
         private void Form1_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.F1) { HelpDialog.ShowFor(this); e.Handled = true; return; }
 
-            float digitSpeed = PlaybackSettings.SpeedFromDigitKey(e.KeyCode);
-            if (digitSpeed > 0f)
+            if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
             {
-                if (_session.CurrentFrames.Count > 0 && !IsTypingInTextField())
-                    SetPlaybackSpeed(digitSpeed);
-                e.Handled = true;
-                return;
+                float preset = PlaybackSettings.PresetSpeedFromDigitKey(e.KeyCode);
+                if (preset > 0f)
+                {
+                    SetPlaybackSpeed(preset);
+                    e.Handled = true;
+                    return;
+                }
             }
 
             if (_session.CurrentFrames.Count == 0) return;
@@ -175,8 +254,12 @@ namespace Malcha
                     BtnPlayPause_Click(null, EventArgs.Empty);
                     e.Handled = true;
                     break;
-                case Keys.OemOpenBrackets: SetRangeStart(); e.Handled = true; break;
-                case Keys.OemCloseBrackets: SetRangeEnd(); e.Handled = true; break;
+                case Keys.OemOpenBrackets:
+                case Keys.I when !IsTypingInTextField():
+                    SetRangeStart(); e.Handled = true; break;
+                case Keys.OemCloseBrackets:
+                case Keys.O when !IsTypingInTextField():
+                    SetRangeEnd(); e.Handled = true; break;
                 case Keys.Escape:
                     if (_selection.HasSelection) { _selection.Clear(); RefreshSelectionUi(); }
                     else if (_deletedSelection.HasSelection) { _deletedSelection.Clear(); RefreshDeletedSelectionUi(); }
@@ -184,6 +267,38 @@ namespace Malcha
                     e.Handled = true; break;
                 case Keys.Z when e.Control:
                     _catalogController!.TryRecoverFromUndo(); e.Handled = true; break;
+
+                case Keys.Right when e.Control: StepFrame(5); e.Handled = true; break;
+                case Keys.Left when e.Control: StepFrame(-5); e.Handled = true; break;
+
+                case Keys.Right: StepFrame(1); e.Handled = true; break;
+                case Keys.Left: StepFrame(-1); e.Handled = true; break;
+
+
+
+                case Keys.Q: SetRangeStart(); e.Handled = true; break;
+                case Keys.W: SetRangeEnd(); e.Handled = true; break;
+                case Keys.X when !IsTypingInTextField():
+                    if (_playCts != null) CutSelectionDuringPlayback();
+                    else _ = _catalogController!.HandleDeleteSelectionAsync();
+                    e.Handled = true;
+                    break;
+                case Keys.Delete:
+                    if (IsTypingInTextField()) break;
+                    if (_playCts != null) CutSelectionDuringPlayback();
+                    else _ = _catalogController!.HandleDeleteSelectionAsync();
+                    e.Handled = true; break;
+                case Keys.Up:
+                    if (!IsTypingInTextField() && _playbackSpeed < PlaybackSettings.MaxSpeed)
+                        SetPlaybackSpeed(Math.Min(PlaybackSettings.MaxSpeed, _playbackSpeed + PlaybackSettings.ArrowSpeedStep));
+                    e.Handled = true;
+                    break;
+                case Keys.Down:
+                    if (!IsTypingInTextField() && _playbackSpeed > PlaybackSettings.MinSpeed)
+                        SetPlaybackSpeed(Math.Max(PlaybackSettings.MinSpeed, _playbackSpeed - PlaybackSettings.ArrowSpeedStep));
+                    e.Handled = true;
+                    break;
+
             }
         }
 
@@ -274,7 +389,10 @@ namespace Malcha
             if (_session.CurrentFrames.Count > 0)
             {
                 int i = Math.Max(0, _session.CurrentIndex) + 1;
-                toolStripStatusLabel1.Text = $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+                string time = FormatFrameTimestamp(_session.CurrentFrames, _session.CurrentIndex);
+                toolStripStatusLabel1.Text = string.IsNullOrEmpty(time)
+                    ? $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0}"
+                    : $"프레임 {i:N0} / {_session.CurrentFrames.Count:N0} · {time}";
             }
         }
 
@@ -290,8 +408,17 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             int i = Math.Max(0, _session.CurrentIndex) + 1;
-            toolStripStatusLabel1.Text =
+            string time = FormatFrameTimestamp(_session.CurrentFrames, _session.CurrentIndex);
+            string text =
                 $"재생 {PlaybackSettings.FormatSpeedLabel(_playbackSpeed)} · 프레임 {i:N0} / {_session.CurrentFrames.Count:N0}";
+            if (!string.IsNullOrEmpty(time))
+                text += $" · {time}";
+            if (_selection.HasSelection)
+            {
+                var (s, e) = _selection.GetRange();
+                text += $" · In~Out {s}~{e}";
+            }
+            toolStripStatusLabel1.Text = text;
         }
 
         private void HidePlaybackSpeedIndicators()
@@ -302,36 +429,74 @@ namespace Malcha
             btnPlayPause.Text = "재생 / 정지";
         }
 
-        // 현재 프레임을 구간 시작으로 설정
+        // 현재 프레임을 구간 시작(In)으로 설정
         private void SetRangeStart()
         {
             if (_session.CurrentFrames.Count == 0) return;
             _selection.SetStart(_session.CurrentIndex);
             RefreshSelectionUi();
+            if (_playCts != null) UpdatePlaybackStatusBar();
         }
 
-        // 현재 프레임을 구간 끝으로 설정
+        // 현재 프레임을 구간 끝(Out)으로 설정
         private void SetRangeEnd()
         {
             if (_session.CurrentFrames.Count == 0) return;
             _selection.SetEnd(_session.CurrentIndex);
             RefreshSelectionUi();
+            if (_playCts != null) UpdatePlaybackStatusBar();
+        }
+
+        // 재생 중 선택 구간 컷 (확인 없음)
+        private void CutSelectionDuringPlayback()
+        {
+            if (_playCts == null || _catalogController == null) return;
+            if (!_selection.HasSelection)
+            {
+                toolStripStatusLabel1.Text = "컷할 구간 없음 — I 또는 [ 로 In, O 또는 ] 로 Out";
+                return;
+            }
+            if (_catalogController.TryCutSelectionDuringPlayback())
+                UpdatePlaybackStatusBar();
         }
 
         // 세션 프레임으로 차트 갱신
         private void RefreshChartFromFrames() => _display.RefreshChart(_session.CurrentFrames);
 
         // 지정 인덱스 프레임 표시
-        private void ShowFrame(int index)
+        private void ShowFrame(int index, bool syncTimeline = true)
         {
             if (_session.CurrentFrames.Count == 0) return;
             index = Math.Clamp(index, 0, _session.CurrentFrames.Count - 1);
             _session.CurrentIndex = index;
-            _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            _timelineSync = true;
+            try
+            {
+                _display.ShowFrame(index, _session.CurrentFrames, _session.FrameImagePaths, this);
+            }
+            finally
+            {
+                _timelineSync = false;
+            }
+            if (syncTimeline)
+                SyncTimeline(index);
             RefreshModelLabels();
             picVideoScreen.Invalidate();
+            InvalidateTimelineMarkers();
             if (_playCts == null && _speedFeedbackTimer is not { Enabled: true })
                 RestoreIdleStatusBar();
+        }
+
+        private static string FormatFrameTimestamp(IReadOnlyList<Frame> frames, int index)
+        {
+            if (index < 0 || index >= frames.Count) return string.Empty;
+            long ts = frames[index].TimestampMs;
+            if (ts > 1_000_000_000_000L)
+                return DateTimeOffset.FromUnixTimeMilliseconds(ts).ToLocalTime().ToString("HH:mm:ss.fff");
+            long t0 = frames[0].TimestampMs;
+            if (t0 > 0 && ts >= t0)
+                return $"+{(ts - t0) / 1000.0:F2}s";
+            return $"#{index}";
         }
 
         // 교차 테스트 HUD·모델 라벨 갱신
@@ -427,19 +592,30 @@ namespace Malcha
                 pred?.Angle);
         }
 
-        // 리스트 선택 변경 → 해당 프레임 표시
+        // 리스트 선택 변경 → 해당 프레임 표시 (재생 중 무시)
         private void OnListSelectionChanged()
         {
+            if (_playCts != null) return;
             if (lstDataList.SelectedIndex < 0 || lstDataList.SelectedIndex == _session.CurrentIndex) return;
             ShowFrame(lstDataList.SelectedIndex);
         }
 
-        // 타임라인 스크롤 → 해당 프레임 표시
-        private void OnTimelineScroll()
+        // 타임라인 드래그/클릭 → 해당 프레임 (재생 중·프로그램 동기화 시 무시)
+        private void OnTimelineUserChanged()
         {
-            if (_session.CurrentFrames.Count == 0) return;
-            ShowFrame(trbTimeline.Value);
-            if (lstDataList.SelectedIndex != _session.CurrentIndex)
+            if (_session.CurrentFrames.Count == 0 || _playCts != null || _timelineSync) return;
+
+            if (IsTimelineScrubbing())
+                _timelineScrubbing = true;
+
+            var active = Math.Clamp(trbTimeline.Value, 0, _session.CurrentFrames.Count - 1);
+
+            bool scrubbing = IsTimelineScrubbing();
+            if (active == _session.CurrentIndex && !scrubbing) return;
+
+            ShowFrame(active, syncTimeline: !scrubbing);
+
+            if (!scrubbing && lstDataList.SelectedIndex != _session.CurrentIndex)
                 lstDataList.SelectedIndex = _session.CurrentIndex;
         }
 
@@ -448,6 +624,7 @@ namespace Malcha
         {
             if (_session.CurrentFrames.Count == 0) return;
             ShowFrame(Math.Clamp(_session.CurrentIndex + delta, 0, _session.CurrentFrames.Count - 1));
+            lstDataList.ClearSelected();
             lstDataList.SelectedIndex = _session.CurrentIndex;
         }
 
@@ -469,6 +646,7 @@ namespace Malcha
                     int next = _session.CurrentIndex + 1;
                     if (next >= _session.CurrentFrames.Count) break;
                     ShowFrame(next);
+                    lstDataList.ClearSelected();
                     lstDataList.SelectedIndex = _session.CurrentIndex;
                     UpdatePlaybackStatusBar();
                     await Task.Delay(PlaybackSettings.DelayMs(_playbackSpeed), _playCts.Token);
@@ -490,6 +668,114 @@ namespace Malcha
         {
             if (_catalogController == null) return;
             await _catalogController.HandleSaveSessionAsync();
+            RefreshListBox();
+        }
+        private void RefreshListBox()
+        {
+            lstSave.Items.Clear(); // 기존 목록 지우기
+
+            try
+            {
+                var files = _saveController.GetSaveFilesForUI();
+                foreach (var file in files)
+                {
+                    // ListBox는 텍스트 하나만 들어가므로 이름만 추가
+                    lstSave.Items.Add(file.Name);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+        private async void lstSave_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            // 빈 공간을 더블클릭한 것이 아닌지 확인
+            int index = lstSave.IndexFromPoint(e.Location);
+            if (index != ListBox.NoMatches)
+            {
+                string selectedFileName = lstSave.Items[index].ToString();
+                try
+                {
+                    bool isSuccess = await _saveController.RequestLoadSaveFile(selectedFileName);
+                    if(!isSuccess) MessageBox.Show("현재 작업 중인 내용이 저장되지 않았습니다. 먼저 저장하시겠습니까?", "로드 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                    MessageBox.Show($"'{selectedFileName}' 로드 완료!");
+                    // 프레임 업데이트는 세션이 변경될 때 CatalogEditorController에서 ICatalogView.CompleteCatalogLoadAsync()를 호출하여 처리합니다.
+                    _catalogController.RefreshFrameList(); // 목록 새로고침 요청 (세션 변경 감지 후에도 처리되지만, 확실히 하기 위해 추가)
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "로드 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+        private void lstSave_MouseDown(object sender, MouseEventArgs e)
+        {
+            // 우클릭을 했을 때, 마우스 위치에 있는 아이템을 강제로 선택 상태로 만듦
+            if (e.Button == MouseButtons.Right)
+            {
+                int index = lstSave.IndexFromPoint(e.Location);
+                if (index != ListBox.NoMatches)
+                {
+                    lstSave.SelectedIndex = index;
+                    // 디자이너에서 ContextMenuStrip을 ListBox에 연결해두면 이 위치에서 메뉴가 뜹니다.
+                    cmsSaveFile.Show(lstSave,e.Location);
+                }
+                else
+                {
+                    lstSave.ClearSelected(); // 빈 공간 우클릭 시 선택 해제
+                }
+            }
+        }
+        private void MenuDelete_Click(object sender, EventArgs e)
+        {
+            if (lstSave.SelectedItem == null) return;
+
+            string selectedFileName = lstSave.SelectedItem.ToString();
+
+            var result = MessageBox.Show($"'{selectedFileName}' 파일을 삭제하시겠습니까?", "삭제 확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    _saveController.RequestDelete(selectedFileName);
+                    RefreshListBox(); // 삭제 후 목록 새로고침
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "삭제 오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+        private void MenuRename_Click(object sender, EventArgs e)
+        {
+            if (lstSave.SelectedItem == null) return;
+
+            string oldName = lstSave.SelectedItem.ToString();
+
+            // InputBox를 띄워 새 이름을 입력받음 (Microsoft.VisualBasic 참조 필요)
+            // 만약 이게 번거롭다면 Form을 하나 새로 만들어서 (TextBox + 확인 버튼) 띄워도 됩니다.
+            string newName = Interaction.InputBox("새로운 파일 이름을 입력하세요:", "이름 변경", oldName);
+
+            if (!string.IsNullOrWhiteSpace(newName) && oldName != newName)
+            {
+                try
+                {
+                    _saveController.RequestRename(oldName, newName);
+                    RefreshListBox(); // 이름 변경 후 목록 새로고침
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(ex.Message, "이름 변경 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+
+        private async void btnSelectData_Click(object sender, EventArgs e)
+        {
+            await _catalogController!.HandleSelectDataAsync();
+            RefreshListBox();
         }
     }
 }

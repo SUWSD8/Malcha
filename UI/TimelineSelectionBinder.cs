@@ -35,6 +35,9 @@ namespace Malcha.UI
                 return (s, e);
             }
 
+            public int InPoint => Start;
+            public int OutPoint => End;
+
             // 인덱스가 현재 구간 안에 있는지
             public bool Contains(int idx)
             {
@@ -67,15 +70,17 @@ namespace Malcha.UI
             }
         }
 
-        private readonly TrackBar _timeline;
+        private readonly TimelineTrackBar _timeline;
         private readonly ListBox _list;
         private readonly FrameRangeSelection _selection;
         private readonly Action _refreshUi;
         private bool _rangeDrag;
         private bool _listRangeDrag;
+        private bool _listPendingClick;
         private int _listAnchor = -1;
+        private Point _listDragStart;
 
-        public TimelineSelectionBinder(TrackBar timeline, ListBox list,
+        public TimelineSelectionBinder(TimelineTrackBar timeline, ListBox list,
             FrameRangeSelection selection, Action refreshUi)
         {
             _timeline = timeline;
@@ -87,6 +92,7 @@ namespace Malcha.UI
         // DrawItem·Mouse·Paint 이벤트 연결
         public void Attach()
         {
+            _list.SelectionMode = SelectionMode.MultiExtended;
             _list.DrawMode = DrawMode.OwnerDrawFixed;
             _list.DrawItem += OnListDrawItem;
             _list.MouseDown += OnListMouseDown;
@@ -95,19 +101,43 @@ namespace Malcha.UI
             _timeline.MouseDown += OnTimelineMouseDown;
             _timeline.MouseMove += OnTimelineMouseMove;
             _timeline.MouseUp += (_, _) => _rangeDrag = false;
-            _timeline.Paint += OnTimelinePaint;
+            _timeline.PostPaint += OnTimelinePaint;
         }
 
-        // 타임라인 마우스 X → 프레임 인덱스 변환
+        public void InvalidateTimeline() => _timeline.Invalidate();
+
+        // 타임라인 마우스 X → 활성 프레임 인덱스
         private int IndexFromMouse(int mouseX)
         {
-            int w = Math.Max(1, _timeline.ClientSize.Width - 8);
-            float ratio = Math.Clamp((float)mouseX / w, 0f, 1f);
-            return Math.Clamp((int)Math.Round(ratio * (_timeline.Maximum - _timeline.Minimum)) + _timeline.Minimum,
-                _timeline.Minimum, _timeline.Maximum);
+            int max = Math.Max(0, _timeline.Maximum);
+            return Math.Clamp(_timeline.XToValue(mouseX), 0, max);
         }
 
-        // 리스트 항목 그리기 (선택 구간 주황 하이라이트)
+        // 타임라인 — 주황=선택 구간 (썸=재생 위치)
+        private void OnTimelinePaint(object? sender, PaintEventArgs e)
+        {
+            var tb = _timeline;
+            var channel = tb.ChannelRect;
+            if (channel.Width <= 1 || channel.Height <= 1) return;
+
+            var (s, end) = _selection.GetRange();
+            if (s < 0) return;
+
+            int endIdx = end >= 0 ? end : s;
+            int vx1 = tb.ValueToX(s);
+            int vx2 = tb.ValueToX(endIdx);
+            int selLeft = Math.Min(vx1, vx2);
+            int selWidth = Math.Max(2, Math.Abs(vx2 - vx1));
+
+            using var band = new SolidBrush(Color.FromArgb(100, Color.Orange));
+            e.Graphics.FillRectangle(band, selLeft, channel.Top + 1, selWidth, Math.Max(4, channel.Height - 2));
+
+            if (s != endIdx)
+            {
+                DrawEdgeLabel(e.Graphics, vx1, channel, "I", Color.LimeGreen);
+                DrawEdgeLabel(e.Graphics, vx2, channel, "O", Color.Gold);
+            }
+        }
         private void OnListDrawItem(object? sender, DrawItemEventArgs e)
         {
             if (e.Index < 0) return;
@@ -125,21 +155,18 @@ namespace Malcha.UI
                 e.Graphics.DrawString(lb.Items[e.Index]?.ToString() ?? "", lb.Font, txt, e.Bounds.Left + 2, e.Bounds.Top + 2);
         }
 
-        // 타임라인에 선택 구간 주황 띠 그리기
-        private void OnTimelinePaint(object? sender, PaintEventArgs e)
+        private static void DrawEdgeLabel(Graphics g, int x, Rectangle channel, string label, Color color)
         {
-            var (s, end) = _selection.GetRange();
-            if (s < 0) return;
-            var tb = _timeline;
-            int w = tb.ClientSize.Width, min = tb.Minimum, max = tb.Maximum;
-            float r1 = (float)(s - min) / Math.Max(1, max - min);
-            float r2 = (float)((end >= 0 ? end : s) - min) / Math.Max(1, max - min);
-            int x1 = (int)(r1 * w), x2 = (int)(r2 * w);
-            using var brush = new SolidBrush(Color.FromArgb(80, Color.Orange));
-            e.Graphics.FillRectangle(brush, Math.Min(x1, x2), 0, Math.Abs(x2 - x1), tb.ClientSize.Height);
+            using var font = new Font("Segoe UI", 7f, FontStyle.Bold);
+            using var shadow = new SolidBrush(Color.FromArgb(180, 0, 0, 0));
+            using var brush = new SolidBrush(color);
+            float tx = Math.Clamp(x - 4, channel.Left, channel.Right - 10);
+            float ty = channel.Top + 1;
+            g.DrawString(label, font, shadow, tx + 1, ty + 1);
+            g.DrawString(label, font, brush, tx, ty);
         }
 
-        // Ctrl+클릭: 구간 끝/시작 · 일반 드래그: 구간 선택
+        // 일반 클릭=프레임 이동 · 드래그=구간 선택 · Ctrl+클릭=In/Out
         private void OnListMouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Left) return;
@@ -152,50 +179,90 @@ namespace Malcha.UI
                 if ((mods & Keys.Shift) != 0) _selection.SetEnd(idx);
                 else _selection.SetStart(idx);
                 _listRangeDrag = false;
+                _listPendingClick = false;
+                SyncListBoxSelectionToRange();
                 _refreshUi();
                 return;
             }
 
-            // 이미 선택된 구간 위에서 누르면 구간 유지 → 이후 드래그로 이동
+            _listAnchor = idx;
+            _listDragStart = e.Location;
+            _listPendingClick = true;
+            _listRangeDrag = false;
+
             if (_selection.Contains(idx))
             {
-                _listRangeDrag = false;
+                // 기존 구간 위: 클릭=이동 · 밖으로 드래그=삭제 목록 DnD (구간 재선택 안 함)
+                ListBoxDragSelectHelper.SelectIndexRange(_list, idx, idx);
                 return;
             }
 
-            _listAnchor = idx;
-            _listRangeDrag = true;
-            _selection.SetRange(idx, idx);
-            _list.SelectedIndex = idx;
+            ListBoxDragSelectHelper.SelectIndexRange(_list, idx, idx);
             _list.Capture = true;
-            _refreshUi();
         }
 
-        // 리스트 내 드래그로 구간 끝 갱신
+        // 드래그 임계값 넘으면 구간 선택 시작 (클릭만이면 In/Out 유지)
         private void OnListMouseMove(object? sender, MouseEventArgs e)
         {
+            if (_listPendingClick && !_listRangeDrag && e.Button == MouseButtons.Left)
+            {
+                if (!ListBoxDragSelectHelper.IsPastDragThreshold(_listDragStart, e.Location))
+                    return;
+
+                _listPendingClick = false;
+
+                if (_selection.Contains(_listAnchor))
+                    return;
+
+                _listRangeDrag = true;
+
+                var pt = _list.PointToClient(Cursor.Position);
+                int idx = _list.ClientRectangle.Contains(pt)
+                    ? ListBoxDragSelectHelper.IndexFromPointClamped(_list, pt)
+                    : _listAnchor;
+                if (idx < 0) idx = _listAnchor;
+
+                _selection.SetRange(_listAnchor, idx);
+                SyncListBoxSelectionToRange();
+                _refreshUi();
+                return;
+            }
+
             if (!_listRangeDrag || e.Button != MouseButtons.Left) return;
 
-            var pt = _list.PointToClient(Cursor.Position);
-            if (!_list.ClientRectangle.Contains(pt)) return;
+            var dragPt = _list.PointToClient(Cursor.Position);
+            if (!_list.ClientRectangle.Contains(dragPt)) return;
 
-            int idx = ListBoxDragSelectHelper.IndexFromPointClamped(_list, pt);
-            if (idx < 0) return;
+            int dragIdx = ListBoxDragSelectHelper.IndexFromPointClamped(_list, dragPt);
+            if (dragIdx < 0) return;
 
-            _selection.SetRange(_listAnchor, idx);
+            _selection.SetRange(_listAnchor, dragIdx);
+            SyncListBoxSelectionToRange();
             _refreshUi();
         }
 
         private void OnListMouseUp(object? sender, MouseEventArgs e)
         {
-            if (!_listRangeDrag) return;
-            _listRangeDrag = false;
             if (_list.Capture) _list.Capture = false;
 
-            var (s, _) = _selection.GetRange();
-            if (s >= 0 && _list.SelectedIndex != s)
-                _list.SelectedIndex = s;
-            _refreshUi();
+            if (_listRangeDrag)
+            {
+                _listRangeDrag = false;
+                _listPendingClick = false;
+                SyncListBoxSelectionToRange();
+                _refreshUi();
+                return;
+            }
+
+            _listPendingClick = false;
+        }
+
+        private void SyncListBoxSelectionToRange()
+        {
+            var (s, end) = _selection.GetRange();
+            if (s < 0) return;
+            int e = end >= 0 ? end : s;
+            ListBoxDragSelectHelper.SelectIndexRange(_list, s, e);
         }
 
         // Ctrl+드래그로 타임라인 구간 선택, Shift로 해제
@@ -215,6 +282,7 @@ namespace Malcha.UI
         private void OnTimelineMouseMove(object? sender, MouseEventArgs e)
         {
             if (!_rangeDrag || e.Button != MouseButtons.Left) return;
+
             _selection.SetEnd(IndexFromMouse(e.X));
             _refreshUi();
         }
