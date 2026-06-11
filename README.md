@@ -9,6 +9,23 @@ Malcha는 **Windows 화면**과 **WSL(Linux) 학습 환경**을 하나의 앱으
 
 <br>
 
+## 🛠️ 기술 스택
+
+<br>
+
+| 구분 | 사용 기술 |
+|------|-----------|
+| **앱 (UI)** | C# 10+ · .NET 10 Windows Forms · MVP(Passive View) |
+| **AI (학습)** | WSL2 (Ubuntu 22.04) · Python 3.9 · DonkeyCar 5.2 · TensorFlow 2.15.1 / Keras 2.15 |
+| **데이터** | JSON / JSON Lines (`.catalog`, `database.json`) |
+| **Windows ↔ WSL** | `wsl.exe` 프로세스 + stdout/stderr 실시간 파싱 |
+
+<br>
+S
+---
+
+<br>
+
 ---
 
 <br>
@@ -283,22 +300,7 @@ Malcha는 **Windows 화면**과 **WSL(Linux) 학습 환경**을 하나의 앱으
 
 <br>
 
-## 🛠️ 기술 스택
 
-<br>
-
-| 구분 | 사용 기술 |
-|------|-----------|
-| **앱 (UI)** | C# 10+ · .NET 10 Windows Forms · MVP(Passive View) |
-| **AI (학습)** | WSL2 (Ubuntu 22.04) · Python 3.9 · DonkeyCar · TensorFlow/Keras |
-| **데이터** | JSON / JSON Lines (`.catalog`, `database.json`) |
-| **Windows ↔ WSL** | `wsl.exe` 프로세스 + stdout/stderr 실시간 파싱 |
-
-<br>
-
----
-
-<br>
 
 ## 📌 1. 왜 만들었나
 
